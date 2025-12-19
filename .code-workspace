@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "path": "OFFLINE-PA-LAB"
+        },
+        // {
+        //     "path": "프로젝트B"
+        // }
+    ],
+    "settings": {
+        "editor.tabSize": 2,
+        "files.exclude": {
+            "**/.git": true,
+            "**/node_modules": true
+        }
+    }
+}
