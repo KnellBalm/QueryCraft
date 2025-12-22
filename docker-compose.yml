@@ -1,68 +1,44 @@
+# docker-compose.yml
 services:
-  # PostgreSQL 데이터베이스
-  postgres:
-    image: postgres:15-alpine
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: pa_lab
-      POSTGRES_PASSWORD: pa_lab
-      POSTGRES_DB: pa_lab
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - DUCKDB_PATH=/app/data/local.duckdb
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pa_lab"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # Streamlit 대시보드 (상시 운영)
-  dashboard:
-    build: .
-    working_dir: /app
-    environment:
-      - PG_HOST=postgres
-      - PG_PORT=5432
-      - PG_USER=pa_lab
-      - PG_PASSWORD=pa_lab
-      - PG_DB=pa_lab
-      - DUCKDB_PATH=/app/data/pa_lab.duckdb
-      - USE_GEMINI=${USE_GEMINI:-0}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - "5174:8000"
     volumes:
-      - ./data:/app/data
+      - duckdb_data:/app/data
       - ./problems:/app/problems
-    ports:
-      - "8501:8501"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
     restart: unless-stopped
 
-  # 일일 데이터 생성 스케줄러
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   scheduler:
-    build: .
-    working_dir: /app
-    environment:
-      - PG_HOST=postgres
-      - PG_PORT=5432
-      - PG_USER=pa_lab
-      - PG_PASSWORD=pa_lab
-      - PG_DB=pa_lab
-      - DUCKDB_PATH=/app/data/pa_lab.duckdb
-      - USE_GEMINI=${USE_GEMINI:-0}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-    volumes:
-      - ./data:/app/data
-      - ./problems:/app/problems
-    depends_on:
-      postgres:
-        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: python -m scripts.run_daily
+    env_file:
+      - .env
+    environment:
+      - DUCKDB_PATH=/app/data/local.duckdb
+      - RUN_INTERVAL_HOURS=24
+    volumes:
+      - duckdb_data:/app/data
+      - ./problems:/app/problems
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  duckdb_data:

@@ -1,0 +1,67 @@
+/* frontend/src/components/ResultTable.css */
+.result-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.8rem;
+}
+
+.result-count {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.result-time {
+    color: #666;
+}
+
+.result-scroll {
+    flex: 1;
+    overflow: auto;
+}
+
+.result-empty {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+}
+
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.result-table th {
+    position: sticky;
+    top: 0;
+    background: #343a40;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.result-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.result-table tr:hover td {
+    background: #f8f9fa;
+}

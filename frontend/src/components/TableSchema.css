@@ -1,0 +1,78 @@
+/* frontend/src/components/TableSchema.css */
+.schema-container {
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.schema-container h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.schema-empty {
+  padding: 1rem;
+  color: #999;
+}
+
+.schema-table {
+  margin-bottom: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.schema-table summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  background: #f8f9fa;
+  font-size: 0.85rem;
+}
+
+.schema-table summary:hover {
+  background: #e9ecef;
+}
+
+.table-icon {
+  font-size: 1rem;
+}
+
+.table-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.row-count {
+  font-size: 0.75rem;
+  color: #666;
+  background: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.columns {
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.column {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.column code {
+  color: #0066cc;
+  background: none;
+}
+
+.column .type {
+  color: #888;
+  font-size: 0.75rem;
+}
