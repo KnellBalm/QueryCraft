@@ -73,9 +73,9 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
                 const suggestions: any[] = [];
 
                 const push = (item: any) => {
-                    const key = `${item.kind}:${item.label}`;
-                    if (seen.has(key)) return;
-                    seen.add(key);
+                    // label만으로 중복 제거 (kind 무관)
+                    if (seen.has(item.label)) return;
+                    seen.add(item.label);
                     suggestions.push(item);
                 };
 
@@ -181,14 +181,29 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
 
                 // 3) SELECT/WHERE/ON 등에서는 "컬럼 + 함수 + 키워드" 위주
                 if (endsWithSelectWhereOn) {
-                    // 컬럼(중복 제거 + 우선순위 높게)
-                    tablesRef.current.forEach(t => {
+                    // 전체 쿼리에서 사용된 테이블 추출
+                    const fullText = model.getValue().toUpperCase();
+                    const tableMatches = fullText.match(/\b(FROM|JOIN)\s+([A-Z_][A-Z0-9_]*)/gi) || [];
+                    const usedTables = new Set<string>();
+                    tableMatches.forEach((match: string) => {
+                        const parts = match.split(/\s+/);
+                        if (parts.length >= 2) {
+                            usedTables.add(parts[parts.length - 1].toLowerCase());
+                        }
+                    });
+
+                    // 사용된 테이블의 컬럼만 표시 (테이블 없으면 전체 표시)
+                    const tablesToShow = usedTables.size > 0
+                        ? tablesRef.current.filter(t => usedTables.has(t.table_name.toLowerCase()))
+                        : tablesRef.current;
+
+                    tablesToShow.forEach(t => {
                         t.columns.forEach(c => {
                             push({
                                 label: c.column_name,
                                 kind: monaco.languages.CompletionItemKind.Field,
                                 insertText: c.column_name,
-                                detail: 'Column',
+                                detail: `${t.table_name}`,  // 어느 테이블 컬럼인지 표시
                                 range,
                                 sortText: `1_${c.column_name}`
                             });
@@ -282,7 +297,11 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
                     wordWrap: 'on',
                     padding: { top: 10, bottom: 10 },
                     suggestOnTriggerCharacters: true,
-                    quickSuggestions: true,
+                    quickSuggestions: {
+                        other: "on",      // 일반 코드에서 suggest 활성화
+                        comments: "off",
+                        strings: "off"
+                    },
                     fixedOverflowWidgets: true,
                     suggest: {
                         showKeywords: true,

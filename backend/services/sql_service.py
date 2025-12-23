@@ -60,10 +60,26 @@ def execute_sql(
         
         elapsed = (time.time() - start) * 1000  # ms
         
-        columns = list(df.columns)
+        # 중복 컬럼 처리: 고유 컬럼명 생성
+        original_columns = list(df.columns)
+        unique_columns = []
+        seen = {}
+        
+        for col in original_columns:
+            if col in seen:
+                seen[col] += 1
+                unique_columns.append(f"{col}_{seen[col]}")
+            else:
+                seen[col] = 0
+                unique_columns.append(col)
+        
+        df.columns = unique_columns
+        
+        columns = unique_columns
         data = df.to_dict(orient="records")
         
         return data, columns, None, elapsed
     
     except Exception as e:
         return None, None, str(e), 0
+

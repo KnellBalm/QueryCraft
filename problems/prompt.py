@@ -15,30 +15,60 @@ logger = get_logger(__name__)
 
 
 def get_data_summary() -> str:
-    """현재 PA 데이터 요약 생성"""
+    """현재 PA 데이터 요약 생성 - Gemini에게 정확한 스키마 정보 제공"""
     pg = PostgresEngine(PostgresEnv().dsn())
     
     try:
-        # 테이블별 row count
-        tables = ["users", "sessions", "events", "orders"]
-        summary_lines = ["## 테이블 구조"]
+        summary_lines = ["## 테이블 구조 (PostgreSQL)"]
         
-        for table in tables:
+        # 테이블별 정보
+        tables_info = [
+            ("pa_users", "user_id (TEXT PK), signup_at (TIMESTAMP), country (TEXT), channel (TEXT)"),
+            ("pa_sessions", "session_id (TEXT PK), user_id (TEXT FK), started_at (TIMESTAMP), device (TEXT)"),
+            ("pa_events", "event_id (TEXT PK), user_id (TEXT FK), session_id (TEXT FK), event_time (TIMESTAMP), event_name (TEXT)"),
+            ("pa_orders", "order_id (TEXT PK), user_id (TEXT FK), order_time (TIMESTAMP), amount (INT)")
+        ]
+        
+        for table_name, columns in tables_info:
             try:
-                count = pg.fetch_one(f"SELECT COUNT(*) FROM {table}")[0]
-                summary_lines.append(f"- {table}: {count:,}건")
-            except Exception:
-                summary_lines.append(f"- {table}: 조회 불가")
+                df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM {table_name}")
+                count = int(df.iloc[0]["cnt"])
+                summary_lines.append(f"- {table_name}: {count:,}건")
+                summary_lines.append(f"  컬럼: {columns}")
+            except Exception as e:
+                summary_lines.append(f"- {table_name}: 조회 불가 ({e})")
         
         # 이벤트 유형
         try:
-            event_types = pg.fetch_all(
-                "SELECT DISTINCT event_type FROM events LIMIT 10"
-            )
-            summary_lines.append(f"\n## 이벤트 유형")
-            summary_lines.append(", ".join([e[0] for e in event_types]))
+            df = pg.fetch_df("SELECT DISTINCT event_name FROM pa_events LIMIT 15")
+            event_names = [row["event_name"] for _, row in df.iterrows()]
+            summary_lines.append(f"\n## 이벤트 유형 (event_name)")
+            summary_lines.append(", ".join(event_names))
         except Exception:
             pass
+        
+        # 실제 데이터 날짜 범위
+        try:
+            date_df = pg.fetch_df("""
+                SELECT 
+                    MIN(signup_at)::date as min_date,
+                    MAX(signup_at)::date as max_date
+                FROM pa_users
+            """)
+            min_date = date_df.iloc[0]["min_date"]
+            max_date = date_df.iloc[0]["max_date"]
+            summary_lines.append(f"\n## 데이터 날짜 범위 (중요!)")
+            summary_lines.append(f"- 가입일: {min_date} ~ {max_date}")
+            summary_lines.append(f"- answer_sql 작성 시 이 범위 내 날짜 사용 필수")
+        except Exception:
+            pass
+        
+        # 주의사항
+        summary_lines.append("\n## 주의사항")
+        summary_lines.append("- answer_sql은 반드시 위 테이블/컬럼만 사용")
+        summary_lines.append("- 존재하지 않는 컬럼 사용 금지 (예: signup_channel, event_type 없음)")
+        summary_lines.append("- division by zero 방지: NULLIF 또는 CASE 사용")
+        summary_lines.append("- 날짜 조건은 위 데이터 범위 내에서 사용")
         
         return "\n".join(summary_lines)
     finally:

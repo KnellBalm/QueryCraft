@@ -339,6 +339,12 @@ def run_pa(save_to=("postgres","duckdb")):
         len(users), len(sessions), len(events), len(orders)
     )
 
+    # 시간순 정렬 (SELECT * 시 시간순으로 보이도록)
+    users.sort(key=lambda x: x[1])  # signup_at
+    sessions.sort(key=lambda x: x[2])  # started_at
+    events.sort(key=lambda x: x[3])  # event_time
+    orders.sort(key=lambda x: x[2])  # order_time
+
     if pg_cur:
         psycopg2.extras.execute_batch(pg_cur,
             "INSERT INTO pa_users VALUES (%s,%s,%s,%s)", users, page_size=5000)

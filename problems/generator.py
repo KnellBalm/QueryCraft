@@ -56,12 +56,17 @@ def generate(today: date, pg: PostgresEngine) -> str:
     logger.info("creating expected data in grading schema")
     for p in problems:
         table = f"{GRADING_SCHEMA}.expected_{p['problem_id']}"
-        sql = build_expected_sql(p)
+        
+        # answer_sql이 있으면 사용, 없으면 templates 사용 (폴백)
+        answer_sql = p.get("answer_sql")
+        if not answer_sql:
+            logger.warning(f"answer_sql missing for {p['problem_id']}, using template fallback")
+            answer_sql = build_expected_sql(p)
         
         try:
             # grading 스키마에 테이블 생성
             pg.execute(f"DROP TABLE IF EXISTS {table}")
-            pg.execute(f"CREATE TABLE {table} AS {sql}")
+            pg.execute(f"CREATE TABLE {table} AS {answer_sql}")
             
             # 메타데이터 추출 (행 수, 컬럼 정보)
             meta_df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM {table}")

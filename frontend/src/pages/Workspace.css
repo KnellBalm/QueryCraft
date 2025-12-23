@@ -283,13 +283,13 @@
     padding: 0 10px;
 }
 
-/* 아이콘 제거 (요구사항 3) */
+/* 아이콘 숨김 (레이아웃 안정성) */
 .monaco-editor .suggest-widget .suggest-icon,
 .monaco-editor .suggest-widget .icon {
     display: none !important;
 }
 
-/* 텍스트 영역: 아이콘 제거에 맞춰 padding 재정렬 */
+/* 텍스트 영역 */
 .monaco-editor .suggest-widget .suggest-label {
     padding-left: 0 !important;
 }

@@ -1,118 +1,241 @@
 [
   {
-    "problem_id": "startup_da_001_easy_funnel",
-    "difficulty": "easy",
-    "topic": "funnel",
-    "requester": "PM팀",
-    "question": "안녕하세요, PM팀입니다. 저희가 지난 주에 결제 페이지 UI를 개선했는데요, 이 개선이 실제 결제 전환율에 어떤 영향을 미쳤는지 확인하고 싶습니다. 특히, '결제 페이지 진입'부터 '결제 완료'까지의 퍼널 전환율이 개선 전후로 어떻게 달라졌는지 알고 싶어요. 지난 7일간의 데이터를 기준으로 일별 추이를 보고 싶습니다. (개선 적용일: 2024-07-01)",
-    "context": "결제 UI 개선이 사용자 경험 및 최종 결제 전환에 긍정적인 영향을 주었는지 데이터로 검증하여 향후 제품 로드맵에 반영하고자 합니다.\n\n[가정하는 테이블 구조]\n- `events` 테이블: `user_id` (사용자 ID), `event_name` (발생 이벤트명, 예: 'view_checkout_page', 'complete_purchase'), `event_timestamp` (이벤트 발생 시각)\n  * 'view_checkout_page'는 결제 페이지 진입을 의미하고, 'complete_purchase'는 결제 완료를 의미합니다.",
-    "expected_description": "일별로 결제 페이지에 진입한 사용자 수, 결제를 완료한 사용자 수, 그리고 해당 일자의 결제 퍼널 전환율을 보여주는 테이블입니다.",
-    "expected_columns": [
-      "date",
-      "checkout_view_users",
-      "purchase_complete_users",
-      "conversion_rate_percent"
-    ],
-    "sort_keys": [
-      "date"
-    ],
-    "hint": "ROW_NUMBER() 또는 LEAD/LAG 함수는 필요하지 않습니다. 단순 집계를 통해 퍼널 전환율을 계산할 수 있습니다."
-  },
-  {
-    "problem_id": "startup_da_002_easy_revenue",
+    "problem_id": "startup_sql_001",
     "difficulty": "easy",
     "topic": "revenue",
-    "requester": "세일즈팀",
-    "question": "안녕하세요, 세일즈팀입니다. 매일 아침 회의 때 전날의 매출 현황을 빠르게 공유해야 합니다. 최근 30일간의 일별 총 매출액과 총 구매 건수를 한눈에 볼 수 있는 리포트가 필요해요. 결제는 완료되었으나 나중에 취소된 건들은 제외하고, 실제 순 매출만 보고 싶습니다.",
-    "context": "일별 매출 성과를 추적하고 신속하게 의사결정에 활용하기 위함입니다.\n\n[가정하는 테이블 구조]\n- `orders` 테이블: `order_id` (주문 ID), `user_id` (사용자 ID), `order_timestamp` (주문 시각), `amount` (주문 금액), `payment_status` (결제 상태, 예: 'completed', 'pending', 'cancelled')",
-    "expected_description": "최근 30일간의 일별 총 매출액과 완료된 총 구매 건수를 보여주는 테이블입니다.",
+    "requester": "경영진",
+    "question": "안녕하세요, 데이터팀. 연말 실적 보고를 위해 2025년 11월 한 달간의 **일별 매출액(daily_revenue)**과 **일별 주문 건수(daily_order_count)**를 확인하고 싶습니다. 결과는 **날짜(order_date)를 기준으로 오름차순 정렬**해주세요.",
+    "context": "매출은 회사의 가장 중요한 지표 중 하나입니다. 경영진은 월별 실적을 파악하고 향후 비즈니스 전략을 수립하기 위해 일별 매출 트렌드를 주기적으로 모니터링해야 합니다.",
+    "submission_requirements": "결과는 'order_date', 'daily_revenue', 'daily_order_count' 세 개의 컬럼으로 구성해주세요. 'order_date'는 'YYYY-MM-DD' 형식이어야 하며, 'order_date'를 기준으로 오름차순 정렬되어야 합니다.",
+    "answer_sql": "SELECT\n    order_time::date AS order_date,\n    SUM(amount) AS daily_revenue,\n    COUNT(order_id) AS daily_order_count\nFROM\n    pa_orders\nWHERE\n    order_time >= '2025-11-01' AND order_time < '2025-12-01'\nGROUP BY\n    order_date\nORDER BY\n    order_date ASC;",
+    "expected_description": "2025년 11월의 일자별 총 매출액과 총 주문 수를 나타내는 테이블입니다.",
     "expected_columns": [
-      "date",
-      "total_revenue",
-      "total_completed_orders"
+      "order_date",
+      "daily_revenue",
+      "daily_order_count"
     ],
     "sort_keys": [
-      "date"
-    ]
-  },
-  {
-    "problem_id": "startup_da_003_medium_retention",
-    "difficulty": "medium",
-    "topic": "retention",
-    "requester": "그로스팀",
-    "question": "그로스팀입니다. 신규 가입자들의 초기 이탈을 줄이는 것이 목표입니다. 저희가 진행하는 캠페인들의 성과를 측정하기 위해, 주간 단위 신규 가입자 코호트의 '가입일로부터 7일 후 리텐션(Day 7 Retention)' 데이터를 구하고 싶습니다. 지난 8주간의 데이터를 기준으로, 가입 주차별로 D7 리텐션이 어떻게 되는지 알려주세요.",
-    "context": "신규 유저 유입 채널 및 온보딩 개선 효과를 측정하고, 장기적인 사용자 유지 전략 수립의 기초 자료로 활용할 것입니다. D7 리텐션은 '가입일로부터 7일째 되는 날 (가입일 포함 8일째) 활동한 유저 수 / 총 가입 유저 수'로 계산합니다.\n\n[가정하는 테이블 구조]\n- `users` 테이블: `user_id` (사용자 ID), `signup_date` (가입일)\n- `events` 테이블: `user_id` (사용자 ID), `event_timestamp` (이벤트 발생 시각, 사용자의 모든 활동을 의미)",
-    "expected_description": "가입 주차별로 총 가입 사용자 수, 가입 7일차에 활동한 사용자 수, 그리고 D7 리텐션율을 보여주는 테이블입니다.",
-    "expected_columns": [
-      "signup_week",
-      "total_cohort_users",
-      "retained_users_day7",
-      "day7_retention_rate_percent"
+      "order_date"
     ],
-    "sort_keys": [
-      "signup_week"
-    ]
+    "hint": "`order_time` 컬럼을 `::date`로 캐스팅하여 일자별로 그룹핑하고, `SUM()`과 `COUNT()` 집계 함수를 사용하세요. 기간은 `WHERE` 절을 사용하여 필터링합니다.",
+    "expected_meta": {
+      "row_count": 30,
+      "columns": [
+        {
+          "name": "order_date",
+          "type": "date"
+        },
+        {
+          "name": "daily_revenue",
+          "type": "bigint"
+        },
+        {
+          "name": "daily_order_count",
+          "type": "bigint"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_001"
+    }
   },
   {
-    "problem_id": "startup_da_004_medium_marketing",
-    "difficulty": "medium",
+    "problem_id": "startup_sql_002",
+    "difficulty": "easy",
     "topic": "marketing",
     "requester": "마케팅팀",
-    "question": "마케팅팀입니다. 저희가 다양한 채널에서 광고를 집행하고 있는데요, 각 채널별 효율을 분석해서 예산 분배를 최적화하고 싶습니다. 지난달 (예: 2024년 6월) 기준으로, 각 마케팅 채널에서 유입된 신규 가입자 수와 해당 채널의 신규 가입자 획득 비용 (CAC)을 계산해주세요. CAC는 '총 마케팅 비용 / 신규 가입자 수'로 계산하며, 채널별 마케팅 비용은 [여기](https://internal_link_to_marketing_cost_spreadsheet) 시트를 참고해주시면 됩니다. (SQL 문제에서는 이 비용을 테이블에 있다고 가정하고 계산해주세요.)",
-    "context": "마케팅 예산의 효율적인 집행을 위한 데이터 기반의 의사결정을 지원합니다.\n\n[가정하는 테이블 구조]\n- `users` 테이블: `user_id` (사용자 ID), `signup_date` (가입일), `marketing_channel` (유입 마케팅 채널명)\n- `marketing_costs` 테이블 (새롭게 가정): `channel_name` (마케팅 채널명), `cost_month` (비용 집계 월), `total_cost` (해당 월의 총 마케팅 비용)",
-    "expected_description": "지정된 기간 동안 각 마케팅 채널별 신규 가입자 수, 총 마케팅 비용, 그리고 CAC를 보여주는 테이블입니다.",
+    "question": "4분기 마케팅 예산 분배를 위해, 2025년 10월 24일부터 12월 23일까지 유입된 **채널(channel)별 총 신규 가입자 수(total_users)**를 분석해주세요. **가입자 수가 많은 순으로 정렬**해서 결과를 보여주세요.",
+    "context": "마케팅팀은 각 채널의 성과를 평가하여 가장 효율적인 채널에 리소스를 집중하고자 합니다. 이를 위해 채널별 신규 가입자 수는 가장 기본적인 성과 지표입니다.",
+    "submission_requirements": "결과는 'channel', 'total_users' 두 개의 컬럼으로 구성해주세요. 'total_users'를 기준으로 내림차순 정렬되어야 합니다.",
+    "answer_sql": "SELECT\n    channel,\n    COUNT(user_id) AS total_users\nFROM\n    pa_users\nWHERE\n    signup_at >= '2025-10-24' AND signup_at < '2025-12-24'\nGROUP BY\n    channel\nORDER BY\n    total_users DESC;",
+    "expected_description": "지정된 기간 동안 각 마케팅 채널을 통해 가입한 총 사용자 수를 나타내는 테이블입니다.",
     "expected_columns": [
-      "marketing_channel",
-      "new_signups",
-      "total_marketing_cost",
-      "cac"
+      "channel",
+      "total_users"
     ],
     "sort_keys": [
-      "new_signups",
-      "cac"
-    ]
+      "total_users"
+    ],
+    "hint": "`pa_users` 테이블을 `channel`로 그룹핑하고 `COUNT()` 함수를 사용하여 사용자 수를 계산하세요. 정렬은 `ORDER BY ... DESC`를 사용합니다.",
+    "expected_meta": {
+      "row_count": 3,
+      "columns": [
+        {
+          "name": "channel",
+          "type": "text"
+        },
+        {
+          "name": "total_users",
+          "type": "bigint"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_002"
+    }
   },
   {
-    "problem_id": "startup_da_005_hard_cohort_revenue",
+    "problem_id": "startup_sql_003",
+    "difficulty": "medium",
+    "topic": "funnel",
+    "requester": "PM팀",
+    "question": "2025년 12월 1일부터 7일까지의 사용자 행동을 기반으로 **구매 전환 퍼널**을 분석해주세요. 퍼널 단계는 '상품 조회(view)' -> '장바구니 추가(add_to_cart)' -> '구매 완료(purchase)' 입니다. 각 단계별 **고유 사용자 수(user_count)**와 **이전 단계 대비 전환율(conversion_rate)**을 계산해주세요.",
+    "context": "최근에 개선한 구매 퍼널의 효율을 측정하고 싶습니다. 특히 어느 단계에서 사용자들이 가장 많이 이탈하는지 파악하여 해당 구간을 집중적으로 개선해야 합니다.",
+    "submission_requirements": "결과는 'funnel_step', 'user_count', 'conversion_rate' 컬럼으로 구성해주세요. 'funnel_step'은 순서를 나타내기 위해 '1_view', '2_add_to_cart', '3_purchase'로 표시하고, 이 순서대로 정렬해주세요. 'conversion_rate'는 소수점 둘째 자리까지 반올림하고, 첫 단계의 전환율은 NULL로 표시합니다.",
+    "answer_sql": "WITH step_counts AS (\n    SELECT\n        event_name,\n        COUNT(DISTINCT user_id) AS user_count\n    FROM\n        pa_events\n    WHERE\n        event_time >= '2025-12-01' AND event_time < '2025-12-08'\n        AND event_name IN ('view', 'add_to_cart', 'purchase')\n    GROUP BY\n        event_name\n),\nfunnel_data AS (\n    SELECT\n        CASE\n            WHEN event_name = 'view' THEN '1_view'\n            WHEN event_name = 'add_to_cart' THEN '2_add_to_cart'\n            WHEN event_name = 'purchase' THEN '3_purchase'\n        END AS funnel_step,\n        user_count\n    FROM\n        step_counts\n)\nSELECT\n    funnel_step,\n    user_count,\n    ROUND(\n        (user_count * 100.0) / NULLIF(LAG(user_count, 1) OVER (ORDER BY funnel_step), 0),\n        2\n    ) AS conversion_rate\nFROM\n    funnel_data\nORDER BY\n    funnel_step;",
+    "expected_description": "지정된 기간 동안의 구매 퍼널 각 단계별 고유 사용자 수와 이전 단계에서 다음 단계로의 전환율을 나타내는 테이블입니다.",
+    "expected_columns": [
+      "funnel_step",
+      "user_count",
+      "conversion_rate"
+    ],
+    "sort_keys": [
+      "funnel_step"
+    ],
+    "hint": "WITH절(CTE)을 사용하여 각 이벤트별 고유 사용자 수를 먼저 계산하세요. 그 다음, `LAG()` 윈도우 함수를 사용하여 이전 단계의 사용자 수를 가져와 전환율을 계산할 수 있습니다. 0으로 나누는 오류를 방지하기 위해 `NULLIF()` 함수를 사용하세요.",
+    "expected_meta": {
+      "row_count": 3,
+      "columns": [
+        {
+          "name": "funnel_step",
+          "type": "text"
+        },
+        {
+          "name": "user_count",
+          "type": "bigint"
+        },
+        {
+          "name": "conversion_rate",
+          "type": "numeric"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_003"
+    }
+  },
+  {
+    "problem_id": "startup_sql_004",
+    "difficulty": "medium",
+    "topic": "segmentation",
+    "requester": "그로스팀",
+    "question": "2025년 11월에 **가입**한 사용자들을 대상으로, **가입 국가(country)별** **가입 후 첫 30일간의 평균 결제액(ARPU)**과 **결제 유저 수(paying_users)**를 분석해주세요. **ARPU가 높은 순**으로 정렬해주세요.",
+    "context": "국가별 사용자 가치가 다르다는 가설을 검증하고, 향후 글로벌 마케팅 예산을 효율적으로 분배하기 위한 근거 자료가 필요합니다. ARPU가 높은 국가에 더 많은 리소스를 투자할 수 있습니다.",
+    "submission_requirements": "결과는 'country', 'paying_users', 'arpu' 컬럼으로 구성해주세요. 'arpu'는 정수로 반올림(ROUND)해야 합니다. 'arpu'를 기준으로 내림차순 정렬해주세요.",
+    "answer_sql": "WITH nov_signups AS (\n    SELECT\n        user_id,\n        signup_at,\n        country\n    FROM\n        pa_users\n    WHERE\n        signup_at >= '2025-11-01' AND signup_at < '2025-12-01'\n),\nuser_revenue_30d AS (\n    SELECT\n        u.user_id,\n        u.country,\n        o.amount\n    FROM\n        nov_signups u\n    JOIN\n        pa_orders o ON u.user_id = o.user_id\n    WHERE\n        o.order_time >= u.signup_at AND o.order_time < u.signup_at + INTERVAL '30 day'\n)\nSELECT\n    country,\n    COUNT(DISTINCT user_id) AS paying_users,\n    ROUND(SUM(amount)::numeric / NULLIF(COUNT(DISTINCT user_id), 0)) AS arpu\nFROM\n    user_revenue_30d\nGROUP BY\n    country\nORDER BY\n    arpu DESC;",
+    "expected_description": "2025년 11월 가입자의 국가별 결제 유저 수와 가입 후 30일간의 1인당 평균 결제액(ARPU)을 나타내는 테이블입니다.",
+    "expected_columns": [
+      "country",
+      "paying_users",
+      "arpu"
+    ],
+    "sort_keys": [
+      "arpu"
+    ],
+    "hint": "먼저 11월 가입자를 필터링하는 CTE를 만드세요. 그 다음, `pa_orders` 테이블과 조인하여 가입 후 30일 이내의 주문만 필터링합니다. 마지막으로 국가별로 그룹핑하여 결제 유저 수와 ARPU를 계산합니다. ARPU 계산 시 0으로 나누기 오류를 방지하기 위해 `NULLIF`를 사용하세요.",
+    "expected_meta": {
+      "row_count": 3,
+      "columns": [
+        {
+          "name": "country",
+          "type": "text"
+        },
+        {
+          "name": "paying_users",
+          "type": "bigint"
+        },
+        {
+          "name": "arpu",
+          "type": "numeric"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_004"
+    }
+  },
+  {
+    "problem_id": "startup_sql_005",
+    "difficulty": "hard",
+    "topic": "retention",
+    "requester": "마케팅팀",
+    "question": "2025년 11월에 가입한 사용자들을 대상으로, **가입 채널(channel)별 Day-N 리텐션**을 분석해주세요. **가입일(Day 0) 이후 Day 1, Day 3, Day 7 재방문 리텐션**을 계산해야 합니다. 결과에는 **가입 채널(channel)**, **총 가입자 수(total_users)**, **Day 1, Day 3, Day 7 리텐션 비율(%)**이 포함되어야 합니다.",
+    "context": "채널별로 유입된 사용자의 질(Quality)을 평가하고 싶습니다. 단순히 가입자 수만 보는 것이 아니라, 실제로 얼마나 많은 사용자가 서비스에 남아 활동하는지를 파악하여 마케팅 채널의 효율성을 보다 정확하게 측정해야 합니다.",
+    "submission_requirements": "결과는 'channel', 'total_users', 'day_1_retention', 'day_3_retention', 'day_7_retention' 컬럼으로 구성해주세요. 리텐션 비율은 소수점 둘째 자리까지 반올림하고, 'channel' 기준 오름차순으로 정렬해주세요.",
+    "answer_sql": "WITH cohort_users AS (\n    SELECT\n        user_id,\n        channel,\n        signup_at::date AS signup_date\n    FROM\n        pa_users\n    WHERE\n        signup_at >= '2025-11-01' AND signup_at < '2025-12-01'\n),\nuser_activity AS (\n    SELECT DISTINCT\n        user_id,\n        started_at::date AS activity_date\n    FROM\n        pa_sessions\n),\nretention_data AS (\n    SELECT\n        c.channel,\n        c.user_id,\n        a.activity_date - c.signup_date AS days_since_signup\n    FROM\n        cohort_users c\n    JOIN\n        user_activity a ON c.user_id = a.user_id\n    WHERE\n        a.activity_date > c.signup_date\n)\nSELECT\n    channel,\n    (SELECT COUNT(*) FROM cohort_users c2 WHERE c2.channel = r.channel) AS total_users,\n    ROUND(100.0 * COUNT(DISTINCT CASE WHEN days_since_signup = 1 THEN user_id END) / NULLIF(COUNT(DISTINCT user_id), 0), 2) AS day_1_retention,\n    ROUND(100.0 * COUNT(DISTINCT CASE WHEN days_since_signup = 3 THEN user_id END) / NULLIF(COUNT(DISTINCT user_id), 0), 2) AS day_3_retention,\n    ROUND(100.0 * COUNT(DISTINCT CASE WHEN days_since_signup = 7 THEN user_id END) / NULLIF(COUNT(DISTINCT user_id), 0), 2) AS day_7_retention\nFROM\n    retention_data r\nGROUP BY\n    channel\nORDER BY\n    channel ASC;",
+    "expected_description": "2025년 11월 가입자를 가입 채널별로 나누어, 가입 후 1일, 3일, 7일차의 재방문 리텐션 비율을 보여주는 테이블입니다.",
+    "expected_columns": [
+      "channel",
+      "total_users",
+      "day_1_retention",
+      "day_3_retention",
+      "day_7_retention"
+    ],
+    "sort_keys": [
+      "channel"
+    ],
+    "hint": "1) 11월 가입자 코호트를 정의하고, 2) 사용자별 활동일을 추출한 후, 3) 두 데이터를 조인하여 가입일로부터 활동일까지의 기간(days_since_signup)을 계산하세요. 마지막으로 `CASE` 문을 사용한 조건부 집계(Conditional Aggregation)를 통해 각 Day-N 리텐션을 계산할 수 있습니다. 총 가입자 수는 서브쿼리 또는 별도의 CTE를 통해 계산해야 합니다.",
+    "expected_meta": {
+      "row_count": 3,
+      "columns": [
+        {
+          "name": "channel",
+          "type": "text"
+        },
+        {
+          "name": "total_users",
+          "type": "bigint"
+        },
+        {
+          "name": "day_1_retention",
+          "type": "numeric"
+        },
+        {
+          "name": "day_3_retention",
+          "type": "numeric"
+        },
+        {
+          "name": "day_7_retention",
+          "type": "numeric"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_005"
+    }
+  },
+  {
+    "problem_id": "startup_sql_006",
     "difficulty": "hard",
     "topic": "cohort",
-    "requester": "전략팀",
-    "question": "안녕하세요, 전략팀입니다. 장기적인 사업 성장을 예측하고 주요 투자 지표를 산정하기 위해 사용자 생애 가치(LTV) 분석이 필요합니다. 특히, 월별 신규 가입자 코호트별로 가입 후 3개월, 6개월, 12개월 시점의 누적 LTV를 알고 싶습니다. 지난 24개월간의 가입 코호트 데이터를 바탕으로 분석해 주세요.",
-    "context": "특정 가입 코호트의 장기적인 가치 변화를 파악하여 서비스의 지속 가능성을 평가하고, 마케팅/제품 전략 수립에 활용하고자 합니다. LTV는 '각 코호트에 속한 사용자들이 가입 시점으로부터 특정 기간(예: 3개월) 동안 발생시킨 총 결제액을 해당 코호트의 총 사용자 수로 나눈 값'으로 정의합니다.\n\n[가정하는 테이블 구조]\n- `users` 테이블: `user_id` (사용자 ID), `signup_date` (가입일)\n- `orders` 테이블: `user_id` (사용자 ID), `order_timestamp` (주문 시각), `amount` (주문 금액), `payment_status` (결제 상태, 'completed'만 유효)",
-    "expected_description": "월별 가입 코호트별로 총 가입 사용자 수, 그리고 가입 후 3개월, 6개월, 12개월 시점의 누적 LTV를 보여주는 테이블입니다.",
+    "requester": "경영진",
+    "question": "2025년 10월 마지막 주부터 11월 셋째 주까지(총 4주), **주차별 가입 코호트(signup_week)**의 **가입 후 경과 주차별 누적 LTV(ARPU)**를 분석해주세요. 결과에는 **가입 주차(signup_week)**, **경과 주차(weeks_after_signup)**, **해당 주차의 ARPU(weekly_arpu)**, **누적 ARPU(cumulative_arpu)**가 포함되어야 합니다.",
+    "context": "사업의 장기적인 건전성을 파악하기 위해, 신규 유저 코호트의 가치가 시간이 지남에 따라 어떻게 변하는지 확인하고 싶습니다. 이를 통해 미래 수익성을 예측하고 사용자 획득 비용(CAC)의 회수 기간을 파악할 수 있습니다.",
+    "submission_requirements": "결과는 'signup_week', 'weeks_after_signup', 'weekly_arpu', 'cumulative_arpu' 컬럼으로 구성해주세요. 'signup_week'는 'YYYY-WW' 형식이어야 합니다. ARPU 값들은 소수점 둘째 자리까지 반올림해주세요. 'signup_week', 'weeks_after_signup' 순으로 오름차순 정렬되어야 합니다.",
+    "answer_sql": "WITH weekly_cohorts AS (\n    SELECT\n        TO_CHAR(DATE_TRUNC('week', signup_at), 'YYYY-WW') AS signup_week,\n        user_id,\n        signup_at\n    FROM\n        pa_users\n    WHERE\n        signup_at >= '2025-10-27' AND signup_at < '2025-11-24'\n),\ncohort_sizes AS (\n    SELECT\n        signup_week,\n        COUNT(DISTINCT user_id) AS total_users\n    FROM\n        weekly_cohorts\n    GROUP BY\n        signup_week\n),\nuser_weekly_revenue AS (\n    SELECT\n        c.signup_week,\n        FLOOR(DATE_PART('day', o.order_time - c.signup_at) / 7)::integer AS weeks_after_signup,\n        SUM(o.amount) AS weekly_revenue\n    FROM\n        weekly_cohorts c\n    JOIN\n        pa_orders o ON c.user_id = o.user_id\n    WHERE\n        o.order_time >= c.signup_at\n    GROUP BY\n        1, 2\n),\ncohort_analysis AS (\n    SELECT\n        wr.signup_week,\n        wr.weeks_after_signup,\n        ROUND((wr.weekly_revenue / NULLIF(cs.total_users, 0))::numeric, 2) AS weekly_arpu\n    FROM\n        user_weekly_revenue wr\n    JOIN\n        cohort_sizes cs ON wr.signup_week = cs.signup_week\n)\nSELECT\n    signup_week,\n    weeks_after_signup,\n    weekly_arpu,\n    SUM(weekly_arpu) OVER (PARTITION BY signup_week ORDER BY weeks_after_signup) AS cumulative_arpu\nFROM\n    cohort_analysis\nORDER BY\n    signup_week, weeks_after_signup;",
+    "expected_description": "주차별 가입 코호트의 시간에 따른 가치 변화를 추적하는 테이블입니다. 각 코호트의 경과 주차별 주간 ARPU와 누적 ARPU를 보여줍니다.",
     "expected_columns": [
-      "signup_cohort_month",
-      "total_cohort_users",
-      "ltv_3_months",
-      "ltv_6_months",
-      "ltv_12_months"
+      "signup_week",
+      "weeks_after_signup",
+      "weekly_arpu",
+      "cumulative_arpu"
     ],
     "sort_keys": [
-      "signup_cohort_month"
-    ]
-  },
-  {
-    "problem_id": "startup_da_006_hard_segmentation_funnel",
-    "difficulty": "hard",
-    "topic": "segmentation",
-    "requester": "CX팀",
-    "question": "안녕하세요, CX팀입니다. 저희 앱에서 특정 중요한 기능 (예: '프리미엄 구독 결제')을 시작했으나 최종적으로 결제하지 않고 이탈하는 사용자들에 대한 이해가 필요합니다. 지난 한 달 동안 '프리미엄 구독 결제 시작' 이벤트는 발생했지만, 30분 이내에 '결제 완료' 이벤트가 발생하지 않은 사용자들을 '이탈 위험군'으로 정의하고자 합니다. 이 이탈 위험군 사용자들의 '결제 시작' 직전 5분간의 행동 이벤트 (최대 3개)를 분석하여 어떤 페이지를 봤고 어떤 행동을 했는지 알려주세요. 이 데이터는 이탈 방지 개선 방안 마련에 도움이 될 것입니다.",
-    "context": "고객 이탈 원인을 파악하고 선제적인 고객 지원 또는 제품 개선을 통해 이탈을 줄이고자 합니다. '프리미엄 구독 결제 시작' 이벤트와 '결제 완료' 이벤트 사이의 시간 관계가 중요합니다. 또한, '결제 시작' 이벤트는 여러 번 발생할 수 있으므로, 각 '결제 시작' 이벤트 건별로 이전 행동을 추적해야 합니다.\n\n[가정하는 테이블 구조]\n- `events` 테이블: `user_id` (사용자 ID), `event_name` (발생 이벤트명, 예: 'start_premium_subscription_checkout', 'complete_purchase', 'view_settings', 'view_faq_page'), `event_timestamp` (이벤트 발생 시각), `event_properties` (JSONB/VARCHAR 형태로, 예: 'page_url' 등의 추가 정보 포함 가능)",
-    "expected_description": "각 '이탈 위험군' 사용자의 '프리미엄 구독 결제 시작' 이벤트 발생 시각과 해당 이벤트 직전 5분 이내에 발생한 최대 3개의 이전 행동 이벤트를 보여주는 테이블입니다.",
-    "expected_columns": [
-      "user_id",
-      "checkout_start_timestamp",
-      "previous_event_1_name",
-      "previous_event_1_timestamp",
-      "previous_event_2_name",
-      "previous_event_2_timestamp",
-      "previous_event_3_name",
-      "previous_event_3_timestamp"
+      "signup_week",
+      "weeks_after_signup"
     ],
-    "sort_keys": [
-      "checkout_start_timestamp",
-      "user_id"
-    ],
-    "hint": "시간 간격을 이용한 윈도우 함수 (예: LAG, INTERVAL)와 조건부 집계 (Conditional Aggregation)가 필요할 수 있습니다. 각 '결제 시작' 이벤트 건별로 이전 행동을 분석해야 합니다."
+    "hint": "여러 개의 CTE를 사용해야 합니다. 1) `DATE_TRUNC('week', ...)`와 `TO_CHAR`를 사용하여 주차별 코호트를 정의합니다. 2) 코호트별 사이즈를 계산합니다. 3) 주문 데이터를 조인하여 가입 후 경과 주차를 `FLOOR(DATE_PART('day', ...)/7)`로 계산하고 주차별 매출을 집계합니다. 4) 마지막으로 윈도우 함수 `SUM(...) OVER (PARTITION BY ... ORDER BY ...)`를 사용하여 누적 ARPU를 계산하세요.",
+    "expected_meta": {
+      "row_count": 20,
+      "columns": [
+        {
+          "name": "signup_week",
+          "type": "text"
+        },
+        {
+          "name": "weeks_after_signup",
+          "type": "integer"
+        },
+        {
+          "name": "weekly_arpu",
+          "type": "numeric"
+        },
+        {
+          "name": "cumulative_arpu",
+          "type": "numeric"
+        }
+      ],
+      "grading_table": "grading.expected_startup_sql_006"
+    }
   }
 ]

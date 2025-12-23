@@ -7,6 +7,15 @@ import { problemsApi, sqlApi } from '../api/client';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
 import './Workspace.css';
 
+// 간단한 마크다운 변환 (볼드, 코드, 줄바꿈)
+function renderMarkdown(text: string) {
+    const html = text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
+        .replace(/`(.+?)`/g, '<code>$1</code>')            // `code`
+        .replace(/\n/g, '<br/>');                          // 줄바꿈
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 interface WorkspaceProps {
     dataType: 'pa' | 'stream';
 }
@@ -45,22 +54,38 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     problemsApi.list(dataType),
                     problemsApi.schema(dataType),
                 ]);
-                setProblems(problemsRes.data.problems);
+                const newProblems = problemsRes.data.problems;
+                setProblems(newProblems);
                 setTables(schemaRes.data);
                 setSelectedIndex(0);
                 setSubmitResult(null);
                 setResult(null);
                 setHint(null);
                 setSql('');
+
+                // 문제 ID 비교하여 새 문제 세트면 제출 기록 초기화
+                const savedKey = `completed_${dataType}`;
+                const savedProblemIdsKey = `problem_ids_${dataType}`;
+                const currentProblemIds = newProblems.map((p: any) => p.problem_id).join(',');
+                const savedProblemIds = localStorage.getItem(savedProblemIdsKey);
+
+                if (savedProblemIds !== currentProblemIds) {
+                    // 새 문제 세트 - 기존 제출 기록 초기화
+                    localStorage.removeItem(savedKey);
+                    localStorage.setItem(savedProblemIdsKey, currentProblemIds);
+                    setCompletedStatus({});
+                } else {
+                    // 같은 문제 세트 - 저장된 기록 복원
+                    const saved = localStorage.getItem(savedKey);
+                    if (saved) {
+                        try { setCompletedStatus(JSON.parse(saved)); } catch { }
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load data:', error);
             }
         }
         load();
-        const saved = localStorage.getItem(`completed_${dataType}`);
-        if (saved) {
-            try { setCompletedStatus(JSON.parse(saved)); } catch { }
-        }
     }, [dataType]);
 
     // SQL 실행
@@ -227,11 +252,11 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                             <span className="slack-time">오늘 오전 10:30</span>
                                         </div>
                                         <div className="slack-content">
-                                            {selectedProblem.question}
+                                            {renderMarkdown(selectedProblem.question)}
                                         </div>
                                         {selectedProblem.context && (
                                             <div className="slack-context">
-                                                💡 {selectedProblem.context}
+                                                💡 {renderMarkdown(selectedProblem.context)}
                                             </div>
                                         )}
                                     </div>

@@ -13,7 +13,7 @@ def build_pa_prompt(data_summary: str, n: int = 6) -> str:
     """
     return f"""
 너는 스타트업의 시니어 데이터 분석가다.  
-아래 데이터를 기반으로 **실무 SQL 분석 문제**를 출제하라.
+아래 데이터를 기반으로 **실무 SQL 분석 문제와 정답**을 출제하라.
 
 [데이터 요약]
 {data_summary}
@@ -22,7 +22,7 @@ def build_pa_prompt(data_summary: str, n: int = 6) -> str:
 1. 총 {n}개 문제
 2. 난이도 분배: easy 2개, medium 2개, hard 2개
 3. **반드시 다른 팀/직무가 요청하는 형태**로 작성
-4. 정답 SQL은 작성하지 말 것
+4. **answer_sql은 반드시 위 데이터 스키마에 맞게 작성** (실제 실행 가능해야 함)
 
 [문제 유형 (반드시 포함)]
 - 리텐션 분석 (Day N Retention, Cohort Retention)
@@ -39,31 +39,42 @@ def build_pa_prompt(data_summary: str, n: int = 6) -> str:
 - CX팀: "이탈 직전 사용자들의 행동 패턴이 궁금합니다"
 - 그로스팀: "퍼널 병목 구간을 찾아주세요"
 
-[JSON 스키마]
+[JSON 스키마 - 반드시 준수]
 {{
-  "problem_id": "unique_id_daily_001",
+  "problem_id": "startup_sql_001",
   "difficulty": "easy | medium | hard",
   "topic": "retention | funnel | cohort | revenue | segmentation | marketing",
   "requester": "요청팀 또는 직무 (예: PM팀, 마케팅팀)",
-  "question": "실제 업무 요청처럼 작성 (예: 'OO팀입니다. XX 분석이 필요합니다...')",
+  "question": "실제 업무 요청처럼 작성. 반드시 다음을 명시: 1)필요한 컬럼 2)정렬 기준 3)기간/조건",
   "context": "배경 설명 (왜 이 분석이 필요한지)",
+  "submission_requirements": "제출 조건을 구체적으로 명시 (예: '결과는 date 컬럼 기준 오름차순 정렬, 소수점 2자리 반올림')",
+  "answer_sql": "PostgreSQL 정답 SQL (위 데이터 스키마의 테이블명/컬럼명 정확히 사용)",
   "expected_description": "기대 결과 테이블 설명",
   "expected_columns": ["col1", "col2", "..."],
-  "sort_keys": ["정렬 기준 컬럼"],
-  "hint": "힌트 (선택)"
+  "sort_keys": ["정렬 기준 컬럼 - 필수"],
+  "hint": "SQL 작성 힌트 (사용해야 할 함수, 조인 방법 등)"
 }}
 
-[중요]
-- 문제는 **다른 팀에서 슬랙으로 요청하는 톤**으로 작성
-- 실제 스타트업에서 발생하는 분석 요청처럼 구체적으로
-- 초보자도 이해할 수 있도록 배경 설명 포함
+[데이터 스키마 - answer_sql 작성 시 반드시 사용]
+- pa_users: user_id, signup_at
+- pa_sessions: session_id, user_id, started_at, device
+- pa_events: event_id, user_id, session_id, event_time, event_name
+- pa_orders: order_id, user_id, order_time, amount
+
+[중요 - 문제 명확성]
+- 문제는 **다른 팀에서 슬랙으로 요청하는 톤**으로 작성하되, 업무 내용은 명확하게
+- **submission_requirements**에 정확한 제출 조건 명시 (컬럼명, 정렬 순서, 데이터 형식)
+- **question**에서 필요한 컬럼과 정렬 조건을 반드시 언급
+- 모호한 요청 금지 - 사용자가 정답을 맞출 수 있도록 충분한 정보 제공
+- answer_sql은 **위 테이블/컬럼만 사용**하여 실제 실행 가능하게 작성
 - JSON 배열 형식으로만 출력
 
-예시:
-"PM팀입니다. 지난주 런칭한 결제 개선 기능의 성과를 파악하고 싶습니다. 
-기능 적용 전후로 결제 전환율이 어떻게 변했는지 분석해주실 수 있을까요? 
-가능하면 일별 추이와 전체 비교 둘 다 보고 싶습니다."
+예시 (좋은 문제):
+"PM팀입니다. 11월 한 달간 **일별 매출**을 확인하고 싶습니다. 
+결과에는 **날짜(order_date)**, **총 매출(total_revenue)**, **주문 건수(order_count)** 컬럼이 필요합니다.
+**날짜 오름차순으로 정렬**해주시고, 매출은 정수로 표시해주세요."
 """.strip()
+
 
 
 def build_pa_review_prompt(
