@@ -119,7 +119,7 @@ async def get_system_status():
 
 @router.post("/generate-problems", response_model=GenerateProblemsResponse)
 async def generate_problems(request: GenerateProblemsRequest):
-    """문제 생성"""
+    """문제 생성 (PA 또는 Stream)"""
     today = date.today()
     
     if request.data_type == "pa":
@@ -143,12 +143,36 @@ async def generate_problems(request: GenerateProblemsRequest):
         except Exception as e:
             return GenerateProblemsResponse(
                 success=False,
-                message=f"문제 생성 실패: {str(e)}"
+                message=f"PA 문제 생성 실패: {str(e)}"
             )
+    
+    elif request.data_type == "stream":
+        try:
+            from problems.generator_stream import generate_stream_problems
+            
+            with postgres_connection() as pg:
+                path = generate_stream_problems(today, pg)
+            
+            import json
+            with open(path, encoding="utf-8") as f:
+                problems = json.load(f)
+            
+            return GenerateProblemsResponse(
+                success=True,
+                message="Stream 문제 생성 완료",
+                path=path,
+                problem_count=len(problems)
+            )
+        except Exception as e:
+            return GenerateProblemsResponse(
+                success=False,
+                message=f"Stream 문제 생성 실패: {str(e)}"
+            )
+    
     else:
         return GenerateProblemsResponse(
             success=False,
-            message="Stream 문제 생성은 준비 중입니다."
+            message="지원하지 않는 data_type입니다."
         )
 
 
@@ -179,3 +203,28 @@ async def reset_submissions():
         return {"success": True, "message": "제출 기록 초기화 완료"}
     except Exception as e:
         raise HTTPException(500, f"초기화 실패: {str(e)}")
+
+
+@router.get("/dataset-versions")
+async def get_dataset_versions():
+    """데이터셋 버전 이력 조회"""
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT 
+                    version_id,
+                    created_at,
+                    generator_type,
+                    start_date,
+                    end_date,
+                    n_users,
+                    n_events
+                FROM dataset_versions
+                ORDER BY created_at DESC
+                LIMIT 20
+            """)
+            versions = df.to_dict(orient="records")
+            return {"success": True, "versions": versions}
+    except Exception as e:
+        return {"success": False, "message": str(e), "versions": []}
+

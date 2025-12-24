@@ -288,10 +288,10 @@ def generate_stream_events(
         yield events_batch, daily_batch
 
 # ------------------------------------------------------------
-# PA 데이터 생성
+# PA 데이터 생성 (현실적 퍼널 패턴 + 고속 COPY 인서트)
 # ------------------------------------------------------------
 def run_pa(save_to=("postgres","duckdb")):
-    logger.info("start PA generator")
+    logger.info("start PA generator with realistic funnel")
     base_dt = datetime.now()
     _apply_seed(base_dt)
 
@@ -309,6 +309,14 @@ def run_pa(save_to=("postgres","duckdb")):
 
     truncate_targets(pg_cur=pg_cur, duck_con=duck_con, modes=("pa",))
 
+    # 현실적 퍼널 전환율 (step별로 떨어짐)
+    FUNNEL_RATES = {
+        'view': 1.0,           # 100% - 모든 방문자
+        'click': 0.60,         # 60% - 상세보기
+        'add_to_cart': 0.25,   # 25% - 장바구니
+        'purchase': 0.08       # 8% - 구매
+    }
+
     users = []
     for _ in tqdm(range(cfg.PA_NUM_USERS), desc="PA: generating users"):
         uid = str(uuid.uuid4())
@@ -323,38 +331,56 @@ def run_pa(save_to=("postgres","duckdb")):
             started_at = signup_at + timedelta(days=random.randint(0, 30), minutes=random.randint(0, 1440))
             sessions.append((sid, user_id, started_at, random.choice(cfg.PA_DEVICES)))
 
-            purchase_time = None
-            for _ in range(random.randint(*cfg.PA_EVENTS_PER_SESSION)):
-                ev_time = started_at + timedelta(minutes=random.randint(0, 240))
-                ev_name = random.choice(cfg.PA_EVENT_NAMES)
-                events.append((str(uuid.uuid4()), user_id, sid, ev_time, ev_name))
-                if ev_name == "purchase":
-                    purchase_time = ev_time
+            # 현실적 퍼널 시뮬레이션 - 각 단계별 확률로 진행
+            ev_time = started_at
+            purchase_occurred = False
+            
+            for step, rate in FUNNEL_RATES.items():
+                if random.random() > rate:
+                    break  # 이 단계에서 이탈
+                
+                ev_time = ev_time + timedelta(minutes=random.randint(1, 30))
+                events.append((str(uuid.uuid4()), user_id, sid, ev_time, step))
+                
+                if step == 'purchase':
+                    purchase_occurred = True
 
-            if purchase_time and random.random() < cfg.PA_ORDER_RATE_IF_PURCHASE:
-                orders.append((str(uuid.uuid4()), user_id, purchase_time, random.randint(1000, 50000)))
+            if purchase_occurred and random.random() < cfg.PA_ORDER_RATE_IF_PURCHASE:
+                orders.append((str(uuid.uuid4()), user_id, ev_time, random.randint(1000, 50000)))
 
     logger.info(
         "PA generated: users=%d sessions=%d events=%d orders=%d",
         len(users), len(sessions), len(events), len(orders)
     )
 
-    # 시간순 정렬 (SELECT * 시 시간순으로 보이도록)
-    users.sort(key=lambda x: x[1])  # signup_at
-    sessions.sort(key=lambda x: x[2])  # started_at
-    events.sort(key=lambda x: x[3])  # event_time
-    orders.sort(key=lambda x: x[2])  # order_time
+    # 시간순 정렬
+    users.sort(key=lambda x: x[1])
+    sessions.sort(key=lambda x: x[2])
+    events.sort(key=lambda x: x[3])
+    orders.sort(key=lambda x: x[2])
 
+    # PostgreSQL: COPY 사용하여 고속 인서트
     if pg_cur:
-        psycopg2.extras.execute_batch(pg_cur,
-            "INSERT INTO pa_users VALUES (%s,%s,%s,%s)", users, page_size=5000)
-        psycopg2.extras.execute_batch(pg_cur,
-            "INSERT INTO pa_sessions VALUES (%s,%s,%s,%s)", sessions, page_size=5000)
-        psycopg2.extras.execute_batch(pg_cur,
-            "INSERT INTO pa_events VALUES (%s,%s,%s,%s,%s)", events, page_size=5000)
-        if orders:
-            psycopg2.extras.execute_batch(pg_cur,
-                "INSERT INTO pa_orders VALUES (%s,%s,%s,%s)", orders, page_size=5000)
+        from io import StringIO
+        
+        def copy_insert(table, columns, data, types):
+            if not data:
+                return
+            buf = StringIO()
+            for row in data:
+                line = '\t'.join(
+                    str(v.isoformat() if hasattr(v, 'isoformat') else v) 
+                    for v in row
+                )
+                buf.write(line + '\n')
+            buf.seek(0)
+            pg_cur.copy_from(buf, table, columns=columns)
+        
+        logger.info("PA: using COPY for fast insert")
+        copy_insert('pa_users', ('user_id', 'signup_at', 'country', 'channel'), users, None)
+        copy_insert('pa_sessions', ('session_id', 'user_id', 'started_at', 'device'), sessions, None)
+        copy_insert('pa_events', ('event_id', 'user_id', 'session_id', 'event_time', 'event_name'), events, None)
+        copy_insert('pa_orders', ('order_id', 'user_id', 'order_time', 'amount'), orders, None)
 
     if duck_con:
         duck_con.executemany("INSERT INTO pa_users VALUES (?, ?, ?, ?)", users)

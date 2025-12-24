@@ -1,9 +1,9 @@
 # backend/services/stats_service.py
-"""통계 서비스"""
+"""통계 서비스 - PostgreSQL submissions 테이블 사용"""
 from datetime import date, timedelta
 from typing import List
 
-from backend.services.database import duckdb_connection
+from backend.services.database import postgres_connection
 from backend.schemas.submission import UserStats, SubmissionHistory
 
 
@@ -13,18 +13,18 @@ def get_user_stats() -> UserStats:
     level_info = get_level()
     
     try:
-        with duckdb_connection() as duck:
-            result = duck.fetchone("""
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
                 SELECT 
                     COUNT(*) as total,
                     SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-                FROM pa_submissions
+                FROM submissions
             """)
         
-        total = result.get("total", 0) or 0
-        correct = result.get("correct", 0) or 0
+        total = int(df.iloc[0]["total"]) if len(df) > 0 else 0
+        correct = int(df.iloc[0]["correct"]) if len(df) > 0 and df.iloc[0]["correct"] else 0
         accuracy = (correct / total * 100) if total > 0 else 0
-    except:
+    except Exception:
         total, correct, accuracy = 0, 0, 0
     
     return UserStats(
@@ -41,20 +41,19 @@ def get_user_stats() -> UserStats:
 def get_streak() -> dict:
     """연속 출석 스트릭 계산"""
     try:
-        with duckdb_connection() as duck:
-            result = duck.fetchall("""
-                SELECT DISTINCT session_date 
-                FROM pa_submissions 
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT DISTINCT session_date::date as session_date
+                FROM submissions 
                 ORDER BY session_date DESC 
                 LIMIT 30
             """)
-    except:
-        result = []
+        dates = {row["session_date"].isoformat() if hasattr(row["session_date"], 'isoformat') else str(row["session_date"]) for _, row in df.iterrows()}
+    except Exception:
+        dates = set()
     
-    if not result:
+    if not dates:
         return {"current": 0, "max": 0}
-    
-    dates = {r["session_date"] for r in result}
     
     streak = 0
     check = date.today()
@@ -71,13 +70,13 @@ def get_streak() -> dict:
 def get_level() -> dict:
     """레벨 계산"""
     try:
-        with duckdb_connection() as duck:
-            result = duck.fetchone("""
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
                 SELECT SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-                FROM pa_submissions
+                FROM submissions
             """)
-        correct = result.get("correct", 0) or 0
-    except:
+        correct = int(df.iloc[0]["correct"]) if len(df) > 0 and df.iloc[0]["correct"] else 0
+    except Exception:
         correct = 0
     
     levels = [
@@ -102,17 +101,34 @@ def get_level() -> dict:
     return {"name": level_name, "correct": correct, "next": next_threshold}
 
 
-def get_submission_history(limit: int = 20) -> List[SubmissionHistory]:
-    """제출 이력 조회"""
+def get_submission_history(limit: int = 20, data_type: str = None) -> List[SubmissionHistory]:
+    """제출 이력 조회 (data_type으로 필터링 가능)"""
     try:
-        with duckdb_connection() as duck:
-            rows = duck.fetchall(f"""
-                SELECT problem_id, session_date, is_correct, submitted_at, feedback
-                FROM pa_submissions
+        with postgres_connection() as pg:
+            where_clause = ""
+            if data_type:
+                where_clause = f"WHERE data_type = '{data_type}'"
+            
+            df = pg.fetch_df(f"""
+                SELECT problem_id, session_date::date as session_date, is_correct, 
+                       submitted_at, feedback, data_type
+                FROM submissions
+                {where_clause}
                 ORDER BY submitted_at DESC
                 LIMIT {limit}
             """)
         
-        return [SubmissionHistory(**r) for r in rows]
-    except:
+        return [
+            SubmissionHistory(
+                problem_id=row["problem_id"],
+                session_date=str(row["session_date"]),
+                is_correct=row["is_correct"],
+                submitted_at=row["submitted_at"].isoformat() if row["submitted_at"] else None,
+                feedback=row.get("feedback")
+            )
+            for _, row in df.iterrows()
+        ]
+    except Exception:
         return []
+
+

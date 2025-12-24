@@ -2,7 +2,7 @@
 """
 일일 데이터 생성 및 문제 출제 스케줄러
 - Docker 컨테이너에서 상시 실행
-- 매일 자정에 데이터 생성
+- 매일 09:00에 파이프라인 실행
 """
 from __future__ import annotations
 
@@ -25,7 +25,25 @@ logger = get_logger(__name__)
 # 환경 변수
 # -------------------------------------------------
 STREAM_REFRESH_WEEKDAY = int(os.getenv("STREAM_REFRESH_WEEKDAY", "6"))  # Sunday = 6
-RUN_INTERVAL_HOURS = int(os.getenv("RUN_INTERVAL_HOURS", "24"))
+RUN_HOUR = int(os.getenv("RUN_HOUR", "9"))  # 매일 9시 실행
+
+
+def init_duckdb_schema(duck: DuckDBEngine):
+    """DuckDB 스키마 초기화 및 마이그레이션"""
+    try:
+        duck.execute(open("sql/init_duckdb.sql").read())
+    except FileNotFoundError:
+        logger.warning("[WARN] sql/init_duckdb.sql not found")
+    
+    # 마이그레이션: problem_set_path 컬럼이 없으면 추가
+    try:
+        duck.execute("SELECT problem_set_path FROM daily_sessions LIMIT 1")
+    except Exception:
+        logger.info("[MIGRATION] Adding problem_set_path column to daily_sessions")
+        try:
+            duck.execute("ALTER TABLE daily_sessions ADD COLUMN problem_set_path TEXT")
+        except Exception:
+            pass  # 이미 있으면 무시
 
 
 def run_daily_pipeline():
@@ -38,24 +56,24 @@ def run_daily_pipeline():
     pg = PostgresEngine(PostgresEnv().dsn())
     duck = DuckDBEngine("data/pa_lab.duckdb")
 
-    # DuckDB 스키마 초기화
-    try:
-        duck.execute(open("sql/init_duckdb.sql").read())
-    except FileNotFoundError:
-        logger.warning("[WARN] sql/init_duckdb.sql not found, skipping")
+    # DuckDB 스키마 초기화 및 마이그레이션
+    init_duckdb_schema(duck)
 
     # ---------------------------------------------
     # 1. 전날 세션 자동 SKIPPED 처리
     # ---------------------------------------------
-    duck.execute(
-        """
-        UPDATE daily_sessions
-        SET status='SKIPPED', finished_at=now()
-        WHERE session_date = ?
-          AND status IN ('GENERATED','STARTED')
-        """,
-        [(today - timedelta(days=1)).isoformat()],
-    )
+    try:
+        duck.execute(
+            """
+            UPDATE daily_sessions
+            SET status='SKIPPED', finished_at=now()
+            WHERE session_date = ?
+              AND status IN ('GENERATED','STARTED')
+            """,
+            [(today - timedelta(days=1)).isoformat()],
+        )
+    except Exception as e:
+        logger.warning(f"[WARN] Failed to update yesterday's session: {e}")
 
     # ---------------------------------------------
     # 2. 오늘 세션 이미 있으면 종료
@@ -85,51 +103,74 @@ def run_daily_pipeline():
         except Exception as e:
             logger.error(f"[ERROR] Stream data generation failed: {e}")
     else:
-        logger.info("[INFO] skipping STREAM generation today")
+        logger.info("[INFO] skipping STREAM data generation today")
 
     # ---------------------------------------------
-    # 5. 문제 생성 (Gemini API)
+    # 5. PA 문제 생성 (매일)
     # ---------------------------------------------
-    logger.info("[INFO] generating problems")
+    logger.info("[INFO] generating PA problems")
+    pa_problem_path = None
     try:
-        from problems.generator import generate as gen_problems
-        problem_path = gen_problems(today, pg)
-        logger.info(f"[INFO] problems saved to {problem_path}")
+        from problems.generator import generate as gen_pa_problems
+        pa_problem_path = gen_pa_problems(today, pg)
+        logger.info(f"[INFO] PA problems saved to {pa_problem_path}")
     except Exception as e:
-        logger.error(f"[ERROR] Problem generation failed: {e}")
-        problem_path = None
+        logger.error(f"[ERROR] PA problem generation failed: {e}")
 
     # ---------------------------------------------
-    # 6. 세션 기록
+    # 6. Stream 문제 생성 (매일)
     # ---------------------------------------------
-    duck.insert("daily_sessions", {
-        "session_date": today.isoformat(),
-        "problem_set_path": problem_path,
-        "generated_at": datetime.now(),
-        "status": "GENERATED"
-    })
+    logger.info("[INFO] generating Stream problems")
+    stream_problem_path = None
+    try:
+        from problems.generator_stream import generate_stream_problems
+        stream_problem_path = generate_stream_problems(today, pg)
+        logger.info(f"[INFO] Stream problems saved to {stream_problem_path}")
+    except Exception as e:
+        logger.error(f"[ERROR] Stream problem generation failed: {e}")
+
+    # ---------------------------------------------
+    # 7. 세션 기록
+    # ---------------------------------------------
+    try:
+        duck.insert("daily_sessions", {
+            "session_date": today.isoformat(),
+            "problem_set_path": pa_problem_path or "",
+            "generated_at": datetime.now(),
+            "status": "GENERATED"
+        })
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to insert session: {e}")
 
     pg.close()
     duck.close()
-    logger.info("[DONE] daily pipeline completed")
+    logger.info("[DONE] Daily pipeline completed")
 
 
 def run_scheduler():
     """스케줄러 루프 - Docker 컨테이너에서 상시 실행"""
-    logger.info(f"[SCHEDULER] Starting with {RUN_INTERVAL_HOURS}h interval")
+    logger.info(f"[SCHEDULER] Starting, will run at {RUN_HOUR}:00 daily")
     
     # 시작 시 데이터/문제 체크 및 초기화
     check_and_init_on_startup()
     
     while True:
+        now = datetime.now()
+        
+        # 다음 실행 시각 계산 (오늘 또는 내일 RUN_HOUR시)
+        next_run = now.replace(hour=RUN_HOUR, minute=0, second=0, microsecond=0)
+        if now >= next_run:
+            next_run += timedelta(days=1)
+        
+        wait_seconds = (next_run - now).total_seconds()
+        logger.info(f"[SCHEDULER] Next run at {next_run}, waiting {wait_seconds/3600:.1f} hours")
+        
+        time.sleep(wait_seconds)
+        
         try:
             run_daily_pipeline()
         except Exception as e:
             logger.error(f"[SCHEDULER] Pipeline error: {e}")
-        
-        # 다음 실행까지 대기
-        logger.info(f"[SCHEDULER] Sleeping for {RUN_INTERVAL_HOURS} hours")
-        time.sleep(RUN_INTERVAL_HOURS * 3600)
 
 
 def check_and_init_on_startup():
@@ -138,6 +179,10 @@ def check_and_init_on_startup():
     logger.info(f"[STARTUP] Checking data and problems for {today}")
     
     pg = PostgresEngine(PostgresEnv().dsn())
+    duck = DuckDBEngine("data/pa_lab.duckdb")
+    
+    # DuckDB 스키마 초기화
+    init_duckdb_schema(duck)
     
     # 1. PA 데이터 체크
     try:
@@ -156,23 +201,38 @@ def check_and_init_on_startup():
         except Exception as e2:
             logger.error(f"[STARTUP] PA data generation failed: {e2}")
     
-    # 2. 오늘 문제 체크
-    problem_path = f"problems/daily/{today.isoformat()}.json"
-    if not os.path.exists(problem_path):
-        logger.info(f"[STARTUP] Today's problems missing, generating...")
+    # 2. 오늘 PA 문제 체크
+    pa_problem_path = f"problems/daily/{today.isoformat()}.json"
+    if not os.path.exists(pa_problem_path):
+        logger.info(f"[STARTUP] Today's PA problems missing, generating...")
         try:
-            from problems.generator import generate as gen_problems
-            gen_problems(today, pg)
-            logger.info(f"[STARTUP] Problems generated: {problem_path}")
+            from problems.generator import generate as gen_pa_problems
+            gen_pa_problems(today, pg)
+            logger.info(f"[STARTUP] PA problems generated: {pa_problem_path}")
         except Exception as e:
-            logger.error(f"[STARTUP] Problem generation failed: {e}")
+            logger.error(f"[STARTUP] PA problem generation failed: {e}")
     else:
-        logger.info(f"[STARTUP] Today's problems exist: {problem_path}")
+        logger.info(f"[STARTUP] Today's PA problems exist: {pa_problem_path}")
+    
+    # 3. 오늘 Stream 문제 체크
+    stream_problem_path = f"problems/daily/stream_{today.isoformat()}.json"
+    if not os.path.exists(stream_problem_path):
+        logger.info(f"[STARTUP] Today's Stream problems missing, generating...")
+        try:
+            from problems.generator_stream import generate_stream_problems
+            generate_stream_problems(today, pg)
+            logger.info(f"[STARTUP] Stream problems generated: {stream_problem_path}")
+        except Exception as e:
+            logger.error(f"[STARTUP] Stream problem generation failed: {e}")
+    else:
+        logger.info(f"[STARTUP] Today's Stream problems exist: {stream_problem_path}")
     
     pg.close()
+    duck.close()
     logger.info("[STARTUP] Initialization complete")
 
 
 if __name__ == "__main__":
     run_scheduler()
+
 

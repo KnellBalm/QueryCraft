@@ -1,0 +1,120 @@
+/* frontend/src/components/FloatingContact.css */
+
+.floating-contact {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+}
+
+.floating-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.floating-btn.open {
+    background: #555;
+    transform: rotate(90deg);
+}
+
+.floating-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    overflow: hidden;
+    animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.floating-menu-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.floating-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #444;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.floating-menu-item:hover {
+    background: #f5f5f5;
+}
+
+.floating-menu-item .icon {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+}
+
+.floating-menu-item.kakao:hover {
+    background: #fee500;
+    color: #3c1e1e;
+}
+
+.floating-menu-item.slack:hover {
+    background: #4a154b;
+    color: white;
+}
+
+.floating-menu-item.faq:hover {
+    background: #e8f4fd;
+    color: #0066cc;
+}
+
+.floating-menu-item.email:hover {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.floating-menu-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    color: #888;
+    font-size: 0.85rem;
+}

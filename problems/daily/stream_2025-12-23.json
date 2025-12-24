@@ -1,0 +1,130 @@
+[
+  {
+    "problem_id": "stream_sql_001",
+    "difficulty": "easy",
+    "topic": "dau",
+    "requester": "프로덕트팀",
+    "question": "안녕하세요, 프로덕트팀입니다. 곧 연말 사용자 활성화 이벤트를 기획하고 있는데, 참고 데이터가 필요합니다. 2025년 11월 한 달간의 일별 순 방문자 수(DAU)를 추출해주실 수 있을까요? 날짜별로 오름차순 정렬해서 전달 부탁드립니다.",
+    "context": "일별 활성 사용자(DAU, Daily Active Users)는 서비스의 건강도를 측정하는 핵심 지표 중 하나입니다. 특정 기간의 DAU 추이를 분석하여 마케팅 캠페인이나 신규 기능 출시의 효과를 파악할 수 있습니다.",
+    "submission_requirements": "컬럼은 `dt` (DATE), `dau` (INTEGER) 순서로 제출해주세요. `dt`를 기준으로 오름차순 정렬해야 합니다.",
+    "answer_sql": "SELECT event_time::DATE AS dt, COUNT(DISTINCT user_id) AS dau FROM stream_events WHERE event_time >= '2025-11-01' AND event_time < '2025-12-01' GROUP BY dt ORDER BY dt ASC;",
+    "expected_columns": [
+      "dt",
+      "dau"
+    ],
+    "sort_keys": [
+      "dt"
+    ],
+    "hint": "`event_time`을 날짜(DATE) 형식으로 변환하고, `user_id`의 고유한 개수를 세어야 합니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_001"
+    }
+  },
+  {
+    "problem_id": "stream_sql_002",
+    "difficulty": "easy",
+    "topic": "revenue",
+    "requester": "세일즈팀",
+    "question": "세일즈팀입니다. 2025년 3분기(7월~9월) 실적 보고를 위해 월별 총 매출액 데이터가 필요합니다. 월별로 집계해서 오름차순으로 정리된 데이터를 요청드립니다.",
+    "context": "정기적인 매출 추이 분석은 비즈니스 성과를 평가하고 미래 전략을 수립하는 데 필수적입니다. 월별, 분기별, 연도별 매출 데이터를 통해 성장률을 파악하고 목표 달성 여부를 점검합니다.",
+    "submission_requirements": "컬럼은 `month` (DATE), `total_revenue` (FLOAT) 순서로 제출해주세요. `month`를 기준으로 오름차순 정렬해야 합니다.",
+    "answer_sql": "SELECT DATE_TRUNC('month', date)::DATE AS month, SUM(revenue) AS total_revenue FROM stream_daily_metrics WHERE date >= '2025-07-01' AND date <= '2025-09-30' GROUP BY month ORDER BY month ASC;",
+    "expected_columns": [
+      "month",
+      "total_revenue"
+    ],
+    "sort_keys": [
+      "month"
+    ],
+    "hint": "`DATE_TRUNC` 함수를 사용하면 특정 기간(월, 주 등)을 기준으로 날짜를 그룹화하기 용이합니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_002"
+    }
+  },
+  {
+    "problem_id": "stream_sql_003",
+    "difficulty": "medium",
+    "topic": "channel",
+    "requester": "마케팅팀",
+    "question": "마케팅팀입니다. 2025년 10월에 집행한 채널별 광고 성과를 비교 분석하고 싶습니다. 각 마케팅 채널(channel)별로 순 방문자 수(visitors), 구매로 이어진 순 사용자 수(purchasers), 그리고 방문자 대비 구매 전환율(conversion_rate)을 계산해주세요. 전환율이 높은 순으로 정렬해서 부탁드립니다.",
+    "context": "채널별 성과 분석은 한정된 마케팅 예산을 효율적으로 분배하기 위한 핵심 활동입니다. 각 채널의 방문자 수, 전환율 등을 비교하여 ROI가 높은 채널에 자원을 집중할 수 있습니다.",
+    "submission_requirements": "컬럼은 `channel` (TEXT), `visitors` (INTEGER), `purchasers` (INTEGER), `conversion_rate` (FLOAT, 소수점 포함) 순서로 제출해주세요. `conversion_rate`를 기준으로 내림차순 정렬해야 합니다.",
+    "answer_sql": "WITH channel_metrics AS ( SELECT channel, COUNT(DISTINCT user_id) AS visitors, COUNT(DISTINCT CASE WHEN event_name = 'purchase' THEN user_id END) AS purchasers FROM stream_events WHERE event_time >= '2025-10-01' AND event_time < '2025-11-01' GROUP BY channel ) SELECT channel, visitors, purchasers, (purchasers::FLOAT / visitors) * 100 AS conversion_rate FROM channel_metrics ORDER BY conversion_rate DESC;",
+    "expected_columns": [
+      "channel",
+      "visitors",
+      "purchasers",
+      "conversion_rate"
+    ],
+    "sort_keys": [
+      "conversion_rate"
+    ],
+    "hint": "`CASE` 문을 사용하여 특정 이벤트(`purchase`)가 발생했을 때만 사용자를 카운트할 수 있습니다. 전환율 계산 시 정수 나눗셈을 피하기 위해 데이터 타입을 변환해야 합니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_003"
+    }
+  },
+  {
+    "problem_id": "stream_sql_004",
+    "difficulty": "medium",
+    "topic": "funnel",
+    "requester": "UX/UI팀",
+    "question": "UX/UI팀입니다. 사용자들이 서비스에 들어와서 구매까지의 여정(퍼널)에서 어느 단계에 가장 많이 이탈하는지 파악하고 싶습니다. 2025년 11월 1일부터 11월 7일까지 일주일간, 'visit' -> 'view_product' -> 'add_to_cart' -> 'purchase' 각 단계에 도달한 순 사용자 수(Unique Users)를 한 번에 볼 수 있도록 집계해주세요.",
+    "context": "퍼널 분석은 사용자가 목표(예: 구매, 가입)에 도달하기까지의 과정을 단계별로 추적하여 이탈률이 높은 구간을 식별하고 개선하는 분석 방법입니다. 이를 통해 사용자 경험을 최적화하고 전환율을 높일 수 있습니다.",
+    "submission_requirements": "컬럼은 `visit_users`, `view_product_users`, `add_to_cart_users`, `purchase_users` 순서로, 총 1개의 행으로 제출해주세요.",
+    "answer_sql": "SELECT COUNT(DISTINCT CASE WHEN event_name = 'visit' THEN user_id END) AS visit_users, COUNT(DISTINCT CASE WHEN event_name = 'view_product' THEN user_id END) AS view_product_users, COUNT(DISTINCT CASE WHEN event_name = 'add_to_cart' THEN user_id END) AS add_to_cart_users, COUNT(DISTINCT CASE WHEN event_name = 'purchase' THEN user_id END) AS purchase_users FROM stream_events WHERE event_time >= '2025-11-01' AND event_time < '2025-11-08';",
+    "expected_columns": [
+      "visit_users",
+      "view_product_users",
+      "add_to_cart_users",
+      "purchase_users"
+    ],
+    "sort_keys": [],
+    "hint": "`GROUP BY` 없이 `COUNT(DISTINCT CASE WHEN ...)` 구문을 사용하면 여러 단계의 지표를 한 행으로 집계할 수 있습니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_004"
+    }
+  },
+  {
+    "problem_id": "stream_sql_005",
+    "difficulty": "hard",
+    "topic": "funnel",
+    "requester": "Growth팀",
+    "question": "Growth팀입니다. 신규 사용자의 서비스 정착을 유도하기 위한 전략을 수립 중입니다. 2025년 9월에 우리 서비스에 처음으로 방문한 사용자 그룹(코호트)이, 첫 방문일 이후 7일, 14일, 30일 내에 다시 방문하는 비율(리텐션)을 각각 계산해주세요.",
+    "context": "코호트 분석은 특정 기간에 공통된 특성을 가진 사용자 그룹을 만들어 시간 경과에 따른 행동 변화를 추적하는 분석 기법입니다. 특히 신규 사용자 리텐션 분석은 제품의 초기 매력도와 장기적인 성장 가능성을 평가하는 데 매우 중요합니다.",
+    "submission_requirements": "컬럼은 `retention_7d` (FLOAT), `retention_14d` (FLOAT), `retention_30d` (FLOAT) 순서로, 총 1개의 행으로 제출해주세요. 비율은 백분율(%)로 계산합니다.",
+    "answer_sql": "WITH first_visit AS (\n  SELECT\n    user_id,\n    MIN(event_time)::DATE AS first_visit_date\n  FROM stream_events\n  WHERE event_name = 'visit'\n  GROUP BY user_id\n), \nseptember_cohort AS (\n  SELECT user_id, first_visit_date\n  FROM first_visit\n  WHERE first_visit_date >= '2025-09-01' AND first_visit_date < '2025-10-01'\n), \nrevisit_activity AS (\n  SELECT DISTINCT\n    s.user_id,\n    s.event_time::DATE AS revisit_date\n  FROM stream_events s\n  JOIN september_cohort c ON s.user_id = c.user_id\n  WHERE s.event_name = 'visit' AND s.event_time::DATE > c.first_visit_date\n), \ncohort_retention AS (\n  SELECT\n    c.user_id,\n    MAX(CASE WHEN r.revisit_date - c.first_visit_date BETWEEN 1 AND 7 THEN 1 ELSE 0 END) AS retained_7d,\n    MAX(CASE WHEN r.revisit_date - c.first_visit_date BETWEEN 1 AND 14 THEN 1 ELSE 0 END) AS retained_14d,\n    MAX(CASE WHEN r.revisit_date - c.first_visit_date BETWEEN 1 AND 30 THEN 1 ELSE 0 END) AS retained_30d\n  FROM september_cohort c\n  LEFT JOIN revisit_activity r ON c.user_id = r.user_id\n  GROUP BY c.user_id\n)\nSELECT\n  (SUM(retained_7d)::FLOAT / COUNT(user_id)) * 100 AS retention_7d,\n  (SUM(retained_14d)::FLOAT / COUNT(user_id)) * 100 AS retention_14d,\n  (SUM(retained_30d)::FLOAT / COUNT(user_id)) * 100 AS retention_30d\nFROM cohort_retention;",
+    "expected_columns": [
+      "retention_7d",
+      "retention_14d",
+      "retention_30d"
+    ],
+    "sort_keys": [],
+    "hint": "WITH절(CTE)을 사용하여 여러 단계를 나누어 쿼리를 작성하면 복잡한 문제를 해결하기 쉽습니다. 1) 사용자별 첫 방문일 계산, 2) 특정 월의 코호트 필터링, 3) 해당 코호트의 재방문 기록 추출, 4) 최종 리텐션 계산 순서로 접근해보세요.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_005"
+    }
+  },
+  {
+    "problem_id": "stream_sql_006",
+    "difficulty": "hard",
+    "topic": "device",
+    "requester": "BI팀",
+    "question": "BI팀입니다. 디바이스(모바일/PC)별 사용자 행동 패턴에 차이가 있는지 확인하고 싶습니다. 2025년 4분기(10월~12월) 동안, 각 디바이스별로 '상품 조회 후 장바구니에 담는 전환율' (view_to_cart_rate)과 '장바구니에 담은 후 구매하는 전환율' (cart_to_purchase_rate)을 각각 계산해주세요. 결과는 전환율이 높은 순으로 정렬 부탁드립니다.",
+    "context": "사용자 행동을 디바이스별로 나누어 분석하면, 특정 디바이스 환경에 최적화된 UX/UI 개선점을 발견할 수 있습니다. 예를 들어, 모바일에서 장바구니 이탈률이 유독 높다면, 모바일 결제 프로세스에 문제가 있을 수 있다고 가정하고 원인을 파악할 수 있습니다.",
+    "submission_requirements": "컬럼은 `device` (TEXT), `view_to_cart_rate` (FLOAT), `cart_to_purchase_rate` (FLOAT) 순서로 제출해주세요. `cart_to_purchase_rate`를 기준으로 내림차순 정렬해야 합니다.",
+    "answer_sql": "WITH device_funnel_counts AS (\n  SELECT\n    device,\n    COUNT(DISTINCT CASE WHEN event_name IN ('view_product', 'add_to_cart', 'purchase') THEN user_id END) AS view_users,\n    COUNT(DISTINCT CASE WHEN event_name IN ('add_to_cart', 'purchase') THEN user_id END) AS cart_users,\n    COUNT(DISTINCT CASE WHEN event_name = 'purchase' THEN user_id END) AS purchase_users\n  FROM stream_events\n  WHERE event_time >= '2025-10-01' AND event_time < '2026-01-01'\n  GROUP BY device\n)\nSELECT\n  device,\n  (cart_users::FLOAT / NULLIF(view_users, 0)) * 100 AS view_to_cart_rate,\n  (purchase_users::FLOAT / NULLIF(cart_users, 0)) * 100 AS cart_to_purchase_rate\nFROM device_funnel_counts\nORDER BY cart_to_purchase_rate DESC;",
+    "expected_columns": [
+      "device",
+      "view_to_cart_rate",
+      "cart_to_purchase_rate"
+    ],
+    "sort_keys": [
+      "cart_to_purchase_rate"
+    ],
+    "hint": "이 문제는 순차적인 퍼널이 아닌, 각 단계를 경험한 '사용자 수'를 기준으로 계산합니다. `COUNT(DISTINCT CASE WHEN event_name IN (...) ...)` 구문을 활용하여 각 단계를 경험한 순 사용자 수를 집계한 후, 비율을 계산하세요. 0으로 나누는 오류를 방지하기 위해 `NULLIF` 함수 사용을 고려해보세요.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_006"
+    }
+  }
+]

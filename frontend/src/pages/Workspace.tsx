@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { ResultTable } from '../components/ResultTable';
-import { problemsApi, sqlApi } from '../api/client';
+import { problemsApi, sqlApi, statsApi } from '../api/client';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
 import './Workspace.css';
 
@@ -37,7 +37,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [hint, setHint] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'problem' | 'schema' | 'history'>('problem');
     const [leftWidth, setLeftWidth] = useState(45);
-    const [editorHeight, setEditorHeight] = useState(250); // 기본 높이 px
+    const [editorHeight, setEditorHeight] = useState(400); // 기본 높이 - 약 50%
     const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
     const [history, setHistory] = useState<any[]>([]);
     const resizerRef = useRef<HTMLDivElement>(null);
@@ -87,6 +87,25 @@ export function Workspace({ dataType }: WorkspaceProps) {
         }
         load();
     }, [dataType]);
+
+    // 기록 탭 API에서 로드 (성적 페이지와 동기화)
+    useEffect(() => {
+        if (activeTab === 'history') {
+            statsApi.history(20, dataType)
+                .then(res => {
+                    const formatted = res.data.map((h: any, idx: number) => ({
+                        problem_id: h.problem_id,
+                        problem_num: idx + 1,
+                        sql: '',  // API에서 sql 미제공
+                        is_correct: h.is_correct,
+                        feedback: h.feedback,
+                        submitted_at: h.submitted_at ? new Date(h.submitted_at).toLocaleString() : ''
+                    }));
+                    setHistory(formatted);
+                })
+                .catch(() => setHistory([]));
+        }
+    }, [activeTab, dataType]);
 
     // SQL 실행
     const handleExecute = useCallback(async () => {
@@ -226,7 +245,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 <button
                                     key={p.problem_id}
                                     className={`problem-item ${selectedIndex === idx ? 'active' : ''}`}
-                                    onClick={() => { setSelectedIndex(idx); setSubmitResult(null); setHint(null); }}
+                                    onClick={() => { setSelectedIndex(idx); setSql(''); setSubmitResult(null); setResult(null); setHint(null); }}
                                 >
                                     <span className="status">{getStatusIcon(p.problem_id)}</span>
                                     <span className="num">{idx + 1}번</span>

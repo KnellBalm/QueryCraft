@@ -50,7 +50,8 @@ export const sqlApi = {
 // 통계 API
 export const statsApi = {
     me: () => api.get('/stats/me'),
-    history: (limit: number = 20) => api.get('/stats/history', { params: { limit } }),
+    history: (limit: number = 20, dataType?: string) =>
+        api.get('/stats/history', { params: { limit, data_type: dataType } }),
 };
 
 // 관리자 API
@@ -61,4 +62,5 @@ export const adminApi = {
     refreshData: (dataType: string) =>
         api.post('/admin/refresh-data', { data_type: dataType }),
     resetSubmissions: () => api.post('/admin/reset-submissions'),
+    datasetVersions: () => api.get('/admin/dataset-versions'),
 };
