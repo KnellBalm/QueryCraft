@@ -4,6 +4,7 @@ import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { ResultTable } from '../components/ResultTable';
 import { problemsApi, sqlApi, statsApi } from '../api/client';
+import { analytics } from '../services/analytics';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
 import './Workspace.css';
 
@@ -88,6 +89,22 @@ export function Workspace({ dataType }: WorkspaceProps) {
         load();
     }, [dataType]);
 
+    // Analytics: 페이지 로드 및 문제 선택 추적
+    useEffect(() => {
+        analytics.pageView(dataType === 'pa' ? '/pa-practice' : '/stream', { data_type: dataType });
+    }, [dataType]);
+
+    useEffect(() => {
+        if (selectedProblem) {
+            analytics.problemStart(
+                selectedProblem.problem_id,
+                selectedProblem.difficulty,
+                selectedProblem.topic || 'unknown',
+                dataType
+            );
+        }
+    }, [selectedProblem, dataType]);
+
     // 기록 탭 API에서 로드 (성적 페이지와 동기화)
     useEffect(() => {
         if (activeTab === 'history') {
@@ -116,8 +133,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
         try {
             const res = await sqlApi.execute(sql);
             setResult(res.data);
+            // Analytics: SQL 실행 성공
+            analytics.sqlExecute(sql.length, false);
         } catch (error: any) {
             setResult({ success: false, error: error.message });
+            // Analytics: SQL 실행 실패
+            analytics.sqlExecute(sql.length, true, error.message);
         }
         setLoading(false);
     }, [sql]);
@@ -150,6 +171,14 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 feedback: res.data.feedback,
                 submitted_at: new Date().toLocaleTimeString()
             }, ...prev].slice(0, 20));
+
+            // Analytics: 문제 제출
+            analytics.problemSubmit(
+                selectedProblem.problem_id,
+                res.data.is_correct,
+                1, // attempt number (simplified)
+                0  // time spent (simplified)
+            );
         } catch (error: any) {
             setSubmitResult({ is_correct: false, feedback: error.message });
         }
@@ -161,6 +190,15 @@ export function Workspace({ dataType }: WorkspaceProps) {
         if (!sql.trim() || !selectedProblem) return;
         setHinting(true);
         setHint(null);
+
+        // Analytics: 힌트 요청
+        analytics.track('problem_hint_request', {
+            problem_id: selectedProblem.problem_id,
+            problem_difficulty: selectedProblem.difficulty,
+            data_type: dataType,
+            sql_length: sql.length
+        });
+
         try {
             const res = await sqlApi.hint(selectedProblem.problem_id, sql, dataType);
             setHint(res.data.hint);
@@ -230,10 +268,10 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     <button className={activeTab === 'problem' ? 'active' : ''} onClick={() => setActiveTab('problem')}>
                         📌 문제
                     </button>
-                    <button className={activeTab === 'schema' ? 'active' : ''} onClick={() => setActiveTab('schema')}>
+                    <button className={activeTab === 'schema' ? 'active' : ''} onClick={() => { setActiveTab('schema'); analytics.track('tab_change', { tab: 'schema', data_type: dataType }); }}>
                         📋 스키마
                     </button>
-                    <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>
+                    <button className={activeTab === 'history' ? 'active' : ''} onClick={() => { setActiveTab('history'); analytics.track('tab_change', { tab: 'history', data_type: dataType }); }}>
                         📜 기록
                     </button>
                 </div>

@@ -228,3 +228,67 @@ async def get_dataset_versions():
     except Exception as e:
         return {"success": False, "message": str(e), "versions": []}
 
+
+@router.get("/scheduler-logs")
+async def get_scheduler_logs(lines: int = 50):
+    """스케줄러 로그 조회 (docker logs)"""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "logs", "scheduler", "--tail", str(lines)],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd="/app"  # docker compose가 실행되는 위치
+        )
+        logs = result.stdout or result.stderr
+        
+        # 로그를 줄 단위로 파싱
+        log_lines = []
+        for line in logs.split('\n'):
+            if 'scheduler-1' in line:
+                # "scheduler-1  | " 제거
+                clean_line = line.split('|', 1)[-1].strip() if '|' in line else line
+                log_lines.append(clean_line)
+        
+        return {
+            "success": True, 
+            "logs": log_lines[-lines:],  # 최근 N줄
+            "total_lines": len(log_lines)
+        }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "message": "로그 조회 타임아웃", "logs": []}
+    except Exception as e:
+        return {"success": False, "message": str(e), "logs": []}
+
+
+@router.get("/scheduler-status")
+async def get_scheduler_status():
+    """스케줄러 상태 조회"""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "ps", "scheduler", "--format", "json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd="/app"
+        )
+        
+        import json as json_lib
+        if result.stdout:
+            try:
+                status_data = json_lib.loads(result.stdout)
+                return {
+                    "success": True,
+                    "running": True,
+                    "status": status_data
+                }
+            except:
+                return {"success": True, "running": "scheduler" in result.stdout, "status": result.stdout}
+        
+        return {"success": True, "running": False, "status": None}
+    except Exception as e:
+        return {"success": False, "message": str(e), "running": False}
+
+

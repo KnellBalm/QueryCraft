@@ -63,4 +63,15 @@ export const adminApi = {
         api.post('/admin/refresh-data', { data_type: dataType }),
     resetSubmissions: () => api.post('/admin/reset-submissions'),
     datasetVersions: () => api.get('/admin/dataset-versions'),
+    schedulerLogs: (lines: number = 50) => api.get('/admin/scheduler-logs', { params: { lines } }),
+    schedulerStatus: () => api.get('/admin/scheduler-status'),
+};
+
+// 인증 API
+export const authApi = {
+    me: () => api.get('/auth/me'),
+    logout: () => api.post('/auth/logout'),
+    status: () => api.get('/auth/status'),
+    googleLogin: () => `${API_BASE}/auth/google/login`,
+    kakaoLogin: () => `${API_BASE}/auth/kakao/login`,
 };

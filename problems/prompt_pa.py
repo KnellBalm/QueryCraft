@@ -1,49 +1,170 @@
 # problems/prompt_pa.py
 """
-Gemini 문제 생성 프롬프트 - 실무형 프로덕트/비즈니스 분석
+Gemini 문제 생성 프롬프트 - Product Type별 맞춤형
 """
 from __future__ import annotations
 
+from generator.product_config import (
+    get_events_for_type, 
+    get_kpi_guide,
+    PRODUCT_KPI_GUIDE
+)
 
-def build_pa_prompt(data_summary: str, n: int = 6) -> str:
+
+# Product Type별 요청자 및 문제 유형 매핑
+PRODUCT_TYPE_CONTEXTS = {
+    "commerce": {
+        "name": "이커머스 플랫폼",
+        "requesters": [
+            ("PM팀", "신규 상품 상세 페이지의 전환율을 알고 싶습니다"),
+            ("마케팅팀", "채널별 구매 전환율을 비교해주세요"),
+            ("경영진", "이번 달 GMV 추이를 분석해주세요"),
+            ("CX팀", "장바구니 이탈 고객의 행동 패턴이 궁금합니다"),
+            ("그로스팀", "쿠폰 적용 시 전환율 변화를 분석해주세요"),
+            ("SCM팀", "재구매율이 높은 상품군을 파악해주세요"),
+        ],
+        "topics": [
+            "퍼널 분석 (view → purchase 전환율, 이탈 구간)",
+            "장바구니 이탈 분석 (cart abandonment)",
+            "쿠폰 효과 분석 (apply_coupon → purchase)",
+            "재구매 분석 (reorder, repeat purchase)",
+            "상품 비교 행동 분석 (compare_product)",
+            "매출 분석 (GMV, AOV, ARPU)",
+        ],
+    },
+    "content": {
+        "name": "콘텐츠/미디어 플랫폼",
+        "requesters": [
+            ("PM팀", "콘텐츠 완독률을 분석해주세요"),
+            ("에디터팀", "어떤 콘텐츠가 공유가 많이 되는지 알고 싶습니다"),
+            ("마케팅팀", "구독 전환에 영향을 주는 행동을 분석해주세요"),
+            ("경영진", "DAU와 Reading Time 추이를 보고해주세요"),
+            ("그로스팀", "스크롤 깊이별 이탈률을 파악해주세요"),
+            ("광고팀", "engagement가 높은 사용자 세그먼트를 찾아주세요"),
+        ],
+        "topics": [
+            "완독률 분석 (scroll_100 / read_content)",
+            "스크롤 깊이 분석 (scroll_25/50/75/100 비율)",
+            "구독 전환 분석 (subscribe)",
+            "공유 행동 분석 (share)",
+            "콘텐츠 소비 패턴 (읽기 시간, 세션당 콘텐츠 수)",
+            "Engagement 분석 (like + comment + share)",
+        ],
+    },
+    "saas": {
+        "name": "B2B SaaS 플랫폼",
+        "requesters": [
+            ("PM팀", "신규 기능의 Adoption Rate를 측정해주세요"),
+            ("CS팀", "Churn 위험 고객을 사전 식별하고 싶습니다"),
+            ("세일즈팀", "Upgrade 가능성이 높은 계정을 분석해주세요"),
+            ("경영진", "WAU와 Feature Usage 트렌드를 보고해주세요"),
+            ("그로스팀", "Activation 이벤트를 정의하고 측정해주세요"),
+            ("플랫폼팀", "API 사용량 상위 고객을 분석해주세요"),
+        ],
+        "topics": [
+            "Activation 분석 (onboarding_complete → feature_use)",
+            "Feature Adoption 분석 (feature_use 패턴)",
+            "Churn 예측 (cancel_subscription 전 행동)",
+            "Upgrade 전환 분석 (upgrade_plan)",
+            "협업 패턴 분석 (invite_member, create_project)",
+            "WAU/MAU 분석 (Active User 정의)",
+        ],
+    },
+    "community": {
+        "name": "소셜/커뮤니티 플랫폼",
+        "requesters": [
+            ("PM팀", "Creator vs Consumer 비율을 분석해주세요"),
+            ("커뮤니티팀", "활성 사용자 정의를 세워주세요"),
+            ("트러스트팀", "신고 패턴을 분석해주세요"),
+            ("경영진", "DAU와 Engagement 추이를 보고해주세요"),
+            ("그로스팀", "Viral Loop를 분석해주세요 (follow → post → like)"),
+            ("마케팅팀", "인플루언서 세그먼트를 정의해주세요"),
+        ],
+        "topics": [
+            "Creator/Consumer 비율 분석",
+            "Engagement Rate 분석 (like + comment / view_feed)",
+            "Viral 분석 (follow 체인, share)",
+            "활성 사용자 정의 (DAC - Daily Active Creator)",
+            "포스팅 패턴 분석 (post_create 시간대, 빈도)",
+            "팔로우 네트워크 분석",
+        ],
+    },
+    "fintech": {
+        "name": "핀테크/금융 서비스",
+        "requesters": [
+            ("리스크팀", "송금 실패율이 높은 세그먼트를 분석해주세요"),
+            ("컴플라이언스팀", "KYC 완료율을 분석해주세요"),
+            ("PM팀", "신규 투자 상품 조회 패턴을 분석해주세요"),
+            ("경영진", "월간 거래량과 거래액 추이를 보고해주세요"),
+            ("그로스팀", "첫 송금까지의 Time to Value를 측정해주세요"),
+            ("FDS팀", "이상 거래 탐지를 위한 행동 패턴을 분석해주세요"),
+        ],
+        "topics": [
+            "거래 성공률 분석 (transfer_success / transfer_attempt)",
+            "거래 실패 원인 분석 (transfer_fail)",
+            "KYC 완료율 분석",
+            "Cross-sell 분석 (loan_apply, investment_view)",
+            "사기 탐지 패턴 분석 (fraud_alert_view)",
+            "거래량/거래액 분석",
+        ],
+    },
+}
+
+
+def build_pa_prompt(data_summary: str, n: int = 6, product_type: str = "commerce") -> str:
     """
-    실무형 SQL 분석 문제 생성 프롬프트
-    - 다른 팀/직무에서 요청하는 형태
-    - 프로덕트 분석, 마케팅 분석, 비즈니스 분석 실무
+    Product Type별 맞춤형 SQL 분석 문제 생성 프롬프트
     """
+    context = PRODUCT_TYPE_CONTEXTS.get(product_type, PRODUCT_TYPE_CONTEXTS["commerce"])
+    events = get_events_for_type(product_type)
+    kpi_guide = get_kpi_guide(product_type)
+    
+    # 요청자/주제 예시 생성
+    requesters_str = "\n".join([f"- {r[0]}: \"{r[1]}\"" for r in context["requesters"]])
+    topics_str = "\n".join([f"- {t}" for t in context["topics"]])
+    events_str = ", ".join(events)
+    metrics_str = ", ".join(kpi_guide.get("key_metrics", []))
+    mistakes_str = "\n".join([f"- {m}" for m in kpi_guide.get("common_mistakes", [])])
+    
     return f"""
-너는 스타트업의 시니어 데이터 분석가다.  
+너는 {context['name']}의 시니어 데이터 분석가다.
 아래 데이터를 기반으로 **실무 SQL 분석 문제와 정답**을 출제하라.
+
+[Product Type]
+{product_type.upper()} - {context['name']}
 
 [데이터 요약]
 {data_summary}
+
+[사용 가능한 이벤트]
+{events_str}
 
 [출제 요구사항]
 1. 총 {n}개 문제
 2. 난이도 분배: easy 2개, medium 2개, hard 2개
 3. **반드시 다른 팀/직무가 요청하는 형태**로 작성
 4. **answer_sql은 반드시 위 데이터 스키마에 맞게 작성** (실제 실행 가능해야 함)
+5. **{product_type.upper()} 프로덕트 특성에 맞는 문제만 출제**
 
-[문제 유형 (반드시 포함)]
-- 리텐션 분석 (Day N Retention, Cohort Retention)
-- 퍼널 분석 (전환율, 이탈 구간)
-- 코호트 분석 (가입 시점별 행동 패턴)
-- 매출 분석 (ARPU, LTV, 결제 전환)
-- 세그먼트 분석 (사용자 그룹별 비교)
-- 마케팅 분석 (채널별 성과, CAC)
+[{context['name']} 핵심 KPI]
+North Star: {kpi_guide.get('north_star', 'N/A')}
+Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activation_criteria', '')})
+주요 지표: {metrics_str}
+
+[문제 유형 (반드시 이 중에서 출제)]
+{topics_str}
 
 [요청자 예시]
-- PM팀: "이번 주 신규 기능의 전환율을 알고 싶습니다"
-- 마케팅팀: "채널별 신규 가입자 리텐션을 비교해주세요"
-- 경영진: "지난 달 대비 매출 트렌드를 분석해주세요"
-- CX팀: "이탈 직전 사용자들의 행동 패턴이 궁금합니다"
-- 그로스팀: "퍼널 병목 구간을 찾아주세요"
+{requesters_str}
+
+[흔히 틀리는 분석 (문제에 반영)]
+{mistakes_str}
 
 [JSON 스키마 - 반드시 준수]
 {{
   "problem_id": "startup_sql_001",
   "difficulty": "easy | medium | hard",
-  "topic": "retention | funnel | cohort | revenue | segmentation | marketing",
+  "topic": "retention | funnel | cohort | revenue | segmentation | activation | engagement",
   "requester": "요청팀 또는 직무 (예: PM팀, 마케팅팀)",
   "question": "실제 업무 요청처럼 작성. 반드시 다음을 명시: 1)필요한 컬럼 2)정렬 기준 3)기간/조건",
   "context": "배경 설명 (왜 이 분석이 필요한지)",
@@ -56,23 +177,21 @@ def build_pa_prompt(data_summary: str, n: int = 6) -> str:
 }}
 
 [데이터 스키마 - answer_sql 작성 시 반드시 사용]
-- pa_users: user_id, signup_at
+- pa_users: user_id, signup_at, country, channel
 - pa_sessions: session_id, user_id, started_at, device
 - pa_events: event_id, user_id, session_id, event_time, event_name
 - pa_orders: order_id, user_id, order_time, amount
 
+[event_name 값 (위 스키마의 pa_events.event_name)]
+{events_str}
+
 [중요 - 문제 명확성]
+- **{product_type.upper()} 프로덕트 관점**에서 문제 출제
+- purchase 중심이 아닌, **{kpi_guide.get('activation_event', '핵심 이벤트')} 중심**으로 사고
 - 문제는 **다른 팀에서 슬랙으로 요청하는 톤**으로 작성하되, 업무 내용은 명확하게
 - **submission_requirements**에 정확한 제출 조건 명시 (컬럼명, 정렬 순서, 데이터 형식)
-- **question**에서 필요한 컬럼과 정렬 조건을 반드시 언급
-- 모호한 요청 금지 - 사용자가 정답을 맞출 수 있도록 충분한 정보 제공
 - answer_sql은 **위 테이블/컬럼만 사용**하여 실제 실행 가능하게 작성
 - JSON 배열 형식으로만 출력
-
-예시 (좋은 문제):
-"PM팀입니다. 11월 한 달간 **일별 매출**을 확인하고 싶습니다. 
-결과에는 **날짜(order_date)**, **총 매출(total_revenue)**, **주문 건수(order_count)** 컬럼이 필요합니다.
-**날짜 오름차순으로 정렬**해주시고, 매출은 정수로 표시해주세요."
 """.strip()
 
 

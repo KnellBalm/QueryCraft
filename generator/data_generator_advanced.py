@@ -288,10 +288,28 @@ def generate_stream_events(
         yield events_batch, daily_batch
 
 # ------------------------------------------------------------
-# PA 데이터 생성 (현실적 퍼널 패턴 + 고속 COPY 인서트)
+# PA 데이터 생성 (Product Profile 기반 + 고속 COPY 인서트)
 # ------------------------------------------------------------
-def run_pa(save_to=("postgres","duckdb")):
-    logger.info("start PA generator with realistic funnel")
+def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
+    """
+    PA 데이터 생성
+    
+    Args:
+        save_to: 저장 대상 ('postgres', 'duckdb')
+        product_type: 사용할 Product Type (None이면 랜덤 선택)
+    """
+    from generator.product_config import select_product_type, get_events_for_type
+    from generator.product_profiles import get_profile
+    
+    # Product Type 선택
+    if product_type is None:
+        product_type = select_product_type()
+    
+    logger.info(f"start PA generator with Product Type: {product_type}")
+    
+    # Profile 인스턴스 획득
+    profile = get_profile(product_type)
+    
     base_dt = datetime.now()
     _apply_seed(base_dt)
 
@@ -302,6 +320,20 @@ def run_pa(save_to=("postgres","duckdb")):
         pg_con = _connect_postgres()
         pg_cur = pg_con.cursor()
         init_postgres_schema(pg_cur)
+        
+        # Product Type 저장 (문제 생성 시 참조용)
+        pg_cur.execute("""
+            CREATE TABLE IF NOT EXISTS current_product_type (
+                id INT PRIMARY KEY DEFAULT 1,
+                product_type TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        pg_cur.execute("""
+            INSERT INTO current_product_type (id, product_type, updated_at)
+            VALUES (1, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET product_type = EXCLUDED.product_type, updated_at = EXCLUDED.updated_at
+        """, (product_type, datetime.now()))
 
     if "duckdb" in save_to:
         duck_con = _connect_duckdb()
@@ -309,48 +341,33 @@ def run_pa(save_to=("postgres","duckdb")):
 
     truncate_targets(pg_cur=pg_cur, duck_con=duck_con, modes=("pa",))
 
-    # 현실적 퍼널 전환율 (step별로 떨어짐)
-    FUNNEL_RATES = {
-        'view': 1.0,           # 100% - 모든 방문자
-        'click': 0.60,         # 60% - 상세보기
-        'add_to_cart': 0.25,   # 25% - 장바구니
-        'purchase': 0.08       # 8% - 구매
-    }
-
     users = []
-    for _ in tqdm(range(cfg.PA_NUM_USERS), desc="PA: generating users"):
+    for _ in tqdm(range(cfg.PA_NUM_USERS), desc=f"PA ({product_type}): generating users"):
         uid = str(uuid.uuid4())
         signup_at = base_dt - timedelta(days=random.randint(0, cfg.PA_SIGNUP_WINDOW_DAYS))
         users.append((uid, signup_at, random.choice(cfg.PA_COUNTRIES), random.choice(cfg.PA_CHANNELS)))
 
     sessions, events, orders = [], [], []
 
-    for (user_id, signup_at, _, _) in tqdm(users, desc="PA: generating sessions/events"):
+    for (user_id, signup_at, _, _) in tqdm(users, desc=f"PA ({product_type}): generating sessions/events"):
         for _ in range(random.randint(*cfg.PA_SESSIONS_PER_USER)):
             sid = str(uuid.uuid4())
             started_at = signup_at + timedelta(days=random.randint(0, 30), minutes=random.randint(0, 1440))
             sessions.append((sid, user_id, started_at, random.choice(cfg.PA_DEVICES)))
 
-            # 현실적 퍼널 시뮬레이션 - 각 단계별 확률로 진행
-            ev_time = started_at
-            purchase_occurred = False
+            # ProductProfile을 사용하여 세션 이벤트 생성
+            session_events = profile.generate_session_events(user_id, sid, started_at)
             
-            for step, rate in FUNNEL_RATES.items():
-                if random.random() > rate:
-                    break  # 이 단계에서 이탈
+            for ev in session_events:
+                events.append((ev.event_id, ev.user_id, ev.session_id, ev.event_time, ev.event_name))
                 
-                ev_time = ev_time + timedelta(minutes=random.randint(1, 30))
-                events.append((str(uuid.uuid4()), user_id, sid, ev_time, step))
-                
-                if step == 'purchase':
-                    purchase_occurred = True
-
-            if purchase_occurred and random.random() < cfg.PA_ORDER_RATE_IF_PURCHASE:
-                orders.append((str(uuid.uuid4()), user_id, ev_time, random.randint(1000, 50000)))
+                # Commerce의 경우 purchase 이벤트면 주문 생성
+                if ev.event_name == 'purchase' and random.random() < cfg.PA_ORDER_RATE_IF_PURCHASE:
+                    orders.append((str(uuid.uuid4()), user_id, ev.event_time, random.randint(1000, 50000)))
 
     logger.info(
-        "PA generated: users=%d sessions=%d events=%d orders=%d",
-        len(users), len(sessions), len(events), len(orders)
+        "PA generated (%s): users=%d sessions=%d events=%d orders=%d",
+        product_type, len(users), len(sessions), len(events), len(orders)
     )
 
     # 시간순 정렬
@@ -389,11 +406,25 @@ def run_pa(save_to=("postgres","duckdb")):
         if orders:
             duck_con.executemany("INSERT INTO pa_orders VALUES (?, ?, ?, ?)", orders)
 
+    # dataset_versions에 기록
+    if pg_cur:
+        try:
+            min_date = min(u[1] for u in users).date() if users else None
+            max_date = max(u[1] for u in users).date() if users else None
+            pg_cur.execute("""
+                INSERT INTO dataset_versions (created_at, generator_type, start_date, end_date, n_users, n_events)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (datetime.now(), product_type, min_date, max_date, len(users), len(events)))
+            logger.info("Recorded dataset version: %s, users=%d, events=%d", product_type, len(users), len(events))
+        except Exception as e:
+            logger.warning("Failed to record dataset version: %s", e)
+
     if duck_con: duck_con.close()
     if pg_cur: pg_cur.close()
     if pg_con: pg_con.close()
 
-    logger.info("PA generator finished")
+    logger.info("PA generator finished with product_type=%s", product_type)
+    return product_type  # 사용된 product_type 반환
 
 # ------------------------------------------------------------
 # 엔트리포인트

@@ -75,23 +75,42 @@ def get_data_summary() -> str:
         pg.close()
 
 
+def get_current_product_type() -> str:
+    """현재 데이터의 Product Type 조회 (default: commerce)"""
+    pg = PostgresEngine(PostgresEnv().dsn())
+    try:
+        df = pg.fetch_df("SELECT product_type FROM current_product_type WHERE id = 1")
+        if len(df) > 0:
+            return str(df.iloc[0]["product_type"])
+        return "commerce"  # 기본값
+    except Exception:
+        return "commerce"
+    finally:
+        pg.close()
+
+
 def build_prompt() -> list[dict]:
     """
     generator.py에서 호출하는 메인 함수
-    1. 데이터 요약 생성
-    2. 프롬프트 빌드
-    3. Gemini 호출
-    4. JSON 파싱 후 반환
+    1. 현재 Product Type 조회
+    2. 데이터 요약 생성
+    3. Product Type 맞춤형 프롬프트 빌드
+    4. Gemini 호출
+    5. JSON 파싱 후 반환
     """
-    logger.info("building PA problems prompt")
+    # 현재 Product Type 조회
+    product_type = get_current_product_type()
+    logger.info(f"building PA problems prompt for product_type: {product_type}")
     
     data_summary = get_data_summary()
     logger.info(f"data summary generated:\n{data_summary}")
     
-    prompt = build_pa_prompt(data_summary, n=6)
+    # Product Type을 전달하여 맞춤형 프롬프트 생성
+    prompt = build_pa_prompt(data_summary, n=6, product_type=product_type)
     logger.info("calling Gemini for problem generation")
     
     problems = call_gemini_json(prompt)
     logger.info(f"received {len(problems)} problems from Gemini")
     
     return problems
+

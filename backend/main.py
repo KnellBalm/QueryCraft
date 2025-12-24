@@ -9,6 +9,7 @@ from backend.api.problems import router as problems_router
 from backend.api.sql import router as sql_router
 from backend.api.stats import router as stats_router
 from backend.api.admin import router as admin_router
+from backend.api.auth import router as auth_router
 
 
 app = FastAPI(
@@ -31,6 +32,7 @@ app.include_router(problems_router)
 app.include_router(sql_router)
 app.include_router(stats_router)
 app.include_router(admin_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

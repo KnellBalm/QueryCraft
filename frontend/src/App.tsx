@@ -4,6 +4,7 @@ import { Workspace } from './pages/Workspace';
 import { FloatingContact } from './components/FloatingContact';
 import { useEffect, useState } from 'react';
 import { statsApi, adminApi } from './api/client';
+import { initAnalytics } from './services/analytics';
 import type { UserStats } from './types';
 import './App.css';
 
@@ -11,6 +12,9 @@ function App() {
   const [stats, setStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
+    // Analytics 초기화
+    initAnalytics();
+
     statsApi.me().then(res => setStats(res.data)).catch(() => { });
   }, []);
 
@@ -160,6 +164,8 @@ function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [datasetVersions, setDatasetVersions] = useState<any[]>([]);
+  const [schedulerLogs, setSchedulerLogs] = useState<string[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
 
   const refreshStatus = () => {
     adminApi.status()
@@ -170,6 +176,12 @@ function AdminPage() {
     adminApi.datasetVersions()
       .then(res => setDatasetVersions(res.data.versions || []))
       .catch(() => { });
+  };
+
+  const loadSchedulerLogs = () => {
+    adminApi.schedulerLogs(30)
+      .then(res => setSchedulerLogs(res.data.logs || []))
+      .catch(() => setSchedulerLogs([]));
   };
 
   useEffect(() => {
@@ -264,6 +276,36 @@ function AdminPage() {
             <span>매주 일요일</span>
           </div>
         </div>
+        <div style={{ marginTop: '12px' }}>
+          <button onClick={() => { setShowLogs(!showLogs); if (!showLogs) loadSchedulerLogs(); }}>
+            {showLogs ? '📋 로그 숨기기' : '📋 스케줄러 로그 보기'}
+          </button>
+        </div>
+        {showLogs && (
+          <div style={{
+            marginTop: '12px',
+            background: '#1e1e1e',
+            color: '#0f0',
+            padding: '12px',
+            borderRadius: '8px',
+            maxHeight: '300px',
+            overflow: 'auto',
+            fontSize: '12px',
+            fontFamily: 'monospace'
+          }}>
+            {schedulerLogs.length > 0 ? (
+              schedulerLogs.map((log, i) => <div key={i}>{log}</div>)
+            ) : (
+              <div>로그를 불러오는 중...</div>
+            )}
+            <button
+              onClick={loadSchedulerLogs}
+              style={{ marginTop: '8px', fontSize: '11px' }}
+            >
+              🔄 새로고침
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="admin-section">

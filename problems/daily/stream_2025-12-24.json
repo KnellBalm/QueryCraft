@@ -1,0 +1,128 @@
+[
+  {
+    "problem_id": "stream_sql_001",
+    "difficulty": "easy",
+    "topic": "revenue",
+    "requester": "재무팀",
+    "question": "재무팀 김대리입니다. 월말 실적 보고를 위해 2025년 11월 한 달간의 일별 매출과 구매 건수 데이터를 요청드립니다. 날짜순으로 정렬해서 전달해주세요.",
+    "context": "회사의 핵심 지표인 일별 매출액과 구매 건수의 변동 추이를 파악하여 11월 실적을 분석하고 다음 달 예산을 계획하는 데 사용될 예정입니다.",
+    "submission_requirements": "컬럼은 `date`, `revenue`, `purchases` 순서로 제출해주세요. `date`를 기준으로 오름차순 정렬이 필요합니다.",
+    "answer_sql": "SELECT\n  date,\n  revenue,\n  purchases\nFROM stream_daily_metrics\nWHERE date >= '2025-11-01' AND date < '2025-12-01'\nORDER BY date ASC;",
+    "expected_columns": [
+      "date",
+      "revenue",
+      "purchases"
+    ],
+    "sort_keys": [
+      "date"
+    ],
+    "hint": "stream_daily_metrics 테이블에는 이미 일별로 집계된 매출과 구매 건수 데이터가 있습니다. WHERE 절을 사용하여 특정 월의 데이터를 필터링하세요.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_001"
+    }
+  },
+  {
+    "problem_id": "stream_sql_002",
+    "difficulty": "easy",
+    "topic": "dau",
+    "requester": "프로덕트팀",
+    "question": "안녕하세요, 프로덕트팀 박 매니저입니다. 12월 첫째 주(12월 1일 ~ 7일) 동안의 일별 순 방문자 수(DAU)가 궁금합니다. 서비스 초기 안정성 확인을 위해 필요합니다.",
+    "context": "12월에 새로운 기능을 배포한 후 사용자의 초기 반응과 서비스 이용률을 파악하기 위해 핵심 지표인 DAU(Daily Active Users)를 모니터링하고 있습니다.",
+    "submission_requirements": "컬럼은 `event_date`, `dau`로 지정하고, `event_date` 기준으로 오름차순 정렬하여 주세요.",
+    "answer_sql": "SELECT \n  DATE_TRUNC('day', event_time)::DATE AS event_date,\n  COUNT(DISTINCT user_id) AS dau\nFROM stream_events\nWHERE event_name = 'visit'\n  AND event_time >= '2025-12-01' AND event_time < '2025-12-08'\nGROUP BY event_date\nORDER BY event_date ASC;",
+    "expected_columns": [
+      "event_date",
+      "dau"
+    ],
+    "sort_keys": [
+      "event_date"
+    ],
+    "hint": "event_time(TIMESTAMP)에서 날짜 부분만 추출하려면 `DATE_TRUNC('day', event_time)::DATE`를 사용할 수 있습니다. 순 방문자 수는 `COUNT(DISTINCT user_id)`로 계산합니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_002"
+    }
+  },
+  {
+    "problem_id": "stream_sql_003",
+    "difficulty": "medium",
+    "topic": "channel",
+    "requester": "마케팅팀",
+    "question": "마케팅팀입니다. 11월 한 달간 진행한 채널별 마케팅 성과를 분석하고 싶습니다. 각 마케팅 채널(channel)을 통해 유입되어 최종적으로 구매까지 완료한 순 사용자 수를 확인해주세요. 구매 사용자 수가 많은 채널 순으로 정렬 부탁드립니다.",
+    "context": "11월에 집행된 광고 채널별 효율을 비교 분석하여 12월 마케팅 예산을 가장 효율적인 채널에 집중적으로 배분하기 위한 의사결정이 필요합니다.",
+    "submission_requirements": "컬럼명은 `channel`, `purchase_user_count`로 지정해주세요. `purchase_user_count`를 기준으로 내림차순 정렬하여 상위 채널을 쉽게 파악할 수 있도록 해주세요.",
+    "answer_sql": "SELECT\n  channel,\n  COUNT(DISTINCT user_id) AS purchase_user_count\nFROM stream_events\nWHERE event_name = 'purchase'\n  AND event_time >= '2025-11-01' AND event_time < '2025-12-01'\nGROUP BY channel\nORDER BY purchase_user_count DESC;",
+    "expected_columns": [
+      "channel",
+      "purchase_user_count"
+    ],
+    "sort_keys": [
+      "purchase_user_count"
+    ],
+    "hint": "'purchase' 이벤트를 일으킨 사용자를 대상으로, `channel`별로 그룹화하여 유저 수를 세어야 합니다. `COUNT(DISTINCT user_id)`를 사용해 중복을 제거하세요.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_003"
+    }
+  },
+  {
+    "problem_id": "stream_sql_004",
+    "difficulty": "medium",
+    "topic": "device",
+    "requester": "UX/UI팀",
+    "question": "UX/UI팀입니다. 2025년 4분기(10월~12월) 동안 디바이스(device)별 구매 전환율을 분석하고 싶습니다. 디바이스별로 방문한 총 순 사용자 대비 구매한 순 사용자의 비율을 계산해주세요.",
+    "context": "모바일과 데스크톱 환경 간의 사용자 경험 차이가 구매 전환율에 미치는 영향을 파악하고, 전환율이 낮은 디바이스의 UX/UI 개선 우선순위를 정하기 위해 데이터가 필요합니다.",
+    "submission_requirements": "컬럼은 `device`, `conversion_rate`로 부탁드립니다. `conversion_rate`를 기준으로 내림차순 정렬해주세요.",
+    "answer_sql": "WITH device_funnel AS (\n  SELECT\n    device,\n    COUNT(DISTINCT CASE WHEN event_name = 'visit' THEN user_id END) AS visitors,\n    COUNT(DISTINCT CASE WHEN event_name = 'purchase' THEN user_id END) AS purchasers\n  FROM stream_events\n  WHERE event_time >= '2025-10-01' AND event_time < '2026-01-01'\n  GROUP BY device\n)\nSELECT\n  device,\n  (purchasers::FLOAT / visitors) * 100 AS conversion_rate\nFROM device_funnel\nWHERE visitors > 0\nORDER BY conversion_rate DESC;",
+    "expected_columns": [
+      "device",
+      "conversion_rate"
+    ],
+    "sort_keys": [
+      "conversion_rate"
+    ],
+    "hint": "WITH절(CTE)을 사용해 디바이스별 방문자 수와 구매자 수를 먼저 계산한 후, 메인 쿼리에서 두 값의 비율을 계산하면 편리합니다. 나눗셈 시 소수점 계산을 위해 `::FLOAT` 형변환을 사용하세요.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_004"
+    }
+  },
+  {
+    "problem_id": "stream_sql_005",
+    "difficulty": "hard",
+    "topic": "funnel",
+    "requester": "그로스해킹팀",
+    "question": "안녕하세요, 그로스해킹팀입니다. 11월 전체 사용자의 구매 퍼널(Funnel) 데이터를 단계별로 분석하고 싶습니다. `visit` -> `view_product` -> `add_to_cart` -> `purchase` 각 단계에 도달한 순 사용자 수와 이전 단계 대비 전환율을 계산해주세요.",
+    "context": "사용자들이 어떤 단계에서 가장 많이 이탈하는지 병목 구간을 파악하여, 해당 단계의 문제점을 개선하고 전체 구매 전환율을 최적화하는 A/B 테스트를 기획하고자 합니다.",
+    "submission_requirements": "컬럼은 `funnel_stage`, `user_count`, `conversion_rate_from_previous`로 지정해주세요. 퍼널 순서대로 정렬되어야 합니다.",
+    "answer_sql": "WITH funnel_steps AS (\n    SELECT\n        1 AS step_order, 'visit' AS funnel_stage, COUNT(DISTINCT user_id) AS user_count\n    FROM stream_events\n    WHERE event_name = 'visit' AND event_time >= '2025-11-01' AND event_time < '2025-12-01'\n    UNION ALL\n    SELECT\n        2 AS step_order, 'view_product' AS funnel_stage, COUNT(DISTINCT user_id) AS user_count\n    FROM stream_events\n    WHERE event_name = 'view_product' AND event_time >= '2025-11-01' AND event_time < '2025-12-01'\n    UNION ALL\n    SELECT\n        3 AS step_order, 'add_to_cart' AS funnel_stage, COUNT(DISTINCT user_id) AS user_count\n    FROM stream_events\n    WHERE event_name = 'add_to_cart' AND event_time >= '2025-11-01' AND event_time < '2025-12-01'\n    UNION ALL\n    SELECT\n        4 AS step_order, 'purchase' AS funnel_stage, COUNT(DISTINCT user_id) AS user_count\n    FROM stream_events\n    WHERE event_name = 'purchase' AND event_time >= '2025-11-01' AND event_time < '2025-12-01'\n),\nfunnel_with_lag AS (\n    SELECT\n        funnel_stage,\n        user_count,\n        LAG(user_count, 1, user_count) OVER (ORDER BY step_order) AS previous_step_users\n    FROM funnel_steps\n)\nSELECT\n    funnel_stage,\n    user_count,\n    (user_count::FLOAT / previous_step_users) * 100 AS conversion_rate_from_previous\nFROM funnel_with_lag\nORDER BY (user_count::FLOAT / previous_step_users) DESC, user_count DESC;",
+    "expected_columns": [
+      "funnel_stage",
+      "user_count",
+      "conversion_rate_from_previous"
+    ],
+    "sort_keys": [
+      "conversion_rate_from_previous",
+      "user_count"
+    ],
+    "hint": "각 퍼널 단계를 계산하기 위해 UNION ALL을 사용하거나, 조건부 집계(COUNT(DISTINCT CASE WHEN ...))를 사용할 수 있습니다. 이전 단계 값 대비 전환율은 윈도우 함수 `LAG()`를 사용하면 쉽게 계산할 수 있습니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_005"
+    }
+  },
+  {
+    "problem_id": "stream_sql_006",
+    "difficulty": "hard",
+    "topic": "dau",
+    "requester": "데이터팀",
+    "question": "데이터팀 내부 분석용으로 2025년 11월의 '서비스 고착도(Stickiness)' 지표인 DAU/MAU 비율을 계산해야 합니다. 해당 월의 평균 DAU를 MAU로 나눈 값을 계산해주세요.",
+    "context": "사용자가 우리 서비스를 얼마나 자주 이용하는지를 나타내는 고착도 지표를 통해 프로덕트의 매력도를 측정하고, 향후 사용자 리텐션 전략 수립의 기반 데이터로 활용하고자 합니다.",
+    "submission_requirements": "단일 값으로 계산되며, 컬럼명은 `stickiness_ratio_pct`로 지정해주세요. (_pct는 백분율을 의미)",
+    "answer_sql": "WITH monthly_users AS (\n  SELECT\n    COUNT(DISTINCT user_id) AS mau,\n    COUNT(DISTINCT DATE_TRUNC('day', event_time)) AS days_in_month\n  FROM stream_events\n  WHERE event_time >= '2025-11-01' AND event_time < '2025-12-01'\n),\ndaily_users AS (\n  SELECT\n    COUNT(DISTINCT user_id) AS total_daily_visits\n  FROM stream_events\n  WHERE event_time >= '2025-11-01' AND event_time < '2025-12-01'\n)\nSELECT\n  ((total_daily_visits::FLOAT / days_in_month) / mau) * 100 AS stickiness_ratio_pct\nFROM monthly_users, daily_users;",
+    "expected_columns": [
+      "stickiness_ratio_pct"
+    ],
+    "sort_keys": [],
+    "hint": "두 개의 CTE를 사용해 보세요. 하나는 11월의 MAU(순 월간 방문자)를 계산하고, 다른 하나는 11월의 일별 DAU의 총합 혹은 평균 DAU를 계산합니다. 평균 DAU는 (DAU의 총합 / 해당 월의 일수)로 구할 수 있습니다.",
+    "expected_meta": {
+      "grading_table": "expected_stream_sql_006"
+    }
+  }
+]
