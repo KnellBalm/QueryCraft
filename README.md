@@ -4,51 +4,51 @@
 
 ---
 
-## Table of Contents
+## 목차
 
-### Quick Navigation
+### 바로가기
 
-| Overview | For Planners | For Developers | For Analysts |
-|:--------:|:------------:|:--------------:|:------------:|
-| [Introduction](#1-introduction) | [Product Specification](#6-product-specification) | [Development Guide](#7-development-guide) | [Analysis Guide](#8-analysis-guide) |
-| [Features](#2-features) | [User Journey](#65-user-journey-map) | [Local Setup](#73-local-development) | [Data Schema](#84-data-schema) |
-| [Quick Start](#5-quick-start) | [KPI Definition](#66-kpi-definition) | [Architecture](#74-system-architecture) | [Problem Types](#83-problem-categories) |
+| 개요 | 기획 | 개발 | 분석 |
+|:----:|:----:|:----:|:----:|
+| [서비스 소개](#1-서비스-소개) | [제품 명세](#6-제품-명세) | [개발 가이드](#7-개발-가이드) | [분석 가이드](#8-분석-가이드) |
+| [주요 기능](#2-주요-기능) | [사용자 여정](#65-사용자-여정) | [로컬 개발](#73-로컬-개발) | [데이터 스키마](#84-데이터-스키마) |
+| [빠른 시작](#5-빠른-시작) | [핵심 지표](#66-핵심-지표) | [시스템 구조](#74-시스템-상세-구조) | [문제 유형](#83-문제-유형) |
 
-### Full Index
+### 전체 목차
 
-1. [Introduction](#1-introduction)
-2. [Features](#2-features)
-3. [System Architecture](#3-system-architecture)
-4. [Tech Stack](#4-tech-stack)
-5. [Quick Start](#5-quick-start)
-6. [Product Specification](#6-product-specification)
-7. [Development Guide](#7-development-guide)
-8. [Analysis Guide](#8-analysis-guide)
-9. [Documentation](#9-documentation)
-10. [Roadmap](#10-roadmap)
+1. [서비스 소개](#1-서비스-소개)
+2. [주요 기능](#2-주요-기능)
+3. [시스템 아키텍처](#3-시스템-아키텍처)
+4. [기술 스택](#4-기술-스택)
+5. [빠른 시작](#5-빠른-시작)
+6. [제품 명세](#6-제품-명세)
+7. [개발 가이드](#7-개발-가이드)
+8. [분석 가이드](#8-분석-가이드)
+9. [관련 문서](#9-관련-문서)
+10. [로드맵](#10-로드맵)
 
 ---
 
-## 1. Introduction
+## 1. 서비스 소개
 
-### 1.1 Problem Statement
+### 1.1 문제 정의
 
-| Pain Point | Solution |
-|------------|----------|
+| 기존 방식의 한계 | 본 서비스의 해결책 |
+|-----------------|------------------|
 | 교과서적 SQL 문법 학습만 가능 | 실무 비즈니스 질문 기반 문제 |
 | 단순 SELECT 쿼리 연습 | 퍼널/코호트/리텐션 분석 |
 | 정답 확인만 가능 | AI 기반 피드백 및 개선 제안 |
 | 단일 도메인 데이터셋 | 5가지 프로덕트 타입 지원 |
 
-### 1.2 Target Users
+### 1.2 타겟 사용자
 
-| Segment | Needs | Expected Outcome |
-|---------|-------|------------------|
+| 세그먼트 | 니즈 | 기대 효과 |
+|---------|------|----------|
 | 취업 준비생 | 실무 경험 대체, 포트폴리오 | 면접 준비, 과제 수행 역량 |
 | 주니어 분석가 | 분석 프레임워크 학습 | 시니어 레벨 역량 획득 |
 | PM/기획자 | 데이터 기반 의사결정 | 직접 쿼리 작성 능력 |
 
-### 1.3 Value Proposition
+### 1.3 핵심 가치
 
 - **6가지 분석 유형** 마스터 → 어떤 도메인에서든 분석 업무 수행
 - **AI 피드백** 활용 → 시니어 분석가 코드리뷰 효과
@@ -56,38 +56,38 @@
 
 ---
 
-## 2. Features
+## 2. 주요 기능
 
-### 2.1 Core Features
+### 2.1 핵심 기능
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| PA Problem Solving | 정적 분석 문제 6개/일 | P0 |
-| Stream Problem Solving | 동적 로그 분석 문제 | P0 |
-| SQL Editor | Monaco 기반 인터랙티브 에디터 | P0 |
-| Auto Grading | 결과 테이블 비교 기반 채점 | P0 |
-| AI Feedback | Gemini 기반 코드 리뷰 | P1 |
-| Schema Explorer | 테이블/컬럼 정보 조회 | P1 |
+| 기능 | 설명 | 우선순위 |
+|------|------|---------|
+| PA 문제 풀이 | 정적 분석 문제 6개/일 | P0 |
+| 스트림 문제 풀이 | 동적 로그 분석 문제 | P0 |
+| SQL 에디터 | Monaco 기반 인터랙티브 에디터 | P0 |
+| 자동 채점 | 결과 테이블 비교 기반 채점 | P0 |
+| AI 피드백 | Gemini 기반 코드 리뷰 | P1 |
+| 스키마 탐색기 | 테이블/컬럼 정보 조회 | P1 |
 
-### 2.2 Supported Product Types
+### 2.2 지원 프로덕트 타입
 
-| Type | Domain | Events | Analysis Focus |
-|------|--------|--------|----------------|
-| Commerce | E-commerce | 15 | Funnel, Cart Abandonment |
-| Content | Media Platform | 12 | Read-through Rate, Subscription |
-| SaaS | B2B Software | 13 | Activation, Feature Adoption |
-| Community | Social Network | 11 | Creator/Consumer Ratio |
-| Fintech | Financial Service | 12 | Transaction Success Rate, KYC |
+| 타입 | 도메인 | 이벤트 수 | 분석 초점 |
+|------|--------|----------|----------|
+| 커머스 | 이커머스 | 15개 | 퍼널, 장바구니 이탈 |
+| 콘텐츠 | 미디어 플랫폼 | 12개 | 완독률, 구독 전환 |
+| SaaS | B2B 소프트웨어 | 13개 | 활성화, 기능 사용률 |
+| 커뮤니티 | 소셜 네트워크 | 11개 | 창작자/소비자 비율 |
+| 핀테크 | 금융 서비스 | 12개 | 거래 성공률, KYC |
 
 ---
 
-## 3. System Architecture
+## 3. 시스템 아키텍처
 
-### 3.1 High-Level Overview
+### 3.1 전체 구조
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                          Client Layer                               │
+│                           클라이언트 레이어                          │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │                    React SPA (Vite)                           │  │
 │  │                       :5173                                   │  │
@@ -95,37 +95,37 @@
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │ REST API
 ┌─────────────────────────────────▼───────────────────────────────────┐
-│                          Service Layer                              │
+│                           서비스 레이어                              │
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                    FastAPI Backend                            │  │
+│  │                    FastAPI 백엔드                             │  │
 │  │                       :8000                                   │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └───────────┬─────────────────────┬─────────────────────┬─────────────┘
             │                     │                     │
 ┌───────────▼───────────┐ ┌───────▼───────┐ ┌───────────▼───────────┐
 │     PostgreSQL        │ │    DuckDB     │ │     Gemini API        │
-│    (Primary DB)       │ │ (Analytics)   │ │    (AI Feedback)      │
+│      (메인 DB)        │ │   (분석용)    │ │    (AI 피드백)        │
 └───────────────────────┘ └───────────────┘ └───────────────────────┘
             │
 ┌───────────▼───────────────────────────────────────────────────────┐
-│                         Scheduler                                  │
-│               (Automated Data & Problem Generation)                │
+│                          스케줄러                                  │
+│                 (데이터 및 문제 자동 생성)                         │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Data Generation Pipeline
+### 3.2 데이터 생성 파이프라인
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Phase 1: Product Type Selection                                     │
+│ 1단계: 프로덕트 타입 선택                                           │
 ├─────────────────────────────────────────────────────────────────────┤
-│   commerce    content     saas      community    fintech           │
-│     20%        20%        20%         20%         20%              │
+│   커머스     콘텐츠      SaaS     커뮤니티     핀테크               │
+│    20%       20%        20%        20%        20%                  │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Phase 2: Event Generation (Strategy Pattern)                       │
+│ 2단계: 이벤트 생성 (전략 패턴)                                      │
 ├─────────────────────────────────────────────────────────────────────┤
 │   BaseProductProfile                                                │
 │         │                                                           │
@@ -138,7 +138,7 @@
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Phase 3: Data Persistence                                           │
+│ 3단계: 데이터 저장                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │   PostgreSQL: pa_users, pa_sessions, pa_events, pa_orders           │
 │   DuckDB: stream_events, stream_daily_metrics                       │
@@ -146,100 +146,100 @@
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Phase 4: Problem Generation (Gemini AI)                             │
+│ 4단계: 문제 생성 (Gemini AI)                                        │
 ├─────────────────────────────────────────────────────────────────────┤
-│   Product Type → Customized Prompt → 6 Problems / Day              │
+│   프로덕트 타입 → 맞춤형 프롬프트 → 일 6개 문제 생성                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.3 Design Patterns
+### 3.3 설계 패턴
 
-| Pattern | Application | Benefit |
-|---------|-------------|---------|
-| Strategy | ProductProfile | 타입별 이벤트 생성 로직 분리 |
-| Factory | get_profile() | 문자열 기반 인스턴스 생성 |
-| Repository | Engine Classes | DB 접근 추상화 |
-| Service Layer | Generator, Grader | 비즈니스 로직 캡슐화 |
-
----
-
-## 4. Tech Stack
-
-### 4.1 Frontend
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 18.x | UI Framework |
-| Vite | 5.x | Build Tool |
-| TypeScript | 5.x | Type Safety |
-| Monaco Editor | - | SQL Code Editor |
-| Mixpanel | - | Event Tracking |
-| PostHog | - | Analytics & Session Recording |
-
-### 4.2 Backend
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Python | 3.12+ | Runtime |
-| FastAPI | 0.115+ | API Server |
-| Pydantic | 2.x | Data Validation |
-| Pandas | - | Data Processing |
-| psycopg2 | - | PostgreSQL Driver |
-| DuckDB | - | Analytics Database |
-
-### 4.3 AI & Analytics
-
-| Technology | Purpose |
-|------------|---------|
-| Google Gemini Pro | Problem Generation, AI Feedback |
-| Mixpanel | User Behavior Analytics |
-| PostHog | Event Tracking, Session Recording |
-
-### 4.4 Infrastructure
-
-| Technology | Purpose |
-|------------|---------|
-| Docker Compose | Container Orchestration |
-| PostgreSQL | Primary Database |
-| DuckDB | Analytics Database |
+| 패턴 | 적용 위치 | 효과 |
+|------|----------|------|
+| 전략 패턴 | ProductProfile | 타입별 이벤트 생성 로직 분리 |
+| 팩토리 패턴 | get_profile() | 문자열 기반 인스턴스 생성 |
+| 저장소 패턴 | Engine 클래스 | DB 접근 추상화 |
+| 서비스 레이어 | Generator, Grader | 비즈니스 로직 캡슐화 |
 
 ---
 
-## 5. Quick Start
+## 4. 기술 스택
 
-### 5.1 Prerequisites
+### 4.1 프론트엔드
+
+| 기술 | 버전 | 용도 |
+|------|------|------|
+| React | 18.x | UI 프레임워크 |
+| Vite | 5.x | 빌드 도구 |
+| TypeScript | 5.x | 타입 안전성 |
+| Monaco Editor | - | SQL 코드 에디터 |
+| Mixpanel | - | 이벤트 트래킹 |
+| PostHog | - | 분석 및 세션 녹화 |
+
+### 4.2 백엔드
+
+| 기술 | 버전 | 용도 |
+|------|------|------|
+| Python | 3.12+ | 런타임 |
+| FastAPI | 0.115+ | API 서버 |
+| Pydantic | 2.x | 데이터 검증 |
+| Pandas | - | 데이터 처리 |
+| psycopg2 | - | PostgreSQL 드라이버 |
+| DuckDB | - | 분석용 데이터베이스 |
+
+### 4.3 AI 및 분석
+
+| 기술 | 용도 |
+|------|------|
+| Google Gemini Pro | 문제 생성, AI 피드백 |
+| Mixpanel | 사용자 행동 분석 |
+| PostHog | 이벤트 트래킹, 세션 녹화 |
+
+### 4.4 인프라
+
+| 기술 | 용도 |
+|------|------|
+| Docker Compose | 컨테이너 오케스트레이션 |
+| PostgreSQL | 메인 데이터베이스 |
+| DuckDB | 분석용 데이터베이스 |
+
+---
+
+## 5. 빠른 시작
+
+### 5.1 사전 요구사항
 
 ```bash
-# Required
+# 필수
 - Docker & Docker Compose
 - Git
 
-# Optional (Local Development)
+# 선택 (로컬 개발 시)
 - Node.js 18+
 - Python 3.12+
 ```
 
-### 5.2 Installation
+### 5.2 설치 및 실행
 
 ```bash
-# Clone Repository
+# 저장소 클론
 git clone https://github.com/your-org/offline_lab.git
 cd offline_lab
 
-# Configure Environment
+# 환경변수 설정
 cp .env.example .env
-# Edit .env file (Gemini API Key, etc.)
+# .env 파일 수정 (Gemini API 키 등)
 
-# Start Services
+# 서비스 시작
 docker compose up -d
 
-# Access
-# Frontend: http://localhost:5173
-# API Docs: http://localhost:8000/docs
-# Admin: http://localhost:5173/admin
+# 접속
+# 프론트엔드: http://localhost:5173
+# API 문서: http://localhost:8000/docs
+# 관리자: http://localhost:5173/admin
 ```
 
-### 5.3 Initial Data Setup
+### 5.3 초기 데이터 생성
 
 ```bash
 docker compose exec backend python -c "
@@ -258,45 +258,45 @@ pg.close()
 
 ---
 
-## 6. Product Specification
+## 6. 제품 명세
 
-### 6.1 Service Concept
+### 6.1 서비스 컨셉
 
 > PM/마케팅팀에서 슬랙으로 데이터 분석을 요청하는 실무 상황 시뮬레이션
 
-**UX Principles:**
+**UX 원칙:**
 1. 실무 톤앤매너: "PM팀입니다. ~분석 부탁드려요" 형식
 2. 명확한 요구사항: 필요 컬럼, 정렬 기준, 기간 명시
 3. 즉각적 피드백: 실행 결과 즉시 확인
 4. AI 리뷰: 시니어 분석가 관점 개선점 제안
 
-### 6.2 Feature Matrix
+### 6.2 기능 목록
 
-#### User Features
+#### 사용자 기능
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| PA Problem Solving | 정적 분석 문제 6개/일 | ✅ |
-| Stream Problem Solving | 동적 로그 분석 문제 | ✅ |
-| SQL Editor | Monaco 기반 코드 작성 | ✅ |
-| Auto Grading | 결과 테이블 비교 채점 | ✅ |
-| AI Feedback | Gemini 기반 코드 리뷰 | ✅ |
-| Schema Explorer | 테이블/컬럼 정보 조회 | ✅ |
-| Submission History | 제출 이력 관리 | ✅ |
+| 기능 | 설명 | 상태 |
+|------|------|------|
+| PA 문제 풀이 | 정적 분석 문제 6개/일 | ✅ |
+| 스트림 문제 풀이 | 동적 로그 분석 문제 | ✅ |
+| SQL 에디터 | Monaco 기반 코드 작성 | ✅ |
+| 자동 채점 | 결과 테이블 비교 채점 | ✅ |
+| AI 피드백 | Gemini 기반 코드 리뷰 | ✅ |
+| 스키마 탐색기 | 테이블/컬럼 정보 조회 | ✅ |
+| 풀이 기록 | 제출 이력 관리 | ✅ |
 
-#### Admin Features
+#### 관리자 기능
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Problem Generation | PA/Stream 문제 수동 생성 | ✅ |
-| Data Refresh | 사용자/이벤트 데이터 재생성 | ✅ |
-| Scheduler Monitoring | 자동 생성 로그 확인 | ✅ |
-| Dataset Version Control | 생성 이력 조회 | ✅ |
+| 기능 | 설명 | 상태 |
+|------|------|------|
+| 문제 생성 | PA/스트림 문제 수동 생성 | ✅ |
+| 데이터 갱신 | 사용자/이벤트 데이터 재생성 | ✅ |
+| 스케줄러 모니터링 | 자동 생성 로그 확인 | ✅ |
+| 데이터셋 버전 관리 | 생성 이력 조회 | ✅ |
 
-### 6.3 Functional Requirements
+### 6.3 기능 요구사항
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
+| ID | 요구사항 | 우선순위 |
+|----|---------|---------|
 | FR-001 | 사용자는 6개의 PA 문제를 조회할 수 있다 | P0 |
 | FR-002 | 사용자는 SQL을 작성하고 실행할 수 있다 | P0 |
 | FR-003 | 사용자는 정답을 제출하고 채점 결과를 확인할 수 있다 | P0 |
@@ -304,101 +304,100 @@ pg.close()
 | FR-005 | 관리자는 문제를 수동으로 생성할 수 있다 | P1 |
 | FR-006 | 시스템은 매일 자동으로 새 문제를 생성한다 | P1 |
 
-### 6.4 Non-Functional Requirements
+### 6.4 비기능 요구사항
 
-| ID | Requirement | Metric |
-|----|-------------|--------|
+| ID | 요구사항 | 기준 |
+|----|---------|------|
 | NFR-001 | API 응답 시간 | < 500ms (p95) |
 | NFR-002 | SQL 실행 시간 | < 5s (타임아웃) |
 | NFR-003 | AI 피드백 응답 시간 | < 30s |
 | NFR-004 | 동시 사용자 지원 | 100명 |
 
-### 6.5 User Journey Map
+### 6.5 사용자 여정
 
 ```
 ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
-│  Visit   │──▶│  Select  │──▶│  Write   │──▶│  Submit  │──▶│ Feedback │
-│          │   │  Problem │   │   SQL    │   │          │   │          │
+│   방문   │──▶│ 문제선택 │──▶│ SQL작성  │──▶│   제출   │──▶│  피드백  │
 └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘
                     │              │              │              │
                     ▼              ▼              ▼              ▼
               ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-              │  Schema  │  │  Execute │  │   Auto   │  │    AI    │
-              │  Lookup  │  │  Preview │  │  Grading │  │  Review  │
+              │  스키마  │  │ 실행결과 │  │ 자동채점 │  │ AI리뷰  │
+              │  조회    │  │ 미리보기 │  │          │  │          │
               └──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
 
-### 6.6 KPI Definition
+### 6.6 핵심 지표
 
-| Metric | Definition | Target |
-|--------|------------|--------|
-| DAU | Daily Active Users | - |
-| Problem Completion Rate | Submissions / Views | > 40% |
-| Accuracy Rate | Correct / Total Submissions | > 60% |
-| Problems per Session | Average attempts | > 2 |
-| D1 Retention | Next-day return rate | > 30% |
+| 지표 | 정의 | 목표 |
+|------|------|------|
+| DAU | 일간 활성 사용자 | - |
+| 문제 완료율 | 제출 수 / 조회 수 | > 40% |
+| 정답률 | 정답 수 / 총 제출 수 | > 60% |
+| 세션당 문제 수 | 평균 시도 문제 | > 2 |
+| D1 리텐션 | 다음날 재방문율 | > 30% |
 
 ---
 
-## 7. Development Guide
+## 7. 개발 가이드
 
-### 7.1 Project Structure
+### 7.1 프로젝트 구조
 
 ```
 offline_lab/
-├── backend/                    # FastAPI Backend
-│   ├── api/                    # API Routers
-│   │   ├── admin.py            # Admin API
-│   │   ├── problems.py         # Problem API
-│   │   └── stats.py            # Statistics API
-│   ├── schemas/                # Pydantic Schemas
-│   └── main.py                 # FastAPI App
+├── backend/                    # FastAPI 백엔드
+│   ├── api/                    # API 라우터
+│   │   ├── admin.py            # 관리자 API
+│   │   ├── problems.py         # 문제 API
+│   │   └── stats.py            # 통계 API
+│   ├── schemas/                # Pydantic 스키마
+│   └── main.py                 # FastAPI 앱
 │
-├── frontend/                   # React Frontend
+├── frontend/                   # React 프론트엔드
 │   ├── src/
-│   │   ├── pages/              # Page Components
-│   │   ├── components/         # Shared Components
-│   │   ├── services/           # API Client, Analytics
-│   │   └── App.tsx             # Routing
-│   └── index.html              # Entry Point
+│   │   ├── pages/              # 페이지 컴포넌트
+│   │   ├── components/         # 공통 컴포넌트
+│   │   ├── services/           # API 클라이언트, 분석
+│   │   └── App.tsx             # 라우팅
+│   └── index.html              # 진입점
 │
-├── generator/                  # Data Generator
-│   ├── product_config.py       # Product Type Config
-│   ├── product_profiles/       # Strategy Profiles
-│   │   ├── base.py             # Base Class
-│   │   ├── commerce.py         # E-commerce Profile
-│   │   ├── content.py          # Content Profile
-│   │   ├── saas.py             # SaaS Profile
-│   │   ├── community.py        # Community Profile
-│   │   └── fintech.py          # Fintech Profile
+├── generator/                  # 데이터 생성기
+│   ├── product_config.py       # 프로덕트 타입 설정
+│   ├── product_profiles/       # 전략 프로필
+│   │   ├── base.py             # 베이스 클래스
+│   │   ├── commerce.py         # 이커머스 프로필
+│   │   ├── content.py          # 콘텐츠 프로필
+│   │   ├── saas.py             # SaaS 프로필
+│   │   ├── community.py        # 커뮤니티 프로필
+│   │   └── fintech.py          # 핀테크 프로필
 │   └── data_generator_advanced.py
 │
-├── problems/                   # Problem Management
-│   ├── generator.py            # PA Problem Generator
-│   ├── generator_stream.py     # Stream Problem Generator
-│   ├── prompt_pa.py            # PA Prompts (Type-specific)
-│   └── gemini.py               # Gemini API Client
+├── problems/                   # 문제 관리
+│   ├── generator.py            # PA 문제 생성
+│   ├── generator_stream.py     # 스트림 문제 생성
+│   ├── prompt_pa.py            # PA 프롬프트 (타입별)
+│   └── gemini.py               # Gemini API 클라이언트
 │
-├── grader/                     # Grading Logic
-│   └── sql_grader.py           # SQL Result Comparison
+├── grader/                     # 채점 로직
+│   └── sql_grader.py           # SQL 결과 비교
 │
-├── engine/                     # Database Engines
-│   ├── postgres_engine.py      # PostgreSQL Wrapper
-│   └── duckdb_engine.py        # DuckDB Wrapper
+├── engine/                     # 데이터베이스 엔진
+│   ├── postgres_engine.py      # PostgreSQL 래퍼
+│   └── duckdb_engine.py        # DuckDB 래퍼
 │
-├── scheduler/                  # Scheduler
-│   └── main.py                 # Automated Execution
+├── scheduler/                  # 스케줄러
+│   └── main.py                 # 자동 실행
 │
-├── docs/                       # Documentation
+├── docs/                       # 문서
 │   ├── EVENT_TRACKING_GUIDE.md
 │   └── EVENT_DESIGN_GUIDELINE.md
 │
-├── docker-compose.yml          # Container Config
-├── .env                        # Environment Variables
-└── README.md                   # This Document
+├── docker-compose.yml          # 컨테이너 구성
+├── .env                        # 환경변수
+└── README.md                   # 이 문서
 ```
 
-### 7.2 Environment Variables
+### 7.2 환경변수
 
 ```bash
 # PostgreSQL
@@ -416,40 +415,40 @@ USE_GEMINI=1
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-pro
 
-# Analytics (Frontend)
+# 분석 도구 (프론트엔드)
 VITE_MIXPANEL_TOKEN=your_mixpanel_token
 VITE_POSTHOG_KEY=your_posthog_key
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 
-# Generator
+# 생성기
 PRODUCT_TYPES=commerce,content,saas,community,fintech
 PA_NUM_USERS=50000
 ```
 
-### 7.3 Local Development
+### 7.3 로컬 개발
 
 ```bash
-# Full Stack (Docker)
+# 전체 스택 (Docker)
 docker compose up -d
 
-# Frontend Only (Dev Mode)
+# 프론트엔드만 (개발 모드)
 cd frontend && npm install && npm run dev
 
-# Backend Only (Dev Mode)
+# 백엔드만 (개발 모드)
 cd backend && uvicorn main:app --reload --port 8000
 
-# Scheduler Only
+# 스케줄러만
 python scheduler/main.py
 ```
 
-### 7.4 System Architecture
+### 7.4 시스템 상세 구조
 
-#### API Endpoints
+#### API 엔드포인트
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
 | `/problems/pa` | GET | PA 문제 목록 |
-| `/problems/stream` | GET | Stream 문제 목록 |
+| `/problems/stream` | GET | 스트림 문제 목록 |
 | `/problems/schema/{type}` | GET | 스키마 정보 |
 | `/execute` | POST | SQL 실행 |
 | `/submit` | POST | 정답 제출 |
@@ -458,10 +457,10 @@ python scheduler/main.py
 | `/admin/generate-problems` | POST | 문제 생성 |
 | `/admin/refresh-data` | POST | 데이터 갱신 |
 
-#### Request Flow
+#### 요청 흐름
 
 ```
-[User SQL Input]
+[사용자 SQL 입력]
         │
         ▼
 [/execute API]
@@ -470,34 +469,34 @@ python scheduler/main.py
 [PostgresEngine | DuckDBEngine]
         │
         ▼
-[Result Return]
+[결과 반환]
         │
         ├──────────────────────▶ [/submit API]
         │                              │
         │                              ▼
-        │                       [SQLGrader]
+        │                        [SQLGrader]
         │                              │
         │                              ▼
-        │                    [Expected Table Comparison]
+        │                      [정답 테이블 비교]
         │                              │
         │                              ▼
-        │                   [Correct / Incorrect]
+        │                       [정답 / 오답]
         │
         └──────────────────────▶ [/feedback API]
                                        │
                                        ▼
-                               [Gemini API Call]
+                               [Gemini API 호출]
                                        │
                                        ▼
-                               [AI Feedback Return]
+                               [AI 피드백 반환]
 ```
 
-### 7.5 Extension Guide
+### 7.5 확장 가이드
 
-#### Adding New Product Type
+#### 새 프로덕트 타입 추가
 
 ```python
-# 1. Create Profile (generator/product_profiles/gaming.py)
+# 1. 프로필 생성 (generator/product_profiles/gaming.py)
 from .base import BaseProductProfile, Event
 
 class GamingProfile(BaseProductProfile):
@@ -505,20 +504,20 @@ class GamingProfile(BaseProductProfile):
     
     def generate_session_events(self, user_id, session_id, base_time):
         events = []
-        # Event generation logic
+        # 이벤트 생성 로직
         return events
 
-# 2. Register (generator/product_profiles/__init__.py)
+# 2. 등록 (generator/product_profiles/__init__.py)
 from .gaming import GamingProfile
 PROFILE_MAP["gaming"] = GamingProfile
 
-# 3. Configure (generator/product_config.py)
+# 3. 설정 (generator/product_config.py)
 PRODUCT_EVENTS["gaming"] = ["login", "play_start", "level_up", ...]
 PRODUCT_PROBABILITIES["gaming"] = {"level_up": 0.3, ...}
 
-# 4. Add Prompt Context (problems/prompt_pa.py)
+# 4. 프롬프트 추가 (problems/prompt_pa.py)
 PRODUCT_TYPE_CONTEXTS["gaming"] = {
-    "name": "Gaming Platform",
+    "name": "게임 플랫폼",
     "requesters": [...],
     "topics": [...]
 }
@@ -526,11 +525,11 @@ PRODUCT_TYPE_CONTEXTS["gaming"] = {
 
 ---
 
-## 8. Analysis Guide
+## 8. 분석 가이드
 
-### 8.1 Getting Started
+### 8.1 시작하기
 
-1. **PA 또는 Stream 탭 선택**
+1. **PA 또는 스트림 탭 선택**
 2. **문제 선택** (난이도별 정렬)
 3. **스키마 확인** (테이블/컬럼 정보)
 4. **SQL 작성** (Monaco 에디터)
@@ -538,7 +537,7 @@ PRODUCT_TYPE_CONTEXTS["gaming"] = {
 6. **제출** (채점)
 7. **피드백 요청** (AI 리뷰)
 
-### 8.2 Problem Example
+### 8.2 문제 예시
 
 ```
 [PM팀 요청]
@@ -548,20 +547,20 @@ D1 재방문자 수(d1_retained), D1 리텐션율(d1_retention) 컬럼이 필요
 가입일 기준 내림차순 정렬해주세요.
 ```
 
-### 8.3 Problem Categories
+### 8.3 문제 유형
 
-| Category | Difficulty | Description | SQL Techniques |
-|----------|------------|-------------|----------------|
-| Funnel Analysis | Easy~Medium | 전환율, 이탈 구간 | COUNT, GROUP BY |
-| Retention Analysis | Medium | Day N Retention | DATE_TRUNC, LAG |
-| Cohort Analysis | Medium~Hard | 가입 시점별 패턴 | Window Functions |
-| Segment Analysis | Medium | 그룹별 비교 | CASE WHEN, JOIN |
-| Revenue Analysis | Easy~Hard | ARPU, LTV | SUM, AVG |
-| Marketing Analysis | Medium | 채널별 성과 | UNION, CTE |
+| 유형 | 난이도 | 설명 | SQL 기법 |
+|------|--------|------|----------|
+| 퍼널 분석 | 쉬움~보통 | 전환율, 이탈 구간 | COUNT, GROUP BY |
+| 리텐션 분석 | 보통 | Day N 리텐션 | DATE_TRUNC, LAG |
+| 코호트 분석 | 보통~어려움 | 가입 시점별 패턴 | 윈도우 함수 |
+| 세그먼트 분석 | 보통 | 그룹별 비교 | CASE WHEN, JOIN |
+| 매출 분석 | 쉬움~어려움 | ARPU, LTV | SUM, AVG |
+| 마케팅 분석 | 보통 | 채널별 성과 | UNION, CTE |
 
-### 8.4 Data Schema
+### 8.4 데이터 스키마
 
-#### PA Tables
+#### PA 테이블
 
 ```sql
 pa_users (
@@ -594,7 +593,7 @@ pa_orders (
 )
 ```
 
-#### Stream Tables
+#### 스트림 테이블
 
 ```sql
 stream_events (
@@ -613,10 +612,10 @@ stream_daily_metrics (
 )
 ```
 
-### 8.5 Event Catalog (Commerce)
+### 8.5 이벤트 목록 (커머스 예시)
 
-| Event | Description |
-|-------|-------------|
+| 이벤트 | 설명 |
+|--------|------|
 | `page_view` | 페이지 조회 |
 | `view_product` | 상품 조회 |
 | `view_review` | 리뷰 조회 |
@@ -635,53 +634,53 @@ stream_daily_metrics (
 
 ---
 
-## 9. Documentation
+## 9. 관련 문서
 
-| Document | Path | Description |
-|----------|------|-------------|
-| Event Tracking Guide | [docs/EVENT_TRACKING_GUIDE.md](./docs/EVENT_TRACKING_GUIDE.md) | Implementation Guide |
-| Event Design Guideline | [docs/EVENT_DESIGN_GUIDELINE.md](./docs/EVENT_DESIGN_GUIDELINE.md) | Design Specification |
-| API Documentation | http://localhost:8000/docs | Swagger UI |
-
----
-
-## 10. Roadmap
-
-### v1.0 (Current)
-- [x] PA/Stream Problem Solving
-- [x] Auto Grading
-- [x] AI Feedback (Gemini)
-- [x] 5 Product Types
-- [x] Event Tracking
-
-### v1.1 (Planned)
-- [ ] User Authentication (Google/Kakao)
-- [ ] Problem Bookmarks
-- [ ] Submission History Persistence
-- [ ] Leaderboard
-
-### v2.0 (Future)
-- [ ] Custom Problem Creation
-- [ ] Team/Group Features
-- [ ] Learning Curriculum
-- [ ] Certificate Issuance
+| 문서 | 경로 | 설명 |
+|------|------|------|
+| 이벤트 트래킹 가이드 | [docs/EVENT_TRACKING_GUIDE.md](./docs/EVENT_TRACKING_GUIDE.md) | 구현 가이드 |
+| 이벤트 설계 가이드라인 | [docs/EVENT_DESIGN_GUIDELINE.md](./docs/EVENT_DESIGN_GUIDELINE.md) | 설계 명세 |
+| API 문서 | http://localhost:8000/docs | Swagger UI |
 
 ---
 
-## License
+## 10. 로드맵
+
+### v1.0 (현재)
+- [x] PA/스트림 문제 풀이
+- [x] 자동 채점
+- [x] AI 피드백 (Gemini)
+- [x] 5가지 프로덕트 타입
+- [x] 이벤트 트래킹
+
+### v1.1 (예정)
+- [ ] 사용자 인증 (Google/Kakao)
+- [ ] 문제 북마크
+- [ ] 풀이 기록 저장
+- [ ] 리더보드
+
+### v2.0 (계획)
+- [ ] 커스텀 문제 생성
+- [ ] 팀/그룹 기능
+- [ ] 학습 커리큘럼
+- [ ] 수료증 발급
+
+---
+
+## 라이선스
 
 Internal Use Only
 
 ---
 
-## Contributing
+## 기여 방법
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. 저장소 포크
+2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
+3. 변경사항 커밋 (`git commit -m 'Add some amazing feature'`)
+4. 브랜치 푸시 (`git push origin feature/amazing-feature`)
+5. Pull Request 생성
 
 ---
 
-**Built with ❤️ for aspiring product analysts**
+**프로덕트 분석가를 꿈꾸는 모든 분들을 위해 ❤️**
