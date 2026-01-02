@@ -55,6 +55,7 @@ export const statsApi = {
         api.get('/stats/history', { params: { limit, data_type: dataType } }),
     leaderboard: (limit: number = 20) =>
         api.get('/stats/leaderboard', { params: { limit } }),
+    reset: () => api.delete('/stats/reset'),
 };
 
 // 관리자 API
@@ -75,6 +76,13 @@ export const adminApi = {
     getUsers: () => api.get('/admin/users'),
     toggleAdmin: (userId: string) => api.patch(`/admin/users/${userId}/admin`),
     deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
+    // API 사용량
+    getApiUsage: (days: number = 7, limit: number = 100) =>
+        api.get('/admin/api-usage', { params: { days, limit } }),
+    // 문제 파일 목록
+    getProblemFiles: () => api.get('/admin/problem-files'),
+    // 스케줄러 수동 실행
+    runSchedulerJob: (jobType: string) => api.post('/admin/run-scheduler-job', null, { params: { job_type: jobType } }),
 };
 
 // 인증 API

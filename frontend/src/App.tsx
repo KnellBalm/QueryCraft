@@ -24,9 +24,16 @@ function App() {
   useEffect(() => {
     // Analytics 초기화
     initAnalytics();
-
-    statsApi.me().then(res => setStats(res.data)).catch(() => { });
   }, []);
+
+  // 로그인 상태에 따른 stats 로드
+  useEffect(() => {
+    if (user) {
+      statsApi.me().then(res => setStats(res.data)).catch(() => setStats(null));
+    } else {
+      setStats(null);
+    }
+  }, [user]);
 
   return (
     <BrowserRouter>
@@ -46,9 +53,8 @@ function App() {
             </NavLink>
           </nav>
           <div className="user-stats">
-            {stats && (
+            {user && stats && (
               <>
-                <NavLink to="/stats" className="stats-link">📈 성적</NavLink>
                 <span className="streak">🔥 {stats.streak}일</span>
                 <span className="level">{stats.level}</span>
                 <span className="correct">✅ {stats.correct}</span>
@@ -199,8 +205,6 @@ function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [datasetVersions, setDatasetVersions] = useState<any[]>([]);
-  const [schedulerLogs, setSchedulerLogs] = useState<string[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
 
   // 시스템 로그 뷰어
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
@@ -223,13 +227,18 @@ function AdminPage() {
 
   // 사용자 관리
   const [users, setUsers] = useState<any[]>([]);
-  const [showUsers, setShowUsers] = useState(false);
+  const [showUsers, setShowUsers] = useState(true);  // 항상 열려있음
 
   const loadUsers = () => {
     adminApi.getUsers()
       .then(res => setUsers(res.data.users || []))
       .catch(() => setUsers([]));
   };
+
+  // 페이지 로드 시 사용자 목록 자동 로드
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   const handleToggleAdmin = async (userId: string) => {
     try {
@@ -263,14 +272,54 @@ function AdminPage() {
       .catch(() => { });
   };
 
-  const loadSchedulerLogs = () => {
-    adminApi.schedulerLogs(30)
-      .then(res => setSchedulerLogs(res.data.logs || []))
-      .catch(() => setSchedulerLogs([]));
+
+  // API 사용량
+  const [apiUsage, setApiUsage] = useState<any>(null);
+  const [showApiUsage, setShowApiUsage] = useState(false);
+
+  const loadApiUsage = () => {
+    adminApi.getApiUsage(7, 50)
+      .then(res => setApiUsage(res.data))
+      .catch(() => setApiUsage(null));
+  };
+
+  // 문제 파일 목록
+  const [problemFiles, setProblemFiles] = useState<any[]>([]);
+  const [showProblemFiles, setShowProblemFiles] = useState(false);
+
+  const loadProblemFiles = () => {
+    adminApi.getProblemFiles()
+      .then(res => setProblemFiles(res.data.files || []))
+      .catch(() => setProblemFiles([]));
+  };
+
+  // 스케줄러 상태
+  const [schedulerStatus, setSchedulerStatus] = useState<any>(null);
+
+  const loadSchedulerStatus = () => {
+    adminApi.schedulerStatus()
+      .then(res => setSchedulerStatus(res.data))
+      .catch(() => setSchedulerStatus(null));
+  };
+
+  const runSchedulerJob = async (jobType: string) => {
+    setLoading(true);
+    try {
+      const res = await adminApi.runSchedulerJob(jobType);
+      setMessage(res.data.message || '완료');
+      loadSchedulerStatus();
+      loadProblemFiles();
+    } catch (e) {
+      setMessage('실행 실패');
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     refreshStatus();
+    loadApiUsage();
+    loadProblemFiles();
+    loadSchedulerStatus();
   }, []);
 
   const generateProblems = async () => {
@@ -341,59 +390,8 @@ function AdminPage() {
         )}
       </section>
 
-      <section className="admin-section">
-        <h2>⏰ 스케줄러 설정</h2>
-        <div className="status-grid">
-          <div className="status-item">
-            <span>실행 주기</span>
-            <span>매일 (24시간)</span>
-          </div>
-          <div className="status-item">
-            <span>PA 데이터 갱신</span>
-            <span>매일</span>
-          </div>
-          <div className="status-item">
-            <span>PA 문제 생성</span>
-            <span>매일</span>
-          </div>
-          <div className="status-item">
-            <span>Stream 데이터 갱신</span>
-            <span>매주 일요일</span>
-          </div>
-        </div>
-        <div style={{ marginTop: '12px' }}>
-          <button onClick={() => { setShowLogs(!showLogs); if (!showLogs) loadSchedulerLogs(); }}>
-            {showLogs ? '📋 로그 숨기기' : '📋 스케줄러 로그 보기'}
-          </button>
-        </div>
-        {showLogs && (
-          <div style={{
-            marginTop: '12px',
-            background: '#1e1e1e',
-            color: '#0f0',
-            padding: '12px',
-            borderRadius: '8px',
-            maxHeight: '300px',
-            overflow: 'auto',
-            fontSize: '12px',
-            fontFamily: 'monospace'
-          }}>
-            {schedulerLogs.length > 0 ? (
-              schedulerLogs.map((log, i) => <div key={i}>{log}</div>)
-            ) : (
-              <div>로그를 불러오는 중...</div>
-            )}
-            <button
-              onClick={loadSchedulerLogs}
-              style={{ marginTop: '8px', fontSize: '11px' }}
-            >
-              🔄 새로고침
-            </button>
-          </div>
-        )}
-      </section>
 
-      <section className="admin-section">
+      {/* 오늘의 문제 현황은 유지 */}      <section className="admin-section">
         <h2>� 오늘의 문제 현황 ({today})</h2>
         {status?.today_problems ? (
           <div className="problems-status">
@@ -418,27 +416,8 @@ function AdminPage() {
         )}
       </section>
 
-      <section className="admin-section">
-        <h2>📊 스케줄러 히스토리</h2>
-        {status?.scheduler_sessions?.length > 0 ? (
-          <table className="admin-table">
-            <thead>
-              <tr><th>날짜</th><th>상태</th><th>생성 시각</th></tr>
-            </thead>
-            <tbody>
-              {status.scheduler_sessions.map((s: any) => (
-                <tr key={s.session_date}>
-                  <td>{s.session_date}</td>
-                  <td className={s.status === 'GENERATED' ? 'ok' : ''}>{s.status}</td>
-                  <td>{s.generated_at ? new Date(s.generated_at).toLocaleString() : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>스케줄러 기록이 없습니다.</p>
-        )}
-      </section>
+
+      {/* 스케줄러 히스토리는 스케줄러 관리 섹션에 통합됨 */}
 
       <section className="admin-section">
         <h2>�🔧 수동 작업</h2>
@@ -585,6 +564,176 @@ function AdminPage() {
           </table>
         ) : (
           <p>테이블 정보를 가져올 수 없습니다.</p>
+        )}
+      </section>
+
+      {/* 문제 생성 이력 섹션 */}
+      <section className="admin-section">
+        <h2>📝 문제 생성 이력</h2>
+        <div style={{ marginBottom: '12px' }}>
+          <button onClick={() => { setShowProblemFiles(!showProblemFiles); loadProblemFiles(); }}>
+            {showProblemFiles ? '📋 목록 숨기기' : '📋 파일 목록 보기'}
+          </button>
+        </div>
+        {showProblemFiles && problemFiles.length > 0 && (
+          <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+            <table className="admin-table" style={{ fontSize: '0.85rem' }}>
+              <thead>
+                <tr>
+                  <th>타입</th>
+                  <th>파일명</th>
+                  <th>문제 수</th>
+                  <th>크기</th>
+                  <th>생성일시</th>
+                </tr>
+              </thead>
+              <tbody>
+                {problemFiles.map((f: any, i: number) => (
+                  <tr key={i}>
+                    <td>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        background: f.type === 'pa' ? '#3b82f6' : '#10b981',
+                        color: 'white'
+                      }}>
+                        {f.type.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>{f.filename}</td>
+                    <td>{f.problem_count}</td>
+                    <td>{f.size_kb} KB</td>
+                    <td>{new Date(f.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {showProblemFiles && problemFiles.length === 0 && (
+          <p style={{ color: 'var(--text-muted)' }}>문제 파일이 없습니다.</p>
+        )}
+      </section>
+
+      {/* 스케줄러 관리 섹션 */}
+      <section className="admin-section">
+        <h2>⏰ 스케줄러 관리</h2>
+        <div className="status-grid" style={{ marginBottom: '16px' }}>
+          <div className="status-item">
+            <span>스케줄러 상태</span>
+            <span className={schedulerStatus?.running ? 'ok' : 'error'}>
+              {schedulerStatus?.running ? '🟢 실행 중' : '🔴 중지됨'}
+            </span>
+          </div>
+        </div>
+
+        {/* 스케줄 작업 목록 */}
+        {schedulerStatus?.jobs && schedulerStatus.jobs.length > 0 && (
+          <table className="admin-table" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
+            <thead>
+              <tr>
+                <th>작업명</th>
+                <th>다음 실행</th>
+                <th>수동 실행</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedulerStatus.jobs.map((job: any, i: number) => (
+                <tr key={i}>
+                  <td>{job.name}</td>
+                  <td>{job.next_run}</td>
+                  <td>
+                    <button
+                      onClick={() => runSchedulerJob(job.id.replace('_generation', '').replace('_job', ''))}
+                      disabled={loading}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                    >
+                      ▶️ 실행
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* 마지막 실행 시간 */}
+        {schedulerStatus?.last_run_times && (
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <p><strong>마지막 실행:</strong></p>
+            <ul style={{ marginLeft: '20px' }}>
+              <li>평일 작업: {schedulerStatus.last_run_times.weekday_job || '없음'}</li>
+              <li>일요일 작업: {schedulerStatus.last_run_times.sunday_job || '없음'}</li>
+              <li>정리 작업: {schedulerStatus.last_run_times.cleanup_job || '없음'}</li>
+            </ul>
+          </div>
+        )}
+
+        <div style={{ marginTop: '12px' }}>
+          <button onClick={loadSchedulerStatus}>🔄 상태 새로고침</button>
+        </div>
+      </section>
+
+      {/* API 사용량 섹션 */}
+      <section className="admin-section">
+        <h2>💰 AI API 사용량</h2>
+        <div style={{ marginBottom: '12px' }}>
+          <button onClick={() => { setShowApiUsage(!showApiUsage); loadApiUsage(); }}>
+            {showApiUsage ? '📊 사용량 숨기기' : '📊 사용량 보기'}
+          </button>
+        </div>
+        {showApiUsage && apiUsage && (
+          <div>
+            <div className="status-grid" style={{ marginBottom: '16px' }}>
+              <div className="status-item">
+                <span>총 호출 수</span>
+                <span className="ok">{apiUsage.summary?.total_calls || 0}회</span>
+              </div>
+              <div className="status-item">
+                <span>총 토큰</span>
+                <span>{(apiUsage.summary?.total_tokens || 0).toLocaleString()}</span>
+              </div>
+              <div className="status-item">
+                <span>예상 비용 (7일)</span>
+                <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
+                  ${apiUsage.summary?.estimated_cost_usd || 0}
+                </span>
+              </div>
+              <div className="status-item">
+                <span>입력 토큰</span>
+                <span>{(apiUsage.summary?.input_tokens || 0).toLocaleString()}</span>
+              </div>
+              <div className="status-item">
+                <span>출력 토큰</span>
+                <span>{(apiUsage.summary?.output_tokens || 0).toLocaleString()}</span>
+              </div>
+            </div>
+            {apiUsage.logs && apiUsage.logs.length > 0 && (
+              <div style={{ maxHeight: '200px', overflow: 'auto' }}>
+                <table className="admin-table" style={{ fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr>
+                      <th>시간</th>
+                      <th>용도</th>
+                      <th>모델</th>
+                      <th>토큰</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiUsage.logs.slice(0, 20).map((log: any, i: number) => (
+                      <tr key={i}>
+                        <td>{new Date(log.timestamp).toLocaleString()}</td>
+                        <td>{log.purpose}</td>
+                        <td>{log.model}</td>
+                        <td>{log.total_tokens}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </section>
 

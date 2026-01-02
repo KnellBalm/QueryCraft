@@ -8,7 +8,12 @@ interface User {
     name: string;
     nickname?: string;
     is_admin?: boolean;
+    xp?: number;
+    level?: number;
+    created_at?: string;
 }
+
+import { analytics } from '../services/analytics';
 
 interface AuthContextType {
     user: User | null;
@@ -41,6 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         refreshUser().finally(() => setIsLoading(false));
     }, []);
+
+    // Analytics: 사용자 식별 및 디버그 모드 설정
+    useEffect(() => {
+        if (user) {
+            analytics.setDebugMode(!!user.is_admin);
+            analytics.identify(user.id, {
+                email: user.email,
+                user_type: user.is_admin ? 'admin' : 'free',
+                signup_date: user.created_at,
+                current_level: user.level?.toString(),
+                current_xp: user.xp,
+            });
+        }
+    }, [user]);
 
     const login = async (email: string, password: string) => {
         try {
@@ -76,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // ignore
         }
         setUser(null);
+        analytics.reset();
     };
 
     return (

@@ -399,13 +399,14 @@ async def get_me(request: Request):
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df(
-                "SELECT is_admin, xp, level FROM users WHERE id = %s",
+                "SELECT is_admin, xp, level, created_at FROM users WHERE id = %s",
                 [user["id"]]
             )
             if len(df) > 0:
                 user["is_admin"] = bool(df.iloc[0].get("is_admin", False))
                 user["xp"] = int(df.iloc[0].get("xp", 0))
                 user["level"] = int(df.iloc[0].get("level", 1))
+                user["created_at"] = df.iloc[0].get("created_at").isoformat() if df.iloc[0].get("created_at") else None
     except Exception:
         user["is_admin"] = False
     

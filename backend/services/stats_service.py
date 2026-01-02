@@ -1,25 +1,34 @@
 # backend/services/stats_service.py
-"""통계 서비스 - PostgreSQL submissions 테이블 사용"""
+"""통계 서비스 - PostgreSQL submissions 테이블 사용 (개인화)"""
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 from backend.services.database import postgres_connection
 from backend.schemas.submission import UserStats, SubmissionHistory
 
 
-def get_user_stats() -> UserStats:
-    """사용자 통계 조회"""
-    streak = get_streak()
-    level_info = get_level()
+def get_user_stats(user_id: Optional[str] = None) -> UserStats:
+    """사용자 통계 조회 (개인화)"""
+    streak = get_streak(user_id)
+    level_info = get_level(user_id)
     
     try:
         with postgres_connection() as pg:
-            df = pg.fetch_df("""
-                SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-                FROM submissions
-            """)
+            if user_id:
+                df = pg.fetch_df("""
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+                    FROM submissions
+                    WHERE user_id = %s
+                """, [user_id])
+            else:
+                df = pg.fetch_df("""
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+                    FROM submissions
+                """)
         
         total = int(df.iloc[0]["total"]) if len(df) > 0 else 0
         correct = int(df.iloc[0]["correct"]) if len(df) > 0 and df.iloc[0]["correct"] else 0
@@ -40,16 +49,25 @@ def get_user_stats() -> UserStats:
     )
 
 
-def get_streak() -> dict:
-    """연속 출석 스트릭 계산"""
+def get_streak(user_id: Optional[str] = None) -> dict:
+    """연속 출석 스트릭 계산 (개인화)"""
     try:
         with postgres_connection() as pg:
-            df = pg.fetch_df("""
-                SELECT DISTINCT session_date::date as session_date
-                FROM submissions 
-                ORDER BY session_date DESC 
-                LIMIT 30
-            """)
+            if user_id:
+                df = pg.fetch_df("""
+                    SELECT DISTINCT session_date::date as session_date
+                    FROM submissions 
+                    WHERE user_id = %s
+                    ORDER BY session_date DESC 
+                    LIMIT 30
+                """, [user_id])
+            else:
+                df = pg.fetch_df("""
+                    SELECT DISTINCT session_date::date as session_date
+                    FROM submissions 
+                    ORDER BY session_date DESC 
+                    LIMIT 30
+                """)
         dates = {row["session_date"].isoformat() if hasattr(row["session_date"], 'isoformat') else str(row["session_date"]) for _, row in df.iterrows()}
     except Exception:
         dates = set()
@@ -69,32 +87,40 @@ def get_streak() -> dict:
     return {"current": streak, "max": len(dates)}
 
 
-def get_level() -> dict:
-    """점수 기반 레벨 계산 (난이도별 차등 점수)"""
-    # 난이도별 점수: easy=10, medium=25, hard=50
-    DIFFICULTY_SCORES = {
-        'easy': 10,
-        'medium': 25,
-        'hard': 50
-    }
-    
+def get_level(user_id: Optional[str] = None) -> dict:
+    """점수 기반 레벨 계산 (개인화)"""
     try:
         with postgres_connection() as pg:
-            # 정답인 제출의 점수 합계 계산
-            df = pg.fetch_df("""
-                SELECT 
-                    COALESCE(SUM(
-                        CASE difficulty
-                            WHEN 'easy' THEN 10
-                            WHEN 'medium' THEN 25
-                            WHEN 'hard' THEN 50
-                            ELSE 25
-                        END
-                    ), 0) as total_score,
-                    COUNT(*) as correct_count
-                FROM submissions
-                WHERE is_correct = true
-            """)
+            if user_id:
+                df = pg.fetch_df("""
+                    SELECT 
+                        COALESCE(SUM(
+                            CASE difficulty
+                                WHEN 'easy' THEN 10
+                                WHEN 'medium' THEN 25
+                                WHEN 'hard' THEN 50
+                                ELSE 25
+                            END
+                        ), 0) as total_score,
+                        COUNT(*) as correct_count
+                    FROM submissions
+                    WHERE is_correct = true AND user_id = %s
+                """, [user_id])
+            else:
+                df = pg.fetch_df("""
+                    SELECT 
+                        COALESCE(SUM(
+                            CASE difficulty
+                                WHEN 'easy' THEN 10
+                                WHEN 'medium' THEN 25
+                                WHEN 'hard' THEN 50
+                                ELSE 25
+                            END
+                        ), 0) as total_score,
+                        COUNT(*) as correct_count
+                    FROM submissions
+                    WHERE is_correct = true
+                """)
         total_score = int(df.iloc[0]["total_score"]) if len(df) > 0 else 0
         correct_count = int(df.iloc[0]["correct_count"]) if len(df) > 0 else 0
     except Exception:
@@ -123,47 +149,58 @@ def get_level() -> dict:
             next_threshold = threshold
             break
     else:
-        # Master 레벨 달성 시
         next_threshold = total_score
+    
+    progress = 0
+    if next_threshold > current_threshold:
+        progress = int((total_score - current_threshold) / (next_threshold - current_threshold) * 100)
     
     return {
         "name": level_name,
         "score": total_score,
-        "correct": correct_count,
         "next": next_threshold,
-        "current": current_threshold,
-        "progress": min(100, int((total_score - current_threshold) / max(1, next_threshold - current_threshold) * 100)) if next_threshold > current_threshold else 100
+        "correct": correct_count,
+        "progress": min(progress, 100)
     }
 
 
-def get_submission_history(limit: int = 20, data_type: str = None) -> List[SubmissionHistory]:
-    """제출 이력 조회 (data_type으로 필터링 가능)"""
+def get_submission_history(limit: int = 20, data_type: str = None, user_id: Optional[str] = None) -> List[SubmissionHistory]:
+    """제출 이력 조회 (개인화)"""
     try:
         with postgres_connection() as pg:
-            where_clause = ""
+            conditions = []
+            params = []
+            
+            if user_id:
+                conditions.append("user_id = %s")
+                params.append(user_id)
+            
             if data_type:
-                where_clause = f"WHERE data_type = '{data_type}'"
+                conditions.append("data_type = %s")
+                params.append(data_type)
+            
+            where_clause = ""
+            if conditions:
+                where_clause = "WHERE " + " AND ".join(conditions)
+            
+            params.append(limit)
             
             df = pg.fetch_df(f"""
-                SELECT problem_id, session_date::date as session_date, is_correct, 
-                       submitted_at, feedback, data_type
+                SELECT problem_id, data_type, is_correct, feedback, submitted_at
                 FROM submissions
                 {where_clause}
                 ORDER BY submitted_at DESC
-                LIMIT {limit}
-            """)
-        
+                LIMIT %s
+            """, params)
         return [
             SubmissionHistory(
                 problem_id=row["problem_id"],
-                session_date=str(row["session_date"]),
+                data_type=row["data_type"],
                 is_correct=row["is_correct"],
-                submitted_at=row["submitted_at"].isoformat() if row["submitted_at"] else None,
-                feedback=row.get("feedback")
+                feedback=row["feedback"] or "",
+                submitted_at=(row["submitted_at"].isoformat() if hasattr(row["submitted_at"], "isoformat") else str(row["submitted_at"]))
             )
             for _, row in df.iterrows()
         ]
     except Exception:
         return []
-
-

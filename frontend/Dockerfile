@@ -7,6 +7,8 @@ COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY . .
+ARG VITE_MIXPANEL_TOKEN
+ENV VITE_MIXPANEL_TOKEN=$VITE_MIXPANEL_TOKEN
 RUN npm run build
 
 # Production

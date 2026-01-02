@@ -1,8 +1,11 @@
 # backend/scheduler.py
-"""백엔드 내장 스케줄러 - APScheduler 기반 (KST 9:00 = UTC 0:00)"""
+"""백엔드 내장 스케줄러 - APScheduler 기반
+- 월~금 새벽 1:00 (KST): PA 문제, Stream 문제, PA 데이터 생성
+- 일요일 새벽 1:00 (KST): Stream 데이터 생성
+"""
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import os
 import glob
 
@@ -16,11 +19,18 @@ scheduler = BackgroundScheduler()
 # 보관 일수 (이전 문제 파일 및 정답 테이블)
 RETENTION_DAYS = 30
 
+# 마지막 실행 시간 기록
+last_run_times = {
+    "weekday_job": None,
+    "sunday_job": None,
+    "cleanup_job": None
+}
+
 
 def cleanup_old_data():
     """오래된 문제 파일과 정답 테이블 정리"""
     cutoff_date = date.today() - timedelta(days=RETENTION_DAYS)
-    cutoff_month = (date.today() - timedelta(days=90)).strftime("%Y-%m")  # 3개월 전
+    cutoff_month = (date.today() - timedelta(days=90)).strftime("%Y-%m")
     logger.info(f"[SCHEDULER] Cleaning up data older than {cutoff_date}")
     
     deleted_files = 0
@@ -50,11 +60,10 @@ def cleanup_old_data():
         for filepath in monthly_files:
             filename = os.path.basename(filepath)
             try:
-                # pa_2025-12.json 또는 stream_2025-12.json 형식
                 if filename.startswith("pa_"):
-                    month_str = filename[3:10]  # pa_YYYY-MM
+                    month_str = filename[3:10]
                 elif filename.startswith("stream_"):
-                    month_str = filename[7:14]  # stream_YYYY-MM
+                    month_str = filename[7:14]
                 else:
                     continue
                 
@@ -65,7 +74,7 @@ def cleanup_old_data():
             except (ValueError, IndexError):
                 continue
         
-        # 3. 오래된 grading 테이블 삭제 (날짜 prefix가 있는 테이블)
+        # 3. 오래된 grading 테이블 삭제
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
             tables_df = pg.fetch_df("""
@@ -75,11 +84,9 @@ def cleanup_old_data():
             
             for _, row in tables_df.iterrows():
                 table_name = row["table_name"]
-                # expected_2025-12-30_xxx 형식에서 날짜 추출
                 try:
-                    # expected_YYYY-MM-DD_... 형식
                     if len(table_name) > 19 and table_name[9:19].count("-") == 2:
-                        date_str = table_name[9:19]  # expected_YYYY-MM-DD
+                        date_str = table_name[9:19]
                         table_date = date.fromisoformat(date_str)
                         if table_date < cutoff_date:
                             pg.execute(f"DROP TABLE IF EXISTS grading.{table_name}")
@@ -87,6 +94,8 @@ def cleanup_old_data():
                             logger.info(f"[CLEANUP] Dropped old grading table: {table_name}")
                 except (ValueError, IndexError):
                     continue
+        
+        last_run_times["cleanup_job"] = datetime.now()
         
         if deleted_files > 0 or deleted_tables > 0:
             db_log(
@@ -101,16 +110,21 @@ def cleanup_old_data():
         logger.error(f"[CLEANUP] Error: {str(e)}")
 
 
-def run_daily_problem_generation():
-    """매일 문제 생성 작업"""
-    # 컨테이너가 UTC 기준이므로, 한국 시간 기준 오늘 날짜 계산
-    # UTC 0:00 = KST 9:00이므로 date.today()는 정확히 한국 날짜
+def run_weekday_generation():
+    """월~금 새벽 1:00 실행: PA 문제, Stream 문제, PA 데이터 생성"""
     today = date.today()
-    logger.info(f"[SCHEDULER] Starting daily problem generation for {today}")
+    weekday = today.weekday()  # 0=월, 6=일
+    
+    # 주말 체크 (혹시나)
+    if weekday >= 5:  # 토(5), 일(6)
+        logger.info(f"[SCHEDULER] Skipping weekday job on weekend: {today}")
+        return
+    
+    logger.info(f"[SCHEDULER] Starting weekday generation for {today} (weekday={weekday})")
     
     db_log(
         category=LogCategory.SCHEDULER,
-        message=f"일일 문제 생성 시작: {today}",
+        message=f"평일 문제/데이터 생성 시작: {today}",
         level=LogLevel.INFO,
         source="scheduler"
     )
@@ -121,13 +135,12 @@ def run_daily_problem_generation():
         
         pg = PostgresEngine(PostgresEnv().dsn())
         
-        # PA 문제 생성
+        # 1. PA 문제 생성
         pa_problem_path = f"problems/daily/{today}.json"
         if not os.path.exists(pa_problem_path):
             logger.info("[SCHEDULER] Generating PA problems...")
             from problems.generator import generate as gen_pa_problems
             gen_pa_problems(today, pg)
-            
             db_log(
                 category=LogCategory.PROBLEM_GENERATION,
                 message=f"PA 문제 생성 완료: {today}",
@@ -137,13 +150,12 @@ def run_daily_problem_generation():
         else:
             logger.info(f"[SCHEDULER] PA problems already exist: {pa_problem_path}")
         
-        # Stream 문제 생성
+        # 2. Stream 문제 생성
         stream_problem_path = f"problems/daily/stream_{today}.json"
         if not os.path.exists(stream_problem_path):
             logger.info("[SCHEDULER] Generating Stream problems...")
             from problems.generator_stream import generate_stream_problems
             generate_stream_problems(today, pg)
-            
             db_log(
                 category=LogCategory.PROBLEM_GENERATION,
                 message=f"Stream 문제 생성 완료: {today}",
@@ -153,21 +165,23 @@ def run_daily_problem_generation():
         else:
             logger.info(f"[SCHEDULER] Stream problems already exist: {stream_problem_path}")
         
+        # 3. PA 데이터 생성 (TODO: 실제 PA 데이터 생성 로직)
+        logger.info("[SCHEDULER] PA data generation would run here (if implemented)")
+        
         pg.close()
         
-        # 오래된 데이터 정리
-        cleanup_old_data()
+        last_run_times["weekday_job"] = datetime.now()
         
         db_log(
             category=LogCategory.SCHEDULER,
-            message=f"일일 문제 생성 완료: {today}",
+            message=f"평일 문제/데이터 생성 완료: {today}",
             level=LogLevel.INFO,
             source="scheduler"
         )
-        logger.info(f"[SCHEDULER] Daily problem generation completed for {today}")
+        logger.info(f"[SCHEDULER] Weekday generation completed for {today}")
         
     except Exception as e:
-        error_msg = f"문제 생성 실패: {str(e)}"
+        error_msg = f"평일 생성 실패: {str(e)}"
         logger.error(f"[SCHEDULER] {error_msg}")
         db_log(
             category=LogCategory.SCHEDULER,
@@ -177,30 +191,125 @@ def run_daily_problem_generation():
         )
 
 
-def start_scheduler():
-    """스케줄러 시작 - UTC 0시 (= KST 9시)"""
-    # 컨테이너는 UTC 기준, KST 9:00 = UTC 0:00
-    run_hour = int(os.getenv("RUN_HOUR", "0"))  # 기본값 0 (= KST 9:00)
+def run_sunday_generation():
+    """일요일 새벽 1:00 실행: Stream 데이터 생성"""
+    today = date.today()
+    weekday = today.weekday()
     
-    scheduler.add_job(
-        run_daily_problem_generation,
-        CronTrigger(hour=run_hour, minute=0),
-        id="daily_problem_generation",
-        replace_existing=True
-    )
+    # 일요일(6) 체크
+    if weekday != 6:
+        logger.info(f"[SCHEDULER] Skipping sunday job on non-sunday: {today}")
+        return
     
-    scheduler.start()
-    logger.info(f"[SCHEDULER] Started - daily job at UTC {run_hour}:00 (KST {run_hour+9}:00)")
+    logger.info(f"[SCHEDULER] Starting Sunday Stream data generation for {today}")
     
     db_log(
         category=LogCategory.SCHEDULER,
-        message=f"스케줄러 시작됨 - 매일 KST {run_hour+9}:00 실행",
+        message=f"일요일 Stream 데이터 생성 시작: {today}",
         level=LogLevel.INFO,
         source="scheduler"
     )
     
-    # 시작 시 오늘 문제 체크
-    run_daily_problem_generation()
+    try:
+        # Stream 데이터 생성 (TODO: 실제 Stream 데이터 생성 로직)
+        logger.info("[SCHEDULER] Stream data generation would run here (if implemented)")
+        
+        last_run_times["sunday_job"] = datetime.now()
+        
+        db_log(
+            category=LogCategory.SCHEDULER,
+            message=f"일요일 Stream 데이터 생성 완료: {today}",
+            level=LogLevel.INFO,
+            source="scheduler"
+        )
+        logger.info(f"[SCHEDULER] Sunday generation completed for {today}")
+        
+    except Exception as e:
+        error_msg = f"일요일 생성 실패: {str(e)}"
+        logger.error(f"[SCHEDULER] {error_msg}")
+        db_log(
+            category=LogCategory.SCHEDULER,
+            message=error_msg,
+            level=LogLevel.ERROR,
+            source="scheduler"
+        )
+
+
+def get_scheduler_status():
+    """스케줄러 상태 반환"""
+    jobs = []
+    for job in scheduler.get_jobs():
+        next_run = job.next_run_time
+        jobs.append({
+            "id": job.id,
+            "name": job.name or job.id,
+            "next_run": next_run.isoformat() if next_run else None,
+            "last_run": last_run_times.get(job.id.replace("_generation", "_job"), {})
+        })
+    
+    return {
+        "running": scheduler.running,
+        "jobs": jobs,
+        "last_run_times": {
+            k: v.isoformat() if v else None 
+            for k, v in last_run_times.items()
+        }
+    }
+
+
+def start_scheduler():
+    """스케줄러 시작
+    - KST 1:00 = UTC 16:00 (전날)
+    - 월~금: day_of_week='0-4' (APScheduler: 0=월)
+    - 일요일: day_of_week='6'
+    """
+    
+    # 1. 평일 작업: 월~금 KST 1:00 (= UTC 16:00 전날)
+    # KST 월요일 1:00 = UTC 일요일 16:00, 따라서 UTC 기준으로는 일~목
+    # APScheduler: 0=월, 6=일이므로 sun-thu = 6,0,1,2,3
+    scheduler.add_job(
+        run_weekday_generation,
+        CronTrigger(hour=16, minute=0, day_of_week='6,0,1,2,3'),  # UTC 일~목 = KST 월~금
+        id="weekday_generation",
+        name="평일 문제/데이터 생성 (월~금 KST 1:00)",
+        replace_existing=True
+    )
+    
+    # 2. 일요일 작업: KST 1:00 (= UTC 토요일 16:00)
+    scheduler.add_job(
+        run_sunday_generation,
+        CronTrigger(hour=16, minute=0, day_of_week='5'),  # UTC 토요일 = KST 일요일
+        id="sunday_generation",
+        name="일요일 Stream 데이터 생성 (일 KST 1:00)",
+        replace_existing=True
+    )
+    
+    # 3. 정리 작업: 매일 KST 4:00 (= UTC 19:00 전날)
+    scheduler.add_job(
+        cleanup_old_data,
+        CronTrigger(hour=19, minute=0),
+        id="cleanup_job",
+        name="오래된 데이터 정리 (매일 KST 4:00)",
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logger.info("[SCHEDULER] Started with new schedule:")
+    logger.info("  - 평일 문제/데이터: 월~금 KST 1:00 (UTC 전날 16:00)")
+    logger.info("  - 일요일 Stream: 일 KST 1:00 (UTC 토 16:00)")
+    logger.info("  - 데이터 정리: 매일 KST 4:00 (UTC 전날 19:00)")
+    
+    db_log(
+        category=LogCategory.SCHEDULER,
+        message="스케줄러 시작됨 - 평일 KST 1:00, 일요일 KST 1:00",
+        level=LogLevel.INFO,
+        source="scheduler"
+    )
+    
+    # 시작 시 오늘 작업 체크 (평일인 경우)
+    today = date.today()
+    if today.weekday() < 5:  # 평일
+        run_weekday_generation()
 
 
 def stop_scheduler():

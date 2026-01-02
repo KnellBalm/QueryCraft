@@ -257,6 +257,49 @@ async def get_dataset_versions():
         return {"success": False, "message": str(e), "versions": []}
 
 
+@router.get("/problem-files")
+async def get_problem_files(admin=Depends(require_admin)):
+    """문제 파일 목록 조회"""
+    import os
+    from pathlib import Path
+    from datetime import datetime
+    import json
+    
+    problem_dir = Path("/app/problems/daily")
+    if not problem_dir.exists():
+        problem_dir = Path("problems/daily")
+    
+    files = []
+    
+    try:
+        for f in sorted(problem_dir.glob("*.json"), reverse=True):
+            stat = f.stat()
+            
+            # 문제 개수 확인
+            try:
+                with open(f, 'r') as fp:
+                    data = json.load(fp)
+                    problem_count = len(data) if isinstance(data, list) else 1
+            except:
+                problem_count = 0
+            
+            # 파일 타입 구분
+            file_type = "stream" if f.name.startswith("stream_") else "pa"
+            
+            files.append({
+                "filename": f.name,
+                "type": file_type,
+                "size_kb": round(stat.st_size / 1024, 1),
+                "problem_count": problem_count,
+                "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            })
+        
+        # 최근 30개만 반환
+        return {"success": True, "files": files[:30]}
+    except Exception as e:
+        return {"success": False, "message": str(e), "files": []}
+
+
 @router.get("/scheduler-logs")
 async def get_scheduler_logs(lines: int = 50):
     """스케줄러 로그 조회 (docker logs)"""
@@ -291,33 +334,53 @@ async def get_scheduler_logs(lines: int = 50):
 
 
 @router.get("/scheduler-status")
-async def get_scheduler_status():
-    """스케줄러 상태 조회"""
-    import subprocess
+async def get_scheduler_status_admin(admin=Depends(require_admin)):
+    """스케줄러 상태 조회 (내부 스케줄러)"""
     try:
-        result = subprocess.run(
-            ["docker", "compose", "ps", "scheduler", "--format", "json"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            cwd="/app"
-        )
+        from backend.scheduler import get_scheduler_status, scheduler
+        status = get_scheduler_status()
         
-        import json as json_lib
-        if result.stdout:
-            try:
-                status_data = json_lib.loads(result.stdout)
-                return {
-                    "success": True,
-                    "running": True,
-                    "status": status_data
-                }
-            except:
-                return {"success": True, "running": "scheduler" in result.stdout, "status": result.stdout}
+        # 추가 정보
+        jobs_info = []
+        for job in scheduler.get_jobs():
+            next_run = job.next_run_time
+            jobs_info.append({
+                "id": job.id,
+                "name": job.name or job.id,
+                "next_run": next_run.strftime("%Y-%m-%d %H:%M:%S KST") if next_run else "미정",
+                "trigger": str(job.trigger)
+            })
         
-        return {"success": True, "running": False, "status": None}
+        return {
+            "success": True,
+            "running": status["running"],
+            "jobs": jobs_info,
+            "last_run_times": status["last_run_times"]
+        }
     except Exception as e:
-        return {"success": False, "message": str(e), "running": False}
+        return {"success": False, "message": str(e), "running": False, "jobs": []}
+
+
+@router.post("/run-scheduler-job")
+async def run_scheduler_job(job_type: str, admin=Depends(require_admin)):
+    """스케줄러 작업 수동 실행"""
+    try:
+        if job_type == "weekday":
+            from backend.scheduler import run_weekday_generation
+            run_weekday_generation()
+            return {"success": True, "message": "평일 문제/데이터 생성 작업 실행됨"}
+        elif job_type == "sunday":
+            from backend.scheduler import run_sunday_generation
+            run_sunday_generation()
+            return {"success": True, "message": "일요일 Stream 데이터 생성 작업 실행됨"}
+        elif job_type == "cleanup":
+            from backend.scheduler import cleanup_old_data
+            cleanup_old_data()
+            return {"success": True, "message": "데이터 정리 작업 실행됨"}
+        else:
+            return {"success": False, "message": f"알 수 없는 작업 타입: {job_type}"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 
 @router.post("/reset-submissions")
@@ -441,3 +504,80 @@ async def delete_user(user_id: str, admin=Depends(require_admin)):
             return {"success": True, "message": "사용자가 삭제되었습니다"}
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+@router.get("/api-usage")
+async def get_api_usage(
+    admin=Depends(require_admin),
+    limit: int = Query(100, description="조회할 로그 수"),
+    days: int = Query(7, description="최근 N일")
+):
+    """Gemini API 사용량 조회"""
+    try:
+        with postgres_connection() as pg:
+            # 테이블 존재 확인
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS api_usage_logs (
+                    id SERIAL PRIMARY KEY,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    purpose VARCHAR(100),
+                    model VARCHAR(50),
+                    input_tokens INTEGER DEFAULT 0,
+                    output_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    user_id VARCHAR(100)
+                )
+            """)
+            
+            # 일별 사용량
+            daily_df = pg.fetch_df("""
+                SELECT 
+                    DATE(timestamp) as date,
+                    purpose,
+                    COUNT(*) as call_count,
+                    SUM(total_tokens) as total_tokens
+                FROM api_usage_logs
+                WHERE timestamp >= CURRENT_DATE - INTERVAL '%s days'
+                GROUP BY DATE(timestamp), purpose
+                ORDER BY date DESC, purpose
+            """, [days])
+            
+            # 최근 로그
+            logs_df = pg.fetch_df("""
+                SELECT 
+                    timestamp, purpose, model, input_tokens, output_tokens, total_tokens, user_id
+                FROM api_usage_logs
+                ORDER BY timestamp DESC
+                LIMIT %s
+            """, [limit])
+            
+            # 총계
+            total_df = pg.fetch_df("""
+                SELECT 
+                    COUNT(*) as total_calls,
+                    COALESCE(SUM(total_tokens), 0) as total_tokens,
+                    COALESCE(SUM(input_tokens), 0) as input_tokens,
+                    COALESCE(SUM(output_tokens), 0) as output_tokens
+                FROM api_usage_logs
+                WHERE timestamp >= CURRENT_DATE - INTERVAL '%s days'
+            """, [days])
+            
+            # Gemini 가격 계산 (대략적 - 1.5 Pro 기준 $0.00025/1K input, $0.0005/1K output)
+            total_input = int(total_df.iloc[0]['input_tokens']) if len(total_df) > 0 else 0
+            total_output = int(total_df.iloc[0]['output_tokens']) if len(total_df) > 0 else 0
+            estimated_cost_usd = (total_input / 1000 * 0.00025) + (total_output / 1000 * 0.0005)
+            
+            return {
+                "summary": {
+                    "total_calls": int(total_df.iloc[0]['total_calls']) if len(total_df) > 0 else 0,
+                    "total_tokens": int(total_df.iloc[0]['total_tokens']) if len(total_df) > 0 else 0,
+                    "input_tokens": total_input,
+                    "output_tokens": total_output,
+                    "estimated_cost_usd": round(estimated_cost_usd, 4),
+                    "period_days": days
+                },
+                "daily": daily_df.to_dict('records') if len(daily_df) > 0 else [],
+                "logs": logs_df.to_dict('records') if len(logs_df) > 0 else []
+            }
+    except Exception as e:
+        return {"error": str(e), "summary": {}, "daily": [], "logs": []}

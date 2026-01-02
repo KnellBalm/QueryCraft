@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import json
 import re
+from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 
@@ -22,11 +23,42 @@ client = genai.Client(
 
 MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
 
+
+# -------------------------------------------------
+# API 사용량 로깅
+# -------------------------------------------------
+def log_api_usage(purpose: str, model: str, input_tokens: int = 0, output_tokens: int = 0, user_id: str = None):
+    """Gemini API 사용량을 DB에 로깅"""
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            # 테이블 생성 (없으면)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS api_usage_logs (
+                    id SERIAL PRIMARY KEY,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    purpose VARCHAR(100),
+                    model VARCHAR(50),
+                    input_tokens INTEGER DEFAULT 0,
+                    output_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    user_id VARCHAR(100)
+                )
+            """)
+            pg.execute("""
+                INSERT INTO api_usage_logs (purpose, model, input_tokens, output_tokens, total_tokens, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, [purpose, model, input_tokens, output_tokens, input_tokens + output_tokens, user_id])
+        logger.info(f"API usage logged: {purpose}, tokens={input_tokens + output_tokens}")
+    except Exception as e:
+        logger.error(f"Failed to log API usage: {e}")
+
+
 # -------------------------------------------------
 # 1️⃣ 문제 출제용 (JSON 강제)
 # -------------------------------------------------
-def call_gemini_json(prompt: str) -> list[dict]:
-    logger.info("calling gemini for json generation")
+def call_gemini_json(prompt: str, purpose: str = "problem_generation") -> list[dict]:
+    logger.info(f"calling gemini for {purpose}")
 
     response = client.models.generate_content(
         model=MODEL,
@@ -35,6 +67,13 @@ def call_gemini_json(prompt: str) -> list[dict]:
 
     raw_text = response.text.strip()
     logger.debug(f"raw gemini response:\n{raw_text}")
+    
+    # 토큰 사용량 추정 (정확한 값은 response.usage_metadata에서)
+    input_tokens = len(prompt) // 4  # 대략적 추정
+    output_tokens = len(raw_text) // 4
+    
+    # 사용량 로깅
+    log_api_usage(purpose=purpose, model=MODEL, input_tokens=input_tokens, output_tokens=output_tokens)
 
     # ------------------------------------------------
     # 1. ```json ... ``` 코드블록 우선 추출
@@ -138,6 +177,11 @@ def grade_pa_submission(
     )
 
     feedback = response.text.strip()
+    
+    # 사용량 로깅
+    input_tokens = len(prompt) // 4
+    output_tokens = len(feedback) // 4
+    log_api_usage(purpose="grading_feedback", model=MODEL, input_tokens=input_tokens, output_tokens=output_tokens)
 
     logger.info("gemini grading completed")
 

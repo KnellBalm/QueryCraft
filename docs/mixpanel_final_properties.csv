@@ -1,0 +1,26 @@
+Entity Type,Entity Name,Entity Display Name,Entity Description,Event Volume,Event Query Volume,Event Tags,Event Hidden,Event Dropped,Event First Queried By,Event First Queried,Event Last Queried By,Event Last Queried,Property Name,Property Display Name,Property Description,Property Volume,Property Query Volume,Property Type,Property Example Values,Property Hidden,Property Dropped,Property Required,Property Sensitive
+,,,,,,,,,,,,,problem_id,문제 ID,문제의 고유 식별값,,,string,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,난이도,"문제의 난이도 (easy, medium, hard)",,,string,medium,False,False,False,False
+,,,,,,,,,,,,,is_daily_problem,오늘의 문제 여부,매일 제공되는 문제인지 여부,,,boolean,true,False,False,False,False
+,,,,,,,,,,,,,data_type,학습 모드 구분,"분석 학습(pa), 스트림(stream), 무한 연습(practice) 구분",,,string,pa,False,False,False,False
+,,,,,,,,,,,,,attempt_count,시도 횟수,현재 문제에 대해 정답을 맞추기까지 제출한 횟수,,,number,1,False,False,False,False
+,,,,,,,,,,,,,execution_count,실행 횟수,현재 문제에서 SQL을 실행한 총 횟수,,,number,3,False,False,False,False
+,,,,,,,,,,,,,time_spent_sec,소요 시간(초),문제 조회 시점부터 정답 해결까지 걸린 총 시간,,,number,45,False,False,False,False
+,,,,,,,,,,,,,result,제출 결과,제출 성공(success) 또는 실패(fail),,,string,success,False,False,False,False
+,,,,,,,,,,,,,sql_text,SQL 쿼리 문구,사용자가 작성하여 제출한 전체 SQL 쿼리 본문,,,string,SELECT * FROM ...,False,False,False,False
+,,,,,,,,,,,,,sql_length,SQL 글자 수,작성한 쿼리의 전체 문자열 길이,,,number,120,False,False,False,False
+,,,,,,,,,,,,,error_type,에러 유형,SQL 실행 시 발생한 오류의 종류,,,string,syntax,False,False,False,False
+,,,,,,,,,,,,,error_message,에러 메시지,데이터베이스에서 반환한 구체적인 에러 내용,,,string,,False,False,False,False
+,,,,,,,,,,,,,db_engine,DB 엔진,쿼리가 실행된 데이터베이스 엔진 명칭,,,string,postgres,False,False,False,False
+,,,,,,,,,,,,,env,실행 환경,"테스트(local, staging) 또는 운영(prod) 환경 구분",,,string,prod,False,False,False,False
+,,,,,,,,,,,,,page,페이지 경로,이벤트가 발생한 앱 내 현재 URL 경로,,,string,/workspace,False,False,False,False
+,,,,,,,,,,,,,tab_name,탭 이름,"선택한 탭의 명칭 (problem, schema 등)",,,string,schema,False,False,False,False
+,,,,,,,,,,,,,user_id,사용자 ID,사용자의 고유 식별값,,,string,google_123,False,False,False,False
+,,,,,,,,,,,,,email,이메일,유저의 이메일 계정,,,string,user@example.com,False,False,False,False
+,,,,,,,,,,,,,user_type,사용자 유형,관리자(admin) 또는 일반 유저(free) 구분,,,string,free,False,False,False,False
+,,,,,,,,,,,,,signup_date,가입 일시,회원 가입이 완료된 시점의 타임스탬프,,,datetime,,False,False,False,False
+,,,,,,,,,,,,,signup_cohort_date,가입 코호트 날짜,가입 날짜 (YYYY-MM-DD),,,datetime,2024-01-01,False,False,False,False
+,,,,,,,,,,,,,current_level,현재 레벨,유저의 현재 학습 레벨,,,string,Level 1,False,False,False,False
+,,,,,,,,,,,,,current_xp,현재 경험치,유저가 보유한 누적 경험치(XP),,,number,150,False,False,False,False
+,,,,,,,,,,,,,experience_level,숙련도 계급,경험치 기반의 사용자 등급,,,string,초보,False,False,False,False
+,,,,,,,,,,,,,total_problems_solved,총 문제 해결 수,지금까지 정답을 맞춘 전체 문제의 수,,,number,10,False,False,False,False

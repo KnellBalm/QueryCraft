@@ -95,12 +95,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
     useEffect(() => {
         if (selectedProblem) {
-            analytics.problemViewed(
-                selectedProblem.problem_id,
-                selectedProblem.difficulty,
-                selectedProblem.topic || 'unknown',
-                dataType
-            );
+            analytics.problemViewed(selectedProblem.problem_id, {
+                difficulty: selectedProblem.difficulty,
+                dataType,
+                isDaily: dataType === 'pa' || dataType === 'stream',
+                topic: selectedProblem.topic
+            });
         }
     }, [selectedProblem, dataType]);
 
@@ -110,18 +110,33 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setLoading(true);
         setSubmitResult(null);
         setHint(null);
+
+        // 첫 실행/타이핑 시 시도로 기록
+        if (selectedProblem) {
+            analytics.problemAttempted(selectedProblem.problem_id, selectedProblem.difficulty);
+        }
+
         try {
             const res = await sqlApi.execute(sql);
             setResult(res.data);
-            // Analytics: SQL 실행 성공
-            analytics.sqlExecuted(sql.length, 0, false);
+            analytics.sqlExecuted(selectedProblem?.problem_id || 'unknown', {
+                sql,
+                hasError: !res.data.success,
+                errorMessage: res.data.error,
+                dbEngine: 'postgres'
+            });
         } catch (error: any) {
             setResult({ success: false, error: error.message });
-            // Analytics: SQL 실행 실패
-            analytics.sqlExecuted(sql.length, 0, true, error.message);
+            analytics.sqlExecuted(selectedProblem?.problem_id || 'unknown', {
+                sql,
+                hasError: true,
+                errorType: 'runtime',
+                errorMessage: error.message,
+                dbEngine: 'postgres'
+            });
         }
         setLoading(false);
-    }, [sql]);
+    }, [sql, selectedProblem]);
 
     // 제출
     const handleSubmit = useCallback(async () => {
@@ -143,13 +158,11 @@ export function Workspace({ dataType }: WorkspaceProps) {
             setCompletedStatus(newStatus);
             localStorage.setItem(`completed_${dataType}`, JSON.stringify(newStatus));
 
-            // Analytics: 문제 제출
-            analytics.problemSubmitted(
-                selectedProblem.problem_id,
-                res.data.is_correct,
-                1, // attempt number (simplified)
-                0  // time spent (simplified)
-            );
+            analytics.problemSubmitted(selectedProblem.problem_id, {
+                isCorrect: res.data.is_correct,
+                difficulty: selectedProblem.difficulty,
+                dataType: dataType
+            });
         } catch (error: any) {
             setSubmitResult({ is_correct: false, feedback: error.message });
         }
@@ -162,13 +175,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setHinting(true);
         setHint(null);
 
-        // Analytics: 힌트 요청
-        analytics.track('problem_hint_request', {
-            problem_id: selectedProblem.problem_id,
-            problem_difficulty: selectedProblem.difficulty,
-            data_type: dataType,
-            sql_length: sql.length
-        });
+        analytics.hintRequested(selectedProblem.problem_id, selectedProblem.difficulty, dataType);
 
         try {
             const res = await sqlApi.hint(selectedProblem.problem_id, sql, dataType);
@@ -236,7 +243,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             {/* 좌측 패널 */}
             <div className="left-panel" style={{ width: `${leftWidth}%` }}>
                 <div className="panel-tabs">
-                    <button className={activeTab === 'problem' ? 'active' : ''} onClick={() => setActiveTab('problem')}>
+                    <button className={activeTab === 'problem' ? 'active' : ''} onClick={() => { setActiveTab('problem'); analytics.tabChanged('problem', dataType); }}>
                         📌 문제
                     </button>
                     <button className={activeTab === 'schema' ? 'active' : ''} onClick={() => { setActiveTab('schema'); analytics.schemaViewed(dataType); }}>
@@ -330,7 +337,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     <div className="editor-shell">
                         <SQLEditor
                             value={sql}
-                            onChange={setSql}
+                            onChange={(val) => {
+                                setSql(val);
+                                if (selectedProblem && val.trim().length > 0) {
+                                    analytics.problemAttempted(selectedProblem.problem_id, selectedProblem.difficulty);
+                                }
+                            }}
                             onExecute={handleExecute}
                             height={`${editorHeight - 110}px`} // header(35) + actions(45) + border/padding
                             tables={tables}

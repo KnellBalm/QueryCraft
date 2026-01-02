@@ -1,11 +1,12 @@
 # backend/api/stats.py
 """통계 API"""
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from backend.schemas.submission import UserStats, SubmissionHistory
 from backend.services.stats_service import get_user_stats, get_submission_history
 from backend.services.database import postgres_connection
+from backend.api.auth import get_session
 from common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -13,16 +14,30 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/stats", tags=["stats"])
 
 
+def get_user_id_from_request(request: Request) -> Optional[str]:
+    """요청에서 사용자 ID 추출"""
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        return None
+    session = get_session(session_id)
+    if not session or not session.get("user"):
+        return None
+    return session["user"].get("id")
+
+
 @router.get("/me", response_model=UserStats)
-async def get_my_stats():
-    """내 통계 조회"""
-    return get_user_stats()
+async def get_my_stats(request: Request):
+    """내 통계 조회 (개인화)"""
+    user_id = get_user_id_from_request(request)
+    return get_user_stats(user_id)
 
 
 @router.get("/history", response_model=list[SubmissionHistory])
-async def get_history(limit: int = 20, data_type: Optional[str] = None):
-    """제출 이력 조회 (data_type: 'pa' 또는 'stream' 필터링)"""
-    return get_submission_history(limit, data_type)
+async def get_history(request: Request, limit: int = 20, data_type: Optional[str] = None):
+    """제출 이력 조회 (개인화)"""
+    user_id = get_user_id_from_request(request)
+    return get_submission_history(limit, data_type, user_id)
+
 
 
 @router.get("/leaderboard")
@@ -74,3 +89,37 @@ async def get_leaderboard(limit: int = 20):
     except Exception as e:
         logger.error(f"Failed to get leaderboard: {e}")
         return []
+
+
+@router.delete("/reset")
+async def reset_my_stats(request: Request):
+    """내 학습 기록 초기화 (submissions, user_problem_sets 삭제, XP 0으로)"""
+    from backend.api.auth import get_session
+    
+    try:
+        session_id = request.cookies.get("session_id")
+        if not session_id:
+            return {"success": False, "error": "로그인이 필요합니다"}
+        
+        session = get_session(session_id)
+        if not session or not session.get("user"):
+            return {"success": False, "error": "세션이 만료되었습니다"}
+        
+        user = session["user"]
+        user_id = user["id"]
+        
+        with postgres_connection() as pg:
+            # 1. 제출 기록 삭제
+            pg.execute("DELETE FROM submissions WHERE user_id = %s", [user_id])
+            
+            # 2. 문제 세트 할당 삭제 (연속 출석 관련)
+            pg.execute("DELETE FROM user_problem_sets WHERE user_id = %s", [user_id])
+            
+            # 3. XP 및 레벨 초기화
+            pg.execute("UPDATE users SET xp = 0 WHERE id = %s", [user_id])
+        
+        logger.info(f"User {user['email']} reset their stats completely")
+        return {"success": True, "message": "모든 학습 기록이 초기화되었습니다"}
+    except Exception as e:
+        logger.error(f"Failed to reset stats: {e}")
+        return {"success": False, "error": str(e)}

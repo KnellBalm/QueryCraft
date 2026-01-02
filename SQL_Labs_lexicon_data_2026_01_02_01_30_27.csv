@@ -1,0 +1,451 @@
+Entity Type,Entity Name,Entity Display Name,Entity Description,Event Volume,Event Query Volume,Event Tags,Event Hidden,Event Dropped,Event First Queried By,Event First Queried,Event Last Queried By,Event Last Queried,Property Name,Property Display Name,Property Description,Property Volume,Property Query Volume,Property Type,Property Example Values,Property Hidden,Property Dropped,Property Required,Property Sensitive
+event,$mp_click,[Auto] Element Click,Built-in Mixpanel event triggered when an element is clicked,55,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,62,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),62,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,62,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",62,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$clientX,[Auto] Client X,The X-coordinate of the mouse pointer relative to the browser's viewport when the event occurred.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$clientY,[Auto] Client Y,The Y-coordinate of the mouse pointer relative to the browser's viewport when the event occurred.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,62,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,62,0,string,,False,False,False,False
+,,,,,,,,,,,,,$el_classes,[Auto] Element Classes,HTML classes of an element that the user has interacted with.,62,0,list,,False,False,False,False
+,,,,,,,,,,,,,$host,Host,The name of the web host.,62,0,string,mixpanel.com,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,62,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,62,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,62,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_autocapture,Autocapture Event,Whether the current event was tracked by the Autocapture SDK feature.,62,0,boolean,true,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,62,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$offsetX,[Auto] Offset X,The X-coordinate of the mouse pointer relative to the event target element.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$offsetY,[Auto] Offset Y,The Y-coordinate of the mouse pointer relative to the event target element.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,62,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$pageHeight,[Auto] Page Height,The height of the entire page.,62,0,number,968,False,False,False,False
+,,,,,,,,,,,,,$pageWidth,[Auto] Page Width,The width of the entire page.,62,0,number,1920,False,False,False,False
+,,,,,,,,,,,,,$pageX,[Auto] Page X,The X-coordinate of the mouse pointer relative to the entire page.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$pageY,[Auto] Page Y,The Y-coordinate of the mouse pointer relative to the entire page.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,62,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screenX,[Auto] Screen X,The X-coordinate of the mouse pointer relative to the screen.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$screenY,[Auto] Screen Y,The Y-coordinate of the mouse pointer relative to the screen.,62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,62,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,62,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$target,[Auto] Target,"The specific HTML element that triggered the event (e.g., a button or link).",62,0,object,,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,15,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,$viewportHeight,[Auto] Viewport Height,The height of the browser's viewport at the time of the event.,62,0,number,600,False,False,False,False
+,,,,,,,,,,,,,$viewportWidth,[Auto] Viewport Width,The width of the browser's viewport at the time of the event.,62,0,number,800,False,False,False,False
+,,,,,,,,,,,,,$x,[Auto] X Coordinate,"The X-coordinate of the event, often synonymous with $pageX.",62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$y,[Auto] Y Coordinate,"The Y-coordinate of the event, often synonymous with $pageY.",62,0,number,100,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",62,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,62,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,62,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$el_attr__href,[Auto] Link target,HTML href attribute of an element that the user has interacted with.,15,0,string,,False,False,False,False
+event,$mp_input_change,[Auto] Input Change,Built-in Mixpanel event triggered when the value of an input element is changed,4,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,6,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),6,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,6,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",6,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,6,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,6,0,string,,False,False,False,False
+,,,,,,,,,,,,,$el_classes,[Auto] Element Classes,HTML classes of an element that the user has interacted with.,6,0,list,,False,False,False,False
+,,,,,,,,,,,,,$host,Host,The name of the web host.,6,0,string,mixpanel.com,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,6,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,6,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,6,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_autocapture,Autocapture Event,Whether the current event was tracked by the Autocapture SDK feature.,6,0,boolean,true,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,6,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,6,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$pageHeight,[Auto] Page Height,The height of the entire page.,6,0,number,968,False,False,False,False
+,,,,,,,,,,,,,$pageWidth,[Auto] Page Width,The width of the entire page.,6,0,number,1920,False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,6,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,6,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,6,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$target,[Auto] Target,"The specific HTML element that triggered the event (e.g., a button or link).",6,0,object,,False,False,False,False
+,,,,,,,,,,,,,$viewportHeight,[Auto] Viewport Height,The height of the browser's viewport at the time of the event.,6,0,number,600,False,False,False,False
+,,,,,,,,,,,,,$viewportWidth,[Auto] Viewport Width,The width of the browser's viewport at the time of the event.,6,0,number,800,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",6,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,6,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,6,0,string,5.4.1,False,False,False,False
+event,$mp_scroll,[Auto] Page Scroll,Built-in Mixpanel event triggered when the page has been scrolled and come to rest,3,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,3,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),3,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,3,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",3,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,3,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,3,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,3,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,3,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_autocapture,Autocapture Event,Whether the current event was tracked by the Autocapture SDK feature.,3,0,boolean,true,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,3,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,3,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,3,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,3,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$scroll_checkpoint,[Auto] Scroll Checkpoint,The percentage of scrollbar that has been reached when crossing specific thresholds.,3,0,number,"25, 50, 75, 100",False,False,False,False
+,,,,,,,,,,,,,$scroll_height,[Auto] Scroll Height,The height of the scrollable area of the page.,3,0,number,1000,False,False,False,False
+,,,,,,,,,,,,,$scroll_percentage,[Auto] Scroll Percentage,The percentage of the page that has been scrolled.,3,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$scroll_top,[Auto] Scroll Top,The number of pixels that the page has been scrolled vertically.,3,0,number,100,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,1,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",3,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,3,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,3,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,1,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+event,$mp_session_record,Session Recording Checkpoint,Session recording event batch sent from client,31,0,,True,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,37,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),37,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,37,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,37,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device,Device,"The name of the event sender's device, if they're on mobile web.",37,0,string,"Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,37,0,string,,False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,37,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,37,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_retention_period,,,37,0,number,,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,37,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$user_agent,User Agent,The raw User Agent string sent by the device sending the event.,37,0,string,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,26,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,batch_start_time,,,37,0,number,,False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,37,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,replay_region,Replay Region,The geographic region where the replay was captured.,37,0,string,us,False,False,False,False
+,,,,,,,,,,,,,replay_start_url,Replay Start URL,The URL where the replay session started.,37,0,string,https://mixpanel.com/dashboard,False,False,False,False
+,,,,,,,,,,,,,seq_no,,,37,0,number,,False,False,False,False
+event,$mp_submit,[Auto] Form Submit,Built-in Mixpanel event triggered when an HTML form is submitted with the standard 'submit' action,2,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,3,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),3,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,3,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",3,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,3,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,$el_classes,[Auto] Element Classes,HTML classes of an element that the user has interacted with.,3,0,list,,False,False,False,False
+,,,,,,,,,,,,,$host,Host,The name of the web host.,3,0,string,mixpanel.com,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,3,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,3,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,3,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_autocapture,Autocapture Event,Whether the current event was tracked by the Autocapture SDK feature.,3,0,boolean,true,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,3,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,3,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$pageHeight,[Auto] Page Height,The height of the entire page.,3,0,number,968,False,False,False,False
+,,,,,,,,,,,,,$pageWidth,[Auto] Page Width,The width of the entire page.,3,0,number,1920,False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,3,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,3,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,3,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$target,[Auto] Target,"The specific HTML element that triggered the event (e.g., a button or link).",3,0,object,,False,False,False,False
+,,,,,,,,,,,,,$viewportHeight,[Auto] Viewport Height,The height of the browser's viewport at the time of the event.,3,0,number,600,False,False,False,False
+,,,,,,,,,,,,,$viewportWidth,[Auto] Viewport Width,The width of the browser's viewport at the time of the event.,3,0,number,800,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",3,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,3,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,3,0,string,5.4.1,False,False,False,False
+event,$mp_web_page_view,[Auto] Page View,Built-in Mixpanel event triggered when a desktop or mobile web page is loaded,19,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,21,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),21,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,21,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",21,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,21,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,21,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,21,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,21,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,21,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_autocapture,Autocapture Event,Whether the current event was tracked by the Autocapture SDK feature.,21,0,boolean,true,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,16,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,21,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,21,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,21,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,21,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,6,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,current_domain,Current Domain,The domain of the current web page on which the event is fired.,21,0,string,"docs.mixpanel.com, www.google.com, segment.com",False,False,False,False
+,,,,,,,,,,,,,current_page_title,Page Title,The title of the current web page retrieved from document.title and typically viewable in the top bar or tab in a web browser.,21,0,string,,False,False,False,False
+,,,,,,,,,,,,,current_url_path,URL Path,"The path portion of the current page’s URL, sometimes called a route, retrieved from the window.location.pathname property.",21,0,string,,False,False,False,False
+,,,,,,,,,,,,,current_url_protocol,URL Protocol,The protocol of the current page view request.,21,0,string,"http, https",False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",21,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,21,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,21,0,string,5.4.1,False,False,False,False
+event,Hint Requested,,,1,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,1,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),1,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,1,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",1,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,1,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,1,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,1,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,1,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,1,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,1,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,1,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,1,0,number,360,False,False,False,False
+,,,,,,,,,,,,,data_type,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",1,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,1,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,1,0,datetime,,False,False,False,False
+event,Onboarding Skipped,,,3,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,5,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),5,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,5,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",5,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,5,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,5,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,5,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,5,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,5,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,5,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,5,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,5,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,1,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,env,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",5,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,5,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,step,,,5,0,number,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,5,0,datetime,,False,False,False,False
+,,,,,,,,,,,,,user_id,,,5,0,string,,False,False,False,False
+event,Onboarding Started,,,3,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,5,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),5,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,5,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",5,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,5,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,5,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,5,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,5,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,5,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,5,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,5,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,5,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,1,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,env,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",5,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,5,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,5,0,datetime,,False,False,False,False
+,,,,,,,,,,,,,user_id,,,5,0,string,,False,False,False,False
+event,Page Viewed,,,16,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,17,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),17,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,17,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",17,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,17,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,17,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,17,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,17,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,17,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,12,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,17,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,17,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,17,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,17,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,6,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,data_type,,,17,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,17,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",17,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,17,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,17,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,17,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,17,0,datetime,,False,False,False,False
+event,Problem Attempted,,,4,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,4,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),4,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,4,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",4,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,4,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,4,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,4,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,4,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,4,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,4,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,4,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,4,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,4,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,2,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,attempt_count,,,4,0,number,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",4,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,4,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,4,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,4,0,datetime,,False,False,False,False
+event,Problem Failed,,,1,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,1,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),1,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,1,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",1,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,1,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,1,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,1,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,1,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,1,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,1,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,1,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,1,0,number,360,False,False,False,False
+,,,,,,,,,,,,,attempt_count,,,1,0,number,,False,False,False,False
+,,,,,,,,,,,,,data_type,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",1,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,1,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,1,0,datetime,,False,False,False,False
+event,Problem Submitted,,,1,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,1,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),1,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,1,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",1,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,1,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,1,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,1,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,1,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,1,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,1,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,1,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,1,0,number,360,False,False,False,False
+,,,,,,,,,,,,,attempt_count,,,1,0,number,,False,False,False,False
+,,,,,,,,,,,,,data_type,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",1,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,1,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,1,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,result,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,1,0,datetime,,False,False,False,False
+event,Problem Viewed,,,24,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,25,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),25,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,25,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",25,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,25,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,25,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,25,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,25,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,23,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,25,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,25,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,25,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,25,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,9,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,data_type,,,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,difficulty_level,,,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,is_daily_problem,,,25,0,boolean,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",25,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,25,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,25,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,25,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,25,0,datetime,,False,False,False,False
+,,,,,,,,,,,,,topic_tags,,,25,0,string,,False,False,False,False
+event,Schema Viewed,,,5,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,5,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),5,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,5,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",5,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,5,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,5,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,5,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,5,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,5,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,5,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,5,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,5,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,1,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,data_type,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",5,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,5,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,5,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,5,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,5,0,datetime,,False,False,False,False
+event,SQL Executed,,,4,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,4,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),4,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,4,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",4,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,4,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,4,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,4,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,4,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,4,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,4,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,4,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,4,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,4,0,number,360,False,False,False,False
+,,,,,,,,,,,,,$user_id,User ID,A default Mixpanel property to track the $identified_id passed into identify method client-side. Stored locally on the user's device using the register method.,2,0,string,123abc,False,False,False,False
+,,,,,,,,,,,,,db_engine,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,execution_count,,,4,0,number,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",4,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,4,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,4,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,problem_id,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,sql_length,,,4,0,number,,False,False,False,False
+,,,,,,,,,,,,,sql_text,,,4,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,4,0,datetime,,False,False,False,False
+event,Tab Changed,,,3,0,,False,False,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$event_name,Event Name,Name of the event,3,0,string,Song Played,False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),3,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,3,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",3,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$current_url,Current URL,The full URL of the webpage on which the event is triggered.,3,0,string,https://mixpanel.com/example/,False,False,False,False
+,,,,,,,,,,,,,$device_id,Device ID,A default Mixpanel property to track the device as determined by Mixpanel's client-side SDKs. Events tracked from the same device and same user but different applications may not have the same $device_id. The reset method will change the device_id.,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,3,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,3,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$lib_version,Library Version,Version of the Mixpanel library used to enqueue or send this data.,3,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,$mp_replay_id,Replay ID,ID of a screen recording that was being captured in the browser tab which tracked this event,3,0,string,2024-02-23/54eb82d4ca230b-0ad95068e100fe-1e525637-384000-54eb82e5ca450b,False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,3,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,3,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$screen_height,Screen Height,The height of a device's screen.,3,0,number,960,False,False,False,False
+,,,,,,,,,,,,,$screen_width,Screen Width,The width of the screen of the device.,3,0,number,360,False,False,False,False
+,,,,,,,,,,,,,data_type,,,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,env,,,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,mp_country_code,Country,"The country of the event sender, parsed from IP.",3,0,string,"United States, Canada",False,False,False,False
+,,,,,,,,,,,,,mp_lib,Mixpanel Library,The name of the Mixpanel Library that sent the event.,3,0,string,"Web, Android, iPhone",False,False,False,False
+,,,,,,,,,,,,,mp_sent_by_lib_version,Sent By Library Version,Version of the Mixpanel library used to send this data over the network (not necessarily the same as the version which enqueued the data).,3,0,string,5.4.1,False,False,False,False
+,,,,,,,,,,,,,page,,,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,tab_name,,,3,0,string,,False,False,False,False
+,,,,,,,,,,,,,timestamp,,,3,0,datetime,,False,False,False,False
+event,$session_start,Session Start,"Mixpanel's virtual event triggered at the start of each user's session. Customize session timeout length, exclude events from sessions, or define event based sessions in project settings. [More about sessions](https://help.mixpanel.com/hc/en-us/articles/115004695223-Track-Sessions)",0,0,,False,False,,,,,,,,,,,,,,,
+event,$session_end,Session End,"Mixpanel's virtual event triggered at the end of each user's session. Customize session timeout length, exclude events from sessions, or define event based sessions in project settings. [More about sessions](https://help.mixpanel.com/hc/en-us/articles/115004695223-Track-Sessions)",0,0,,False,False,,,,,,,,,,,,,,,
+profile,$user,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,$last_seen,Updated at,Timestamp of the last profile update.,1,0,datetime,2012-11-20T15:26:19,False,False,False,False
+,,,,,,,,,,,,,$city,City,"The city of the event sender, parsed from IP.",1,0,string,"San Francisco, Los Angeles",False,False,False,False
+,,,,,,,,,,,,,$country_code,Country Code,"The two-letter country code of the event sender, parsed from IP.",1,0,string,"US, ES (Spain)",False,False,False,False
+,,,,,,,,,,,,,$geo_source,Geo Source,Internal Mixpanel property to record the source used to determine location,1,0,string,reverse_geocoding,True,False,False,False
+,,,,,,,,,,,,,$initial_referrer,Initial Referrer,The referring URL at first arrival.,1,0,string,"$direct, https://www.google.com/",False,False,False,False
+,,,,,,,,,,,,,$initial_referring_domain,Initial Referring Domain,The referring domain at first arrival.,1,0,string,"$direct, www.google.com",False,False,False,False
+,,,,,,,,,,,,,$region,Region,The region (state or province) of the event sender that is parsed from IP.,1,0,string,"California, New York",False,False,False,False
+,,,,,,,,,,,,,$timezone,Timezone,"The timezone of the event sender, parsed from IP.",1,0,string,PST (UTC-08:00),False,False,False,False
+,,,,,,,,,,,,,$browser,Browser,The browser being used at the time the event was fired. (Not versioned),1,0,string,"Chrome, Safari",False,False,False,False
+,,,,,,,,,,,,,$browser_version,Browser Version,The version number of the browser being used at the time the event was fired.,1,0,string,"11, 11.1",False,False,False,False
+,,,,,,,,,,,,,$os,Operating System,The operating system of the event sender.,1,0,string,"Mac OS X, Windows",False,False,False,False
+,,,,,,,,,,,,,current_level,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,current_xp,,,1,0,number,,False,False,False,False
+,,,,,,,,,,,,,email,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,experience_level,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,signup_cohort_date,,,1,0,datetime,,False,False,False,False
+,,,,,,,,,,,,,signup_date,,,1,0,datetime,,False,False,False,False
+,,,,,,,,,,,,,total_problems_solved,,,1,0,number,,False,False,False,False
+,,,,,,,,,,,,,user_id,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,user_type,,,1,0,string,,False,False,False,False
+,,,,,,,,,,,,,$distinct_id,Distinct ID,The way to uniquely identify your users. You can set this to any value using the identify method. Some Mixpanel libraries assign a random value by default.,1,0,string,166424e227e7fb-0ff2f469b2f1fc-2d6a4f35,False,False,False,False

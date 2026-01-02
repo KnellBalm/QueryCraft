@@ -1,7 +1,7 @@
 # backend/api/practice.py
 """무한 연습 모드 API"""
 from datetime import date
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List
 import json
@@ -98,10 +98,21 @@ async def generate_practice_problem(request: GeneratePracticeRequest):
 
 
 @router.post("/submit")
-async def submit_practice(request: SubmitPracticeRequest):
-    """연습 문제 제출 및 채점"""
+async def submit_practice(request: SubmitPracticeRequest, req: Request):
+    """연습 문제 제출 및 채점 (레벨업에 반영)"""
     try:
         from grader.sql_grader import SQLGrader
+        from backend.services.grading_service import save_submission_pg, award_xp
+        from backend.api.auth import get_session
+        from datetime import date
+        
+        # 사용자 ID 추출
+        user_id = None
+        session_id = req.cookies.get("session_id")
+        if session_id:
+            session = get_session(session_id)
+            if session and session.get("user"):
+                user_id = session["user"].get("id")
         
         grader = SQLGrader()
         
@@ -126,18 +137,36 @@ async def submit_practice(request: SubmitPracticeRequest):
         # 결과 비교
         is_correct = grader.compare_results(expected_result["data"], user_result["data"])
         
-        # 점수 계산 (정답인 경우만) - 저장 없이 임시 점수만 반환
-        score = 0
+        # 점수 계산
+        xp_value = 0
+        DIFFICULTY_XP = {'easy': 3, 'medium': 5, 'hard': 8}
         if is_correct:
-            DIFFICULTY_SCORES = {'easy': 10, 'medium': 25, 'hard': 50}
-            score = DIFFICULTY_SCORES.get(request.difficulty, 25)
-            # 무한 연습 모드는 DB에 저장하지 않음 (세션 중 점수만 표시)
+            xp_value = DIFFICULTY_XP.get(request.difficulty, 5)
+        
+        # DB에 저장 (레벨업에 반영)
+        try:
+            save_submission_pg(
+                session_date=date.today().isoformat(),
+                problem_id=request.problem_id,
+                data_type=f"practice_{request.data_type}",
+                sql_text=request.sql,
+                is_correct=is_correct,
+                feedback="정답!" if is_correct else "오답",
+                user_id=user_id,
+                difficulty=request.difficulty
+            )
+            
+            # 정답인 경우 XP 지급
+            if is_correct and user_id:
+                award_xp(user_id, xp_value)
+        except Exception:
+            pass  # 저장 실패해도 채점 결과는 반환
         
         return {
             "success": True,
             "is_correct": is_correct,
-            "score": score if is_correct else 0,
-            "message": "정답입니다! 🎉" if is_correct else "오답입니다. 다시 시도해보세요."
+            "score": xp_value if is_correct else 0,
+            "message": f"정답입니다! 🎉 (+{xp_value} XP)" if is_correct else "오답입니다. 다시 시도해보세요."
         }
         
     except Exception as e:
@@ -146,3 +175,5 @@ async def submit_practice(request: SubmitPracticeRequest):
             "is_correct": False,
             "message": f"채점 오류: {str(e)}"
         }
+
+

@@ -62,9 +62,21 @@ def get_problems(
         if not path.exists():
             # 세트 파일 없으면 기본 파일 사용 (호환성)
             path = PROBLEM_DIR / f"{target_date}.json"
+        
+        # 오늘 파일이 없으면 가장 최근 파일 사용
+        if not path.exists():
+            pa_files = sorted(PROBLEM_DIR.glob("*_set*.json"), reverse=True)
+            if pa_files:
+                path = pa_files[0]
     else:
         # Stream 문제 (아직 세트 미지원)
         path = PROBLEM_DIR / f"stream_{target_date}.json"
+        
+        # 오늘 파일이 없으면 가장 최근 stream 파일 사용
+        if not path.exists():
+            stream_files = sorted(PROBLEM_DIR.glob("stream_*.json"), reverse=True)
+            if stream_files:
+                path = stream_files[0]
     
     if not path.exists():
         return []

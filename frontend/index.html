@@ -21,14 +21,7 @@
       }
     })(document, window.mixpanel || [])
 
-    // Mixpanel Token
-    var MIXPANEL_TOKEN = 'df72b9d880a1889b2672f20bd523b7f7';
-    if (MIXPANEL_TOKEN) {
-      mixpanel.init(MIXPANEL_TOKEN, {
-        autocapture: true,
-        record_sessions_percent: 100,
-      });
-    }
+    // Mixpanel Token is now handled in analytics.ts via VITE_MIXPANEL_TOKEN
   </script>
 
   <!-- PostHog Tracking -->

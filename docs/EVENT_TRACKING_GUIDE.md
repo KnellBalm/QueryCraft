@@ -309,23 +309,50 @@ const handleSubmit = async () => {
 
 ---
 
-## 5. 이벤트 목록 (본 프로젝트)
+## 5. 이벤트 목록 (현재 구현)
+
+> **Mixpanel/PostHog에서 확인하기**: 대시보드 → Live View 또는 Events 메뉴에서 실시간 이벤트 확인 가능
 
 | 이벤트 | 발생 시점 | 주요 속성 |
 |--------|----------|----------|
-| `page_view` | 페이지 로드/이동 | `page`, `data_type` |
-| `problem_view` | 문제 선택 | `problem_id`, `difficulty`, `topic` |
-| `problem_submit` | 정답 제출 | `problem_id`, `is_correct`, `attempt` |
-| `problem_correct` | 정답 시 | `problem_id` |
-| `problem_incorrect` | 오답 시 | `problem_id` |
-| `problem_hint_request` | 힌트 요청 | `problem_id`, `difficulty` |
-| `sql_execute` | SQL 실행 | `sql_length`, `has_error` |
-| `sql_error` | SQL 에러 | `error_message` |
-| `tab_change` | 탭 전환 | `tab`, `data_type` |
-| `user_login` | 로그인 | `auth_provider` |
-| `user_logout` | 로그아웃 | - |
-| `schema_view` | 스키마 조회 | `data_type` |
-| `contact_button_click` | 연락 버튼 클릭 | - |
+| **유입/페이지** | | |
+| `Page Viewed` | 페이지 로드/이동 | `page`, `data_type` |
+| **회원/인증** | | |
+| `Sign Up Completed` | 회원가입 완료 | `auth_provider` |
+| `Login Success` | 로그인 성공 | `auth_provider` |
+| `Logout Completed` | 로그아웃 | - |
+| **문제 풀이 (핵심)** | | |
+| `Problem Viewed` | 문제 선택/조회 | `problem_id`, `difficulty`, `topic`, `data_type` |
+| `Problem Attempted` | 문제 시도 시작 | `problem_id`, `difficulty` |
+| `Problem Submitted` | 정답 제출 | `problem_id`, `is_correct`, `attempt_number`, `time_spent_seconds` |
+| `Problem Solved` ⭐ | 정답 (Core Action) | `problem_id`, `difficulty` |
+| `Problem Failed` | 오답 | `problem_id` |
+| `Hint Requested` | 힌트 요청 | `problem_id`, `difficulty` |
+| **SQL 관련** | | |
+| `SQL Executed` | SQL 실행 | `sql_length`, `execution_time_ms`, `has_error` |
+| `SQL Error Occurred` | SQL 에러 발생 | `error_message` |
+| **온보딩** | | |
+| `Onboarding Started` | 온보딩 시작 | `user_id` |
+| `Onboarding Completed` | 온보딩 완료 | `user_id` |
+| `Onboarding Skipped` | 온보딩 건너뜀 | `step_skipped_at`, `user_id` |
+| **기타** | | |
+| `Tab Changed` | 탭 전환 | `tab`, `data_type` |
+| `Schema Viewed` | 스키마 조회 | `data_type` |
+| `Contact Clicked` | 연락 버튼 클릭 | - |
+
+### 5.1 이벤트 확인 방법
+
+1. **개발 중 (Console)**:
+   - 브라우저 DevTools (F12) → Console
+   - `[Mixpanel] Track:` 또는 `[PostHog] Capture:` 로그 확인
+
+2. **Mixpanel 대시보드**:
+   - https://mixpanel.com → Project → **Live View**
+   - 실시간 이벤트 스트림 확인
+
+3. **PostHog 대시보드**:
+   - https://app.posthog.com → **Activity**
+   - 또는 **Events** 메뉴에서 전체 이벤트 목록 확인
 
 ---
 

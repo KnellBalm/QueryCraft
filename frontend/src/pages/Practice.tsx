@@ -53,7 +53,7 @@ export default function Practice() {
 
     // 스키마 로드
     useEffect(() => {
-        analytics.pageView('/practice');
+        analytics.pageView('/practice', { data_type: 'practice' });
         problemsApi.schema('pa').then(res => setTables(res.data)).catch(() => { });
     }, []);
 
@@ -70,8 +70,11 @@ export default function Practice() {
             const res = await practiceApi.generate('pa');
             if (res.data.success && res.data.problem) {
                 setProblem(res.data.problem);
-                analytics.track('practice_problem_generated', {
-                    difficulty: res.data.problem.difficulty
+                analytics.problemViewed(res.data.problem.id, {
+                    difficulty: res.data.problem.difficulty,
+                    dataType: 'practice',
+                    isDaily: false,
+                    topic: 'infinite'
                 });
             }
         } catch (e) {
@@ -85,14 +88,32 @@ export default function Practice() {
         if (!sql.trim()) return;
         setLoading(true);
         setResult(null);
+
+        if (problem) {
+            analytics.problemAttempted(problem.id, problem.difficulty);
+        }
+
         try {
             const res = await sqlApi.execute(sql, 100);
             setResult(res.data);
+            analytics.sqlExecuted(problem?.id || 'unknown', {
+                sql,
+                hasError: !res.data.success,
+                errorMessage: res.data.error,
+                dbEngine: 'postgres'
+            });
         } catch (e: any) {
             setResult({ success: false, error: e.message });
+            analytics.sqlExecuted(problem?.id || 'unknown', {
+                sql,
+                hasError: true,
+                errorType: 'runtime',
+                errorMessage: e.message,
+                dbEngine: 'postgres'
+            });
         }
         setLoading(false);
-    }, [sql]);
+    }, [sql, problem]);
 
     // 제출 (임시 채점)
     const handleSubmit = useCallback(async () => {
@@ -115,6 +136,12 @@ export default function Practice() {
                 feedback: res.data.message || (isCorrect ? '정답입니다!' : '오답입니다.')
             });
 
+            analytics.problemSubmitted(problem.id, {
+                isCorrect: isCorrect,
+                difficulty: problem.difficulty,
+                dataType: 'practice'
+            });
+
             if (isCorrect) {
                 setTotalScore(prev => prev + (res.data.score || 0));
                 setCorrectCount(prev => prev + 1);
@@ -130,6 +157,8 @@ export default function Practice() {
         if (!sql.trim() || !problem) return;
         setHinting(true);
         setHint(null);
+        analytics.hintRequested(problem.id, problem.difficulty, 'practice');
+
         try {
             const res = await sqlApi.hint(problem.id, sql, 'pa');
             setHint(res.data.hint);
@@ -281,7 +310,12 @@ export default function Practice() {
                     <div className="editor-shell">
                         <SQLEditor
                             value={sql}
-                            onChange={setSql}
+                            onChange={(val) => {
+                                setSql(val);
+                                if (problem && val.trim().length > 0) {
+                                    analytics.problemAttempted(problem.id, problem.difficulty);
+                                }
+                            }}
                             onExecute={handleExecute}
                             height={`${editorHeight - 110}px`}
                             tables={tables}
