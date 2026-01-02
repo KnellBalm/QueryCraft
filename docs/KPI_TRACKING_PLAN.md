@@ -22,6 +22,8 @@
   - **Friction** (방해 지표)
     - SQL 에러율 (`SQL Error Occurred` / `SQL Executed`)
     - 힌트 의존도 (`Hint Requested` / `Problem Attempted`)
+  - **Retention** (유지 지표)
+    - 
 
 ---
 
