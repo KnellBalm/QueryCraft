@@ -18,16 +18,24 @@ from backend.api.practice import router as practice_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """앱 수명 주기 관리 - DB 초기화 및 스케줄러 시작/중지"""
-    # DB 초기화 (테이블 생성)
-    from backend.services.db_init import init_database
-    init_database()
+    # DB 초기화 (테이블 생성) - 실패해도 앱은 시작
+    try:
+        from backend.services.db_init import init_database
+        init_database()
+    except Exception as e:
+        print(f"[WARNING] Database initialization failed: {e}")
+        print("[WARNING] App will start anyway, but some features may not work")
     
     # 스케줄러 시작 (환경변수로 활성화)
     if os.getenv("ENABLE_SCHEDULER", "false").lower() == "true":
-        from backend.scheduler import start_scheduler, stop_scheduler
-        start_scheduler()
-        yield
-        stop_scheduler()
+        try:
+            from backend.scheduler import start_scheduler, stop_scheduler
+            start_scheduler()
+            yield
+            stop_scheduler()
+        except Exception as e:
+            print(f"[WARNING] Scheduler failed: {e}")
+            yield
     else:
         yield
 
