@@ -1,0 +1,245 @@
+[
+  {
+    "problem_id": "2026-01-05_commerce_sql_001_set1",
+    "difficulty": "easy",
+    "topic": "revenue",
+    "requester": "마케팅팀",
+    "question": "지난달(2025년 11월) 채널별 총 매출(GMV)과 평균 주문 금액(AOV)을 알고 싶습니다. 결과는 GMV가 높은 순서대로 정렬해주세요.",
+    "context": "이번 달 마케팅 캠페인 성과를 평가하고, 다음 달 예산 분배를 계획하기 위해 채널별 매출 기여도를 파악해야 합니다.",
+    "submission_requirements": "결과는 channel, total_gmv, average_order_value 컬럼으로 구성하며, total_gmv 기준으로 내림차순 정렬합니다. total_gmv와 average_order_value는 소수점 둘째 자리까지 표시해주세요.",
+    "answer_sql": "SELECT\n    pu.channel,\n    SUM(po.amount) AS total_gmv,\n    AVG(po.amount) AS average_order_value\nFROM\n    pa_orders po\nJOIN\n    pa_users pu ON po.user_id = pu.user_id\nWHERE\n    po.order_time >= '2025-11-01 00:00:00'\n    AND po.order_time < '2025-12-01 00:00:00'\nGROUP BY\n    pu.channel\nORDER BY\n    total_gmv DESC;",
+    "expected_description": "각 마케팅 채널별 2025년 11월의 총 매출(GMV)과 해당 기간 동안 주문된 상품들의 평균 금액(AOV)을 보여줍니다.",
+    "expected_columns": [
+      "channel",
+      "total_gmv",
+      "average_order_value"
+    ],
+    "sort_keys": [
+      "total_gmv"
+    ],
+    "hint": "pa_orders 테이블과 pa_users 테이블을 user_id로 조인합니다. order_time을 기준으로 기간을 필터링하고, channel별로 GROUP BY하여 SUM과 AVG 함수를 사용하세요.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 3,
+    "expected_result": [
+      {
+        "channel": "referral",
+        "total_gmv": 764129,
+        "average_order_value": 24649.322580645163
+      },
+      {
+        "channel": "organic",
+        "total_gmv": 445432,
+        "average_order_value": 19366.608695652176
+      },
+      {
+        "channel": "ad",
+        "total_gmv": 436143,
+        "average_order_value": 31153.071428571428
+      },
+      {
+        "channel": "web",
+        "total_gmv": 317658,
+        "average_order_value": 21177.2
+      }
+    ],
+    "expected_row_count": 4
+  },
+  {
+    "problem_id": "2026-01-05_commerce_sql_002_set1",
+    "difficulty": "easy",
+    "topic": "funnel",
+    "requester": "PM팀",
+    "question": "신규 사용자(가입일 기준 2025-10-30 이후)의 'view_product' 이벤트 발생부터 'add_to_cart' 이벤트 발생까지의 전환율을 계산해주세요. 이 분석은 2025년 12월 15일에 완료된 세션을 기준으로 합니다.",
+    "context": "신규 사용자가 상품을 발견하고 장바구니에 담는 과정에서의 문제점을 파악하고 개선하기 위해 해당 전환율을 확인해야 합니다.",
+    "submission_requirements": "결과는 conversion_rate 컬럼으로 제공하며, 소수점 4자리까지 표시합니다. 'view_product' 이벤트와 'add_to_cart' 이벤트가 모두 존재하는 세션만을 대상으로 합니다.",
+    "answer_sql": "WITH SessionEventCounts AS (\n    SELECT\n        pe.session_id,\n        COUNT(CASE WHEN pe.event_name = 'view_product' THEN 1 END) AS view_product_count,\n        COUNT(CASE WHEN pe.event_name = 'add_to_cart' THEN 1 END) AS add_to_cart_count\n    FROM\n        pa_events pe\n    JOIN\n        pa_users pu ON pe.user_id = pu.user_id\n    WHERE\n        pu.signup_at >= '2025-10-30 00:00:00'\n        AND pe.event_time >= '2025-12-01 00:00:00'\n        AND pe.event_time < '2025-12-16 00:00:00'\n    GROUP BY\n        pe.session_id\n)\nSELECT\n    CASE\n        WHEN SUM(view_product_count) = 0 THEN 0\n        ELSE CAST(SUM(CASE WHEN add_to_cart_count > 0 THEN 1 ELSE 0 END) AS DECIMAL) / SUM(CASE WHEN view_product_count > 0 THEN 1 ELSE 0 END)\n    END AS conversion_rate\nFROM\n    SessionEventCounts;",
+    "expected_description": "2025년 12월 1일부터 12월 15일까지의 세션 중, 'view_product' 이벤트가 발생한 세션 대비 'add_to_cart' 이벤트까지 성공적으로 전환된 세션의 비율을 나타냅니다. 신규 사용자만을 대상으로 합니다.",
+    "expected_columns": [
+      "conversion_rate"
+    ],
+    "sort_keys": [],
+    "hint": "먼저 세션별로 'view_product'와 'add_to_cart' 이벤트 발생 횟수를 집계하는 CTE를 만듭니다. 이후 'view_product' 이벤트가 발생한 세션 중 'add_to_cart' 이벤트가 발생한 세션의 비율을 계산합니다. NULLIF 또는 CASE 문을 사용하여 0으로 나누는 것을 방지하세요.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 3,
+    "expected_result": [
+      {
+        "conversion_rate": 0.24817105613194998
+      }
+    ],
+    "expected_row_count": 1
+  },
+  {
+    "problem_id": "2026-01-05_commerce_sql_003_set1",
+    "difficulty": "medium",
+    "topic": "funnel",
+    "requester": "CX팀",
+    "question": "장바구니 이탈(add_to_cart 이후 purchase가 발생하지 않은 세션) 비율을 세션별로 계산하고, 특히 'begin_checkout' 단계를 거친 후 이탈하는 비율을 별도로 산출해주세요. 2025년 11월 전체 기간의 데이터를 사용하며, 결과는 이탈 비율이 높은 순서대로 정렬합니다.",
+    "context": "사용자가 상품을 장바구니에 담은 후 구매를 완료하지 않는 패턴을 이해하는 것이 장바구니 이탈을 줄이는 데 중요합니다. 특히 결제 시작 후 이탈하는 지점을 파악하여 개선 기회를 찾고자 합니다.",
+    "submission_requirements": "결과는 abandonment_stage, abandonment_rate 컬럼으로 구성하며, abandonment_rate 기준으로 내림차순 정렬합니다. abandonment_rate는 소수점 4자리까지 표시합니다.",
+    "answer_sql": "WITH SessionStages AS (\n    SELECT\n        session_id,\n        MAX(CASE WHEN event_name = 'add_to_cart' THEN 1 ELSE 0 END) AS has_add_to_cart,\n        MAX(CASE WHEN event_name = 'begin_checkout' THEN 1 ELSE 0 END) AS has_begin_checkout,\n        MAX(CASE WHEN event_name = 'purchase' THEN 1 ELSE 0 END) AS has_purchase\n    FROM\n        pa_events\n    WHERE\n        event_time >= '2025-11-01 00:00:00'\n        AND event_time < '2025-12-01 00:00:00'\n    GROUP BY\n        session_id\n),\nAbandonment AS (\n    SELECT\n        CASE\n            WHEN has_add_to_cart = 1 AND has_begin_checkout = 0 AND has_purchase = 0 THEN 'Add to Cart Only'\n            WHEN has_add_to_cart = 1 AND has_begin_checkout = 1 AND has_purchase = 0 THEN 'Begin Checkout'\n            ELSE 'Other'\n        END AS abandonment_stage,\n        COUNT(session_id) AS session_count\n    FROM\n        SessionStages\n    WHERE\n        has_add_to_cart = 1 AND has_purchase = 0\n    GROUP BY\n        abandonment_stage\n),\nTotalAbandonableSessions AS (\n    SELECT COUNT(session_id) AS total_count\n    FROM SessionStages\n    WHERE has_add_to_cart = 1 AND has_purchase = 0\n)\nSELECT\n    a.abandonment_stage,\n    CASE\n        WHEN t.total_count = 0 THEN 0\n        ELSE CAST(a.session_count AS DECIMAL) / t.total_count\n    END AS abandonment_rate\nFROM\n    Abandonment a\nCROSS JOIN\n    TotalAbandonableSessions t\nWHERE a.abandonment_stage != 'Other'\nORDER BY\n    abandonment_rate DESC;",
+    "expected_description": "2025년 11월에 장바구니에 상품을 담았으나 구매를 완료하지 않은 세션을 대상으로, 'add_to_cart'만 하고 이탈한 비율과 'begin_checkout' 단계를 거친 후 이탈한 비율을 보여줍니다. 가장 높은 이탈 비율을 가진 단계부터 정렬됩니다.",
+    "expected_columns": [
+      "abandonment_stage",
+      "abandonment_rate"
+    ],
+    "sort_keys": [
+      "abandonment_rate"
+    ],
+    "hint": "세션별로 'add_to_cart', 'begin_checkout', 'purchase' 이벤트 발생 여부를 집계하는 CTE를 만듭니다. 이후 장바구니에 담고 구매하지 않은 세션들을 대상으로 이탈 단계를 구분합니다. 총 장바구니 이탈 세션 수 대비 각 단계별 이탈 세션 수의 비율을 계산합니다.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 5,
+    "expected_result": [
+      {
+        "abandonment_stage": "Add to Cart Only",
+        "abandonment_rate": 0.8348646635212317
+      },
+      {
+        "abandonment_stage": "Begin Checkout",
+        "abandonment_rate": 0.16513533647876832
+      }
+    ],
+    "expected_row_count": 2
+  },
+  {
+    "problem_id": "2026-01-05_commerce_sql_004_set1",
+    "difficulty": "medium",
+    "topic": "retention",
+    "requester": "그로스팀",
+    "question": "2025년 11월에 첫 구매를 완료한 사용자들이 12월에 재구매했는지 여부를 분석하고 싶습니다. 재구매율(Repeat Purchase Rate)과 해당 사용자들의 평균 재구매 횟수를 계산해주세요.",
+    "context": "신규 고객 확보만큼 중요한 것은 기존 고객의 유지 및 재구매 유도입니다. 첫 구매자 대상의 재구매율을 파악하여 향후 고객 유지 전략 수립에 활용하고자 합니다.",
+    "submission_requirements": "결과는 repeat_purchase_rate, average_repurchase_count 컬럼으로 구성합니다. repeat_purchase_rate는 소수점 4자리까지 표시하고, average_repurchase_count는 소수점 2자리까지 표시합니다.",
+    "answer_sql": "WITH FirstPurchaseUsers AS (\n    SELECT\n        user_id,\n        MIN(order_time) AS first_purchase_time\n    FROM\n        pa_orders\n    WHERE\n        order_time >= '2025-11-01 00:00:00'\n        AND order_time < '2025-12-01 00:00:00'\n    GROUP BY\n        user_id\n),\nRepurchasedUsers AS (\n    SELECT\n        po.user_id,\n        COUNT(DISTINCT po.order_id) AS repurchase_count\n    FROM\n        pa_orders po\n    JOIN\n        FirstPurchaseUsers fpu ON po.user_id = fpu.user_id\n    WHERE\n        po.order_time >= '2025-12-01 00:00:00'\n        AND po.order_time < '2026-01-01 00:00:00'\n        AND po.order_time > fpu.first_purchase_time -- Ensure it's a subsequent purchase\n    GROUP BY\n        po.user_id\n)\nSELECT\n    CASE\n        WHEN COUNT(DISTINCT fpu.user_id) = 0 THEN 0\n        ELSE CAST(COUNT(DISTINCT ru.user_id) AS DECIMAL) / COUNT(DISTINCT fpu.user_id)\n    END AS repeat_purchase_rate,\n    COALESCE(AVG(ru.repurchase_count), 0) AS average_repurchase_count\nFROM\n    FirstPurchaseUsers fpu\nLEFT JOIN\n    RepurchasedUsers ru ON fpu.user_id = ru.user_id;",
+    "expected_description": "2025년 11월에 첫 구매를 한 사용자들을 대상으로, 2025년 12월에 재구매를 한 사용자의 비율(repeat_purchase_rate)과 재구매한 사용자들의 평균 재구매 횟수(average_repurchase_count)를 보여줍니다.",
+    "expected_columns": [
+      "repeat_purchase_rate",
+      "average_repurchase_count"
+    ],
+    "sort_keys": [],
+    "hint": "2025년 11월의 첫 구매 사용자 목록을 추출하는 CTE를 만듭니다. 그 후, 12월에 재구매한 사용자 목록과 재구매 횟수를 집계하는 CTE를 만듭니다. 첫 구매 사용자 전체 대비 재구매 사용자 비율과 재구매 횟수의 평균을 계산합니다. 첫 구매 시점보다 이후에 발생한 구매만 재구매로 간주해야 합니다.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 5,
+    "expected_result": [
+      {
+        "repeat_purchase_rate": 0.0,
+        "average_repurchase_count": 0.0
+      }
+    ],
+    "expected_row_count": 1
+  },
+  {
+    "problem_id": "2026-01-05_commerce_sql_005_set1",
+    "difficulty": "hard",
+    "topic": "activation",
+    "requester": "마케팅팀",
+    "question": "2025년 11월에 가입한 사용자들이 첫 구매까지 도달하는 퍼널 단계를 'page_view' -> 'view_product' -> 'add_to_cart' -> 'begin_checkout' -> 'purchase' 순서로 분석하고, 각 단계별 전환율 및 이탈율을 계산해주세요. 'search' 이벤트도 'page_view'와 'view_product' 사이에 포함될 수 있다고 가정합니다.",
+    "context": "신규 가입자가 실제 구매로 이어지는 과정을 상세히 이해하여, 각 단계별 병목 현상을 파악하고 개선하기 위한 액션 아이템 도출에 활용하고자 합니다.",
+    "submission_requirements": "결과는 event_sequence, conversion_rate, churn_rate 컬럼으로 구성합니다. event_sequence는 'page_view', 'search', 'view_product', 'add_to_cart', 'begin_checkout', 'purchase' 순서를 따릅니다. conversion_rate는 이전 단계 대비 전환율, churn_rate는 이전 단계 대비 이탈율을 의미하며, 둘 다 소수점 4자리까지 표시합니다. 첫 구매 사용자에 대해서만 분석합니다.",
+    "answer_sql": "WITH FirstPurchasers AS (\n    SELECT\n        user_id\n    FROM (\n        SELECT\n            user_id,\n            MIN(order_time) AS first_order_time\n        FROM\n            pa_orders\n        WHERE\n            order_time >= '2025-11-01 00:00:00'\n            AND order_time < '2025-12-01 00:00:00'\n        GROUP BY\n            user_id\n    ) AS fp\n    WHERE\n        first_order_time >= (\n            SELECT MIN(started_at) FROM pa_sessions WHERE user_id IN (SELECT user_id FROM pa_users WHERE signup_at >= '2025-11-01 00:00:00' AND signup_at < '2025-12-01 00:00:00')\n        )\n),\nEventOrder AS (\n    SELECT\n        user_id,\n        event_time,\n        CASE\n            WHEN event_name = 'page_view' THEN 1\n            WHEN event_name = 'search' THEN 2\n            WHEN event_name = 'view_product' THEN 3\n            WHEN event_name = 'add_to_cart' THEN 4\n            WHEN event_name = 'begin_checkout' THEN 5\n            WHEN event_name = 'purchase' THEN 6\n            ELSE 99\n        END AS event_order\n    FROM\n        pa_events\n    WHERE\n        user_id IN (SELECT user_id FROM FirstPurchasers)\n        AND event_name IN ('page_view', 'search', 'view_product', 'add_to_cart', 'begin_checkout', 'purchase')\n),\nRankedEvents AS (\n    SELECT\n        user_id,\n        event_time,\n        event_order,\n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_time) as rn\n    FROM\n        EventOrder\n    WHERE event_order < 6 -- Consider only events up to begin_checkout for funnel steps before purchase\n),\nFunnelCounts AS (\n    SELECT\n        CASE\n            WHEN event_order = 1 THEN 'page_view'\n            WHEN event_order = 2 THEN 'search'\n            WHEN event_order = 3 THEN 'view_product'\n            WHEN event_order = 4 THEN 'add_to_cart'\n            WHEN event_order = 5 THEN 'begin_checkout'\n        END AS event_step,\n        COUNT(DISTINCT user_id) AS step_users\n    FROM\n        RankedEvents\n    WHERE rn = 1 -- First occurrence of each step for a user\n    GROUP BY\n        event_step, event_order\n),\nFinalFunnel AS (\n    SELECT\n        event_step,\n        step_users,\n        ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) as step_rank -- Placeholder for ordering, actual order is in CASE statement\n    FROM FunnelCounts\n)\n-- Manually constructing the funnel sequence and calculating rates\nSELECT\n    CASE\n        WHEN sf.event_step = 'page_view' THEN 'page_view -> search'\n        WHEN sf.event_step = 'search' THEN 'search -> view_product'\n        WHEN sf.event_step = 'view_product' THEN 'view_product -> add_to_cart'\n        WHEN sf.event_step = 'add_to_cart' THEN 'add_to_cart -> begin_checkout'\n        WHEN sf.event_step = 'begin_checkout' THEN 'begin_checkout -> purchase'\n    END AS event_sequence,\n    COALESCE(CAST(sf.step_users AS DECIMAL) / LAG(total_users.total_users, 1, (SELECT COUNT(DISTINCT user_id) FROM FirstPurchasers)) OVER (ORDER BY CASE WHEN sf.event_step = 'page_view' THEN 1 WHEN sf.event_step = 'search' THEN 2 WHEN sf.event_step = 'view_product' THEN 3 WHEN sf.event_step = 'add_to_cart' THEN 4 WHEN sf.event_step = 'begin_checkout' THEN 5 END), 0) AS conversion_rate,\n    CASE\n        WHEN LAG(total_users.total_users, 1, (SELECT COUNT(DISTINCT user_id) FROM FirstPurchasers)) OVER (ORDER BY CASE WHEN sf.event_step = 'page_view' THEN 1 WHEN sf.event_step = 'search' THEN 2 WHEN sf.event_step = 'view_product' THEN 3 WHEN sf.event_step = 'add_to_cart' THEN 4 WHEN sf.event_step = 'begin_checkout' THEN 5 END) = 0 THEN 0\n        ELSE 1 - COALESCE(CAST(sf.step_users AS DECIMAL) / LAG(total_users.total_users, 1, (SELECT COUNT(DISTINCT user_id) FROM FirstPurchasers)) OVER (ORDER BY CASE WHEN sf.event_step = 'page_view' THEN 1 WHEN sf.event_step = 'search' THEN 2 WHEN sf.event_step = 'view_product' THEN 3 WHEN sf.event_step = 'add_to_cart' THEN 4 WHEN sf.event_step = 'begin_checkout' THEN 5 END), 0)\n    END AS churn_rate\nFROM\n    FinalFunnel sf\nCROSS JOIN\n    (SELECT COUNT(DISTINCT user_id) AS total_users FROM FirstPurchasers) AS total_users\nWHERE sf.event_step != 'purchase' -- Exclude the final purchase step for conversion to next stage\nORDER BY CASE WHEN sf.event_step = 'page_view' THEN 1 WHEN sf.event_step = 'search' THEN 2 WHEN sf.event_step = 'view_product' THEN 3 WHEN sf.event_step = 'add_to_cart' THEN 4 WHEN sf.event_step = 'begin_checkout' THEN 5 END;",
+    "expected_description": "2025년 11월에 가입하고 첫 구매를 완료한 사용자를 대상으로, 주요 퍼널 단계별 전환율(이전 단계 대비 현재 단계 사용자 비율)과 이탈율(이전 단계 대비 이탈 사용자 비율)을 보여줍니다. 'page_view'부터 'begin_checkout'까지의 각 전환을 분석합니다.",
+    "expected_columns": [
+      "event_sequence",
+      "conversion_rate",
+      "churn_rate"
+    ],
+    "sort_keys": [
+      "event_sequence"
+    ],
+    "hint": "2025년 11월에 가입하고 첫 구매를 한 사용자 ID를 먼저 추출합니다. 해당 사용자들의 'page_view', 'search', 'view_product', 'add_to_cart', 'begin_checkout', 'purchase' 이벤트를 시간 순서대로 매핑하고 각 단계별 사용자 수를 집계합니다. ROW_NUMBER() 함수를 사용하여 각 사용자별로 각 단계의 첫 발생 시점을 파악합니다. 이전 단계 사용자 수를 기준으로 현재 단계 사용자 수의 비율(전환율)과 1에서 전환율을 뺀 값(이탈율)을 계산합니다. 0으로 나누는 경우를 방지하기 위해 NULLIF 또는 CASE 문을 사용하세요.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 8,
+    "expected_result": [
+      {
+        "event_sequence": "page_view -> search",
+        "conversion_rate": 1.0,
+        "churn_rate": 0.0
+      }
+    ],
+    "expected_row_count": 1
+  },
+  {
+    "problem_id": "2026-01-05_commerce_sql_006_set1",
+    "difficulty": "hard",
+    "topic": "revenue",
+    "requester": "경영진",
+    "question": "2025년 10월 30일부터 12월 29일까지의 기간 동안, 각 국가(country)별 총 매출(GMV), 첫 구매 사용자 수, 그리고 ARPU(Average Revenue Per User)를 계산해주세요. ARPU는 해당 기간 동안 구매가 발생한 사용자만을 대상으로 합니다.",
+    "context": "전반적인 비즈니스 성과를 측정하기 위해 핵심 국가별 매출 기여도와 사용자당 평균 수익을 파악하는 것이 중요합니다. 이는 향후 투자 및 전략 결정에 필수적인 정보입니다.",
+    "submission_requirements": "결과는 country, total_gmv, first_time_buyers, arpu 컬럼으로 구성하며, total_gmv 기준으로 내림차순 정렬합니다. total_gmv는 정수, first_time_buyers는 정수, arpu는 소수점 둘째 자리까지 표시합니다.",
+    "answer_sql": "WITH UserFirstOrder AS (\n    SELECT\n        user_id,\n        MIN(order_time) AS first_order_time\n    FROM\n        pa_orders\n    GROUP BY\n        user_id\n),\nRelevantOrders AS (\n    SELECT\n        po.order_id,\n        po.user_id,\n        po.order_time,\n        po.amount,\n        pu.country,\n        CASE WHEN ufo.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_first_order\n    FROM\n        pa_orders po\n    JOIN\n        pa_users pu ON po.user_id = pu.user_id\n    LEFT JOIN\n        UserFirstOrder ufo ON po.user_id = ufo.user_id AND po.order_time > ufo.first_order_time\n    WHERE\n        po.order_time >= '2025-10-30 00:00:00'\n        AND po.order_time < '2025-12-30 00:00:00'\n),\nCountryStats AS (\n    SELECT\n        country,\n        SUM(amount) AS total_gmv,\n        COUNT(DISTINCT CASE WHEN is_first_order = 1 THEN user_id ELSE NULL END) AS first_time_buyers_count,\n        COUNT(DISTINCT user_id) AS total_buying_users\n    FROM\n        RelevantOrders\n    GROUP BY\n        country\n)\nSELECT\n    cs.country,\n    cs.total_gmv,\n    cs.first_time_buyers_count AS first_time_buyers,\n    CASE\n        WHEN cs.total_buying_users = 0 THEN 0\n        ELSE CAST(cs.total_gmv AS DECIMAL) / cs.total_buying_users\n    END AS arpu\nFROM\n    CountryStats cs\nORDER BY\n    cs.total_gmv DESC;",
+    "expected_description": "2025년 10월 30일부터 12월 29일까지 각 국가별 총 매출(GMV), 해당 기간 동안 첫 구매를 한 사용자 수(first_time_buyers), 그리고 해당 기간 동안 구매가 발생한 사용자당 평균 수익(ARPU)을 보여줍니다. 결과는 총 매출(GMV)이 높은 순서대로 정렬됩니다.",
+    "expected_columns": [
+      "country",
+      "total_gmv",
+      "first_time_buyers",
+      "arpu"
+    ],
+    "sort_keys": [
+      "total_gmv"
+    ],
+    "hint": "먼저 사용자별 첫 구매 시점을 파악합니다. 해당 기간 동안의 모든 주문 데이터를 수집하되, 각 주문이 사용자의 첫 구매인지 여부를 표시합니다. 각 국가별로 주문 총액(GMV), 첫 구매 사용자 수, 구매가 발생한 총 사용자 수를 집계합니다. ARPU는 총 GMV를 구매가 발생한 총 사용자 수로 나누어 계산합니다. 0으로 나누는 경우를 방지하기 위해 CASE 문을 사용하세요.",
+    "date": "2026-01-05",
+    "set_index": 1,
+    "xp_value": 8,
+    "expected_result": [
+      {
+        "country": "JP",
+        "total_gmv": 813405,
+        "first_time_buyers": 0,
+        "arpu": 23923.676470588234
+      },
+      {
+        "country": "CA",
+        "total_gmv": 686041,
+        "first_time_buyers": 0,
+        "arpu": 24501.464285714286
+      },
+      {
+        "country": "FR",
+        "total_gmv": 617464,
+        "first_time_buyers": 0,
+        "arpu": 29403.04761904762
+      },
+      {
+        "country": "IN",
+        "total_gmv": 584041,
+        "first_time_buyers": 0,
+        "arpu": 23361.64
+      },
+      {
+        "country": "DE",
+        "total_gmv": 538967,
+        "first_time_buyers": 0,
+        "arpu": 21558.68
+      },
+      {
+        "country": "KR",
+        "total_gmv": 513149,
+        "first_time_buyers": 0,
+        "arpu": 24435.666666666668
+      },
+      {
+        "country": "US",
+        "total_gmv": 490661,
+        "first_time_buyers": 0,
+        "arpu": 27258.944444444445
+      },
+      {
+        "country": "UK",
+        "total_gmv": 448122,
+        "first_time_buyers": 0,
+        "arpu": 23585.368421052633
+      },
+      {
+        "country": "IT",
+        "total_gmv": 415538,
+        "first_time_buyers": 0,
+        "arpu": 17314.083333333332
+      }
+    ],
+    "expected_row_count": 9
+  }
+]

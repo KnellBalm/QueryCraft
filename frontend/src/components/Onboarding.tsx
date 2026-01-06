@@ -8,6 +8,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { analytics } from '../services/analytics';
 import './Onboarding.css';
 
+// localStorage 키
+const ONBOARDING_KEY = 'sql_labs_onboarding_completed';
+
+// 외부에서 호출 가능한 온보딩 리셋 함수
+let resetOnboardingCallback: (() => void) | null = null;
+
+export function resetOnboarding() {
+    localStorage.removeItem(ONBOARDING_KEY);
+    if (resetOnboardingCallback) {
+        resetOnboardingCallback();
+    }
+}
+
 interface OnboardingStep {
     id: string;
     page: string;
@@ -18,6 +31,7 @@ interface OnboardingStep {
 }
 
 const onboardingSteps: OnboardingStep[] = [
+
     // 메인페이지 (3단계)
     {
         id: 'welcome',
@@ -124,19 +138,16 @@ export function Onboarding() {
 
     const step = onboardingSteps[currentStep];
 
-    // 쿠키 헬퍼
-    const getCookie = (name: string): string | null => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-        return null;
-    };
-
-    const setCookie = (name: string, value: string, days: number = 30) => {
-        const expires = new Date();
-        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-    };
+    // 외부에서 온보딩 리셋 가능하도록 콜백 등록
+    useEffect(() => {
+        resetOnboardingCallback = () => {
+            setCurrentStep(0);
+            setIsActive(true);
+        };
+        return () => {
+            resetOnboardingCallback = null;
+        };
+    }, []);
 
     // 툴팁 위치 계산
     const updatePosition = useCallback(() => {
@@ -223,11 +234,14 @@ export function Onboarding() {
 
     // 온보딩 시작
     useEffect(() => {
-        const hasCompleted = getCookie('onboarding_completed');
-        const isAdmin = user?.is_admin === true;
-        const shouldShow = isAdmin || !user || !hasCompleted;
+        const hasCompleted = localStorage.getItem(ONBOARDING_KEY) === 'true';
 
-        if (shouldShow && location.pathname === '/') {
+        // 이미 완료한 경우 표시 안함
+        if (hasCompleted) {
+            return;
+        }
+
+        if (location.pathname === '/') {
             const timer = setTimeout(() => {
                 setIsActive(true);
                 setCurrentStep(0);
@@ -292,13 +306,13 @@ export function Onboarding() {
     };
 
     const handleSkip = () => {
-        if (!user?.is_admin) setCookie('onboarding_completed', 'true');
+        localStorage.setItem(ONBOARDING_KEY, 'true');
         analytics.track('Onboarding Skipped', { step: currentStep + 1, user_id: user?.id || 'guest' });
         setIsActive(false);
     };
 
     const handleComplete = () => {
-        if (!user?.is_admin) setCookie('onboarding_completed', 'true');
+        localStorage.setItem(ONBOARDING_KEY, 'true');
         analytics.track('Onboarding Completed', { user_id: user?.id || 'guest' });
         setIsActive(false);
     };

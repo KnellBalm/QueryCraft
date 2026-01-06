@@ -17,18 +17,26 @@ GRADING_SCHEMA = "grading"
 def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
     """문제 로드 - 모든 세트 파일 검색"""
     today = date.today().isoformat()
+    problems_dir = Path("problems/daily")
     
     # 검색할 파일 경로들
     if data_type == "stream":
-        paths = [Path(f"problems/daily/stream_{today}.json")]
+        # 오늘 파일 먼저, 없으면 모든 stream 파일 검색
+        paths = [problems_dir / f"stream_{today}.json"]
+        if not paths[0].exists():
+            paths = sorted(problems_dir.glob("stream_*.json"), reverse=True)
     else:
         # 다중 세트 파일들도 검색
         paths = [
-            Path(f"problems/daily/{today}.json"),
-            Path(f"problems/daily/{today}_set0.json"),
-            Path(f"problems/daily/{today}_set1.json"),
-            Path(f"problems/daily/{today}_set2.json"),
+            problems_dir / f"{today}.json",
+            problems_dir / f"{today}_set0.json",
+            problems_dir / f"{today}_set1.json",
+            problems_dir / f"{today}_set2.json",
         ]
+        # 오늘 파일이 없으면 가장 최근 날짜 파일들 검색
+        if not any(p.exists() for p in paths):
+            all_files = sorted(problems_dir.glob("20??-??-??*.json"), reverse=True)
+            paths = [f for f in all_files if not f.name.startswith("stream_")]
     
     for path in paths:
         if not path.exists():
@@ -72,6 +80,46 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
     user_df.columns = [c.lower() for c in user_df.columns]
     expected_df.columns = [c.lower() for c in expected_df.columns]
     
+    # 데이터 타입 정규화 (특히 JSON에서 로드된 expected_df의 날짜/시간 처리)
+    for col in user_df.columns:
+        if col not in expected_df.columns:
+            continue
+            
+        # 1. 날짜/시간 정규화 - 강제 변환 시도
+        # user_df는 Postgres Timestamp, expected_df는 ISO 문자열일 수 있음
+        try:
+            # 첫 번째 non-null 값 샘플로 날짜 형식인지 판단
+            u_sample = user_df[col].dropna().iloc[0] if len(user_df[col].dropna()) > 0 else None
+            e_sample = expected_df[col].dropna().iloc[0] if len(expected_df[col].dropna()) > 0 else None
+            
+            u_looks_like_datetime = (
+                pd.api.types.is_datetime64_any_dtype(user_df[col]) or 
+                (isinstance(u_sample, str) and ('T' in u_sample or '-' in u_sample) and ':' in u_sample)
+            )
+            e_looks_like_datetime = (
+                pd.api.types.is_datetime64_any_dtype(expected_df[col]) or
+                (isinstance(e_sample, str) and ('T' in e_sample or '-' in e_sample) and ':' in e_sample)
+            )
+            
+            if u_looks_like_datetime or e_looks_like_datetime:
+                # 양쪽 모두 datetime으로 변환
+                user_df[col] = pd.to_datetime(user_df[col], errors='coerce')
+                expected_df[col] = pd.to_datetime(expected_df[col], errors='coerce')
+        except Exception:
+            pass
+        
+        # 2. 숫자 정규화 (float vs int 등)
+        try:
+            is_u_num = pd.api.types.is_numeric_dtype(user_df[col])
+            is_e_num = pd.api.types.is_numeric_dtype(expected_df[col])
+            
+            if is_u_num and not is_e_num:
+                expected_df[col] = pd.to_numeric(expected_df[col], errors='coerce')
+            elif is_e_num and not is_u_num:
+                user_df[col] = pd.to_numeric(user_df[col], errors='coerce')
+        except Exception:
+            pass
+
     # 정렬 후 비교
     try:
         # sort_keys가 있으면 사용, 없으면 모든 컬럼으로 정렬
@@ -79,6 +127,9 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
             sort_cols = [k.lower() for k in sort_keys if k.lower() in user_df.columns]
         else:
             sort_cols = list(user_df.columns)
+        
+        # 정렬 전 NaN 처리 (정렬 안정성 위해)
+        # numeric은 0이나 특정값으로 채우지 않고 그대로 두되, string 변환 시에는 차이가 날 수 있음
         
         if sort_cols:
             user_sorted = user_df.sort_values(by=sort_cols).reset_index(drop=True)
@@ -101,9 +152,17 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
                 for col in common_cols:
                     u_val = user_sorted.iloc[i][col]
                     e_val = expected_sorted.iloc[i][col]
-                    if pd.isna(u_val) and pd.isna(e_val):
-                        continue
                     if u_val != e_val:
+                        # 미세한 형식 차이(T 구분자 등) 무시를 위해 문자열 변환 및 정규화 후 재비교
+                        if (isinstance(u_val, (pd.Timestamp, datetime)) or isinstance(e_val, (pd.Timestamp, datetime, str))):
+                            try:
+                                u_dt = pd.to_datetime(u_val).replace(tzinfo=None)
+                                e_dt = pd.to_datetime(e_val).replace(tzinfo=None)
+                                if u_dt == e_dt:
+                                    continue
+                            except:
+                                pass
+                        
                         return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
             return False, "결과 값이 다릅니다."
     except Exception as e:
@@ -162,16 +221,17 @@ def grade_submission(
         # 3. 결과 비교
         is_correct, feedback = compare_results(user_df, expected_df, sort_keys)
         
-        # 4. 제출 기록 저장 (PostgreSQL)
-        save_submission_pg(
-            session_date=session_date,
-            problem_id=problem_id,
-            data_type=data_type,
-            sql_text=sql,
-            is_correct=is_correct,
-            feedback=feedback,
-            user_id=user_id
-        )
+        # 4. 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
+        if user_id:
+            save_submission_pg(
+                session_date=session_date,
+                problem_id=problem_id,
+                data_type=data_type,
+                sql_text=sql,
+                is_correct=is_correct,
+                feedback=feedback,
+                user_id=user_id
+            )
         
         # 5. 정답 시 XP 지급 (문제의 xp_value 또는 기본값 5)
         if is_correct and user_id:

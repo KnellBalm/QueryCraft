@@ -10,3 +10,7 @@ data/*
 .env
 *.zip
 *.log
+
+# Agent 디렉토리 (rules는 버전 관리)
+.agent/*
+!.agent/rules/

@@ -6,7 +6,7 @@ import { MainPage } from './pages/MainPage';
 import { MyPage } from './pages/MyPage';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
-import { Onboarding } from './components/Onboarding';
+import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { useEffect, useState } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics } from './services/analytics';
@@ -62,6 +62,9 @@ function App() {
             )}
             <button onClick={toggleTheme} className="theme-toggle" title={theme === 'light' ? '다크 모드' : '라이트 모드'}>
               {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+            <button onClick={resetOnboarding} className="help-toggle" title="도움말 보기">
+              ❓
             </button>
             {isLoading ? null : user ? (
               <div className="user-menu">

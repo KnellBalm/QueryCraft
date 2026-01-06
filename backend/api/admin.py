@@ -222,15 +222,6 @@ async def refresh_data(request: RefreshDataRequest):
         return RefreshDataResponse(success=False, message=f"데이터 갱신 실패: {str(e)}")
 
 
-@router.post("/reset-submissions")
-async def reset_submissions():
-    """제출 기록 초기화"""
-    try:
-        with duckdb_connection() as duck:
-            duck.execute("DELETE FROM pa_submissions")
-        return {"success": True, "message": "제출 기록 초기화 완료"}
-    except Exception as e:
-        raise HTTPException(500, f"초기화 실패: {str(e)}")
 
 
 @router.get("/dataset-versions")
@@ -390,6 +381,13 @@ async def reset_submissions(admin=Depends(require_admin)):
         with postgres_connection() as pg:
             pg.execute("TRUNCATE TABLE submissions RESTART IDENTITY")
             pg.execute("UPDATE users SET xp = 0, level = 1")
+        
+        # DuckDB의 분석용 데이터도 삭제
+        try:
+            with duckdb_connection() as duck:
+                duck.execute("DELETE FROM pa_submissions")
+        except:
+            pass
         
         return {
             "success": True,
