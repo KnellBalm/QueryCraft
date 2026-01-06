@@ -93,8 +93,8 @@ def ensure_users_table():
         logger.error(f"Failed to create users table: {e}")
 
 
-# 시작 시 테이블 생성
-ensure_users_table()
+# 시작 시 테이블 생성은 backend/main.py의 lifespan에서 처리함
+# ensure_users_table()
 
 
 # =============================================
