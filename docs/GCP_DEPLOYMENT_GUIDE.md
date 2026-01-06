@@ -297,3 +297,39 @@ git push origin main
 ### Supabase 연결 오류
 - POSTGRES_DSN의 비밀번호가 올바른지 확인
 - `sslmode=require`가 포함되어 있는지 확인
+
+---
+
+## Part 7: Dev/Prod 개발 워크플로우
+
+효율적인 개발과 안정적인 운영을 위해 다음과 같은 브랜치 전략을 권장합니다.
+
+### 7.1 브랜치 역할
+
+| 브랜치 | 용도 | 데이터베이스 | 배포 환경 |
+|--------|------|------------|----------|
+| `dev` | 일상 개발 및 테스트 | 사내 PostgreSQL (192.168.101.224) | 로컬 Docker |
+| `main` | 상용 서비스 배포 | Supabase (Cloud) | GCP Cloud Run |
+
+### 7.2 일상 개발 흐름 (dev)
+
+1. **개발 시작**: `git checkout dev`
+2. **코드 작성 및 로컬 테스트**:
+   - `docker compose -f docker-compose.dev.yml up -d`
+   - 프론트엔드: `http://localhost:15173`
+   - 백엔드: `http://localhost:15174`
+3. **코드 푸시**: `git push origin dev`
+
+### 7.3 상용 배포 흐름 (main)
+
+1. **기능 검증 완료 후**: `git checkout main`
+2. **변경사항 병합**: `git merge dev`
+3. **운영 서버 배포**: `git push origin main`
+   - GitHub Actions가 자동으로 빌드 및 배포를 수행합니다.
+   - 약 3-5분 후 서비스에 반영됩니다.
+
+---
+
+## 🎉 완료!
+
+축하합니다! 이제 QueryCraft가 완전 무료로 운영됩니다.

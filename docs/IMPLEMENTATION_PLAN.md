@@ -1,96 +1,50 @@
-# 카카오/구글 SSO 로그인 구현 계획
+# QueryCraft 구현 계획 및 업무 인수인계 (2026-01-07)
 
-## 📋 현재 상태 분석
+## 📋 현재 상태 요약
 
-### ✅ 이미 구현된 부분
+### 1. 배포 상황
+- **GCP Cloud Run**: 배포 성공 (✅ 녹색)
+- **Supabase**: 배포는 성공했으나 테이블이 아직 자동으로 생성되지 않음.
+  - **원인 추정**: 백엔드 시작 시 Supabase 연결에 실패했거나, SSL 설정 문제로 초기화 스크립트가 실행되지 않았을 가능성 높음.
+  - **조치**: `main.py`에 에러 핸들링을 추가하여 앱 시작은 가능하게 해둠.
 
-**백엔드 (`backend/api/auth.py`):**
-- Google OAuth 완전 구현 (L228-298)
-  - `GET /api/auth/google/login` - 로그인 시작
-  - `GET /api/auth/google/callback` - OAuth 콜백 처리
-- Kakao OAuth 완전 구현 (L304-379)
-  - `GET /api/auth/kakao/login` - 로그인 시작
-  - `GET /api/auth/kakao/callback` - OAuth 콜백 처리
-- 세션 관리, 사용자 저장 로직 구현됨
-
-**프론트엔드 (`frontend/src/components/LoginModal.tsx`):**
-- Google/Kakao 로그인 버튼 UI 존재
-- `handleSocialLogin` 함수가 `alert()`만 표시 (미연결)
-
-### ❌ 필요한 작업
-
-| 영역 | 필요 작업 |
-|------|----------|
-| **프론트엔드** | `handleSocialLogin`에서 실제 OAuth URL로 리다이렉트 |
-| **환경변수** | Google/Kakao OAuth 키 설정 확인 ([상세 가이드](file:///mnt/z/GitHub/Offline-Lab/docs/OAUTH_SETUP_GUIDE.md)) |
+### 2. 환경 분리
+- **Prod**: `main` 브랜치 (GCP + Supabase)
+- **Dev**: `dev` 브랜치 (내부 워크스테이션 + 192.168.101.224 PostgreSQL)
 
 ---
 
-## 📂 Proposed Changes
+## 🚀 내일 회사에서 해야 할 일 (To-Do)
 
-### Frontend
+### 1. 환경 준비
+- `dev` 브랜치로 전환: `git checkout dev`
+- 최신 코드 가져오기: `git pull origin dev`
+- 로컬 개발 환경 실행: `docker compose -f docker-compose.dev.yml up -d`
 
-#### [MODIFY] [LoginModal.tsx](file:///mnt/z/GitHub/Offline-Lab/frontend/src/components/LoginModal.tsx)
+### 2. Supabase 테이블 생성 문제 해결
+- **GCP Cloud Run 로그 확인**: 
+  - 콘솔에서 `query-craft-backend` 로그 확인.
+  - `[WARNING] Database initialization failed` 메시지가 있는지 확인.
+- **수동 초기화 시도**:
+  - 만약 자동 생성이 계속 안 된다면, 백엔드 URL의 `/docs` (Swagger)에서 초기화 API를 호출하는 기능을 추가하거나, Supabase SQL Editor에서 `sql/init.sql` 내용을 직접 실행.
 
-`handleSocialLogin` 함수 수정:
+### 3. 회원가입 및 온보딩 버그 수정
+- **회원가입**: `users` 테이블 생성 확인 후 테스트.
+- **온보딩 6단계**: 프론트엔드 네트워크 탭에서 어떤 API가 무한 로딩인지 확인.
 
-```diff
-  const handleSocialLogin = (provider: string) => {
--     alert(`${provider} 로그인은 아직 준비 중입니다.`);
-+     // 백엔드 OAuth 엔드포인트로 리다이렉트
-+     const authUrl = provider === 'Google' 
-+       ? '/api/auth/google/login'
-+       : '/api/auth/kakao/login';
-+     window.location.href = authUrl;
-  };
-```
-
----
-
-## 🔧 환경변수 (이미 백엔드에서 사용 중)
-
-```bash
-# Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# Kakao OAuth
-KAKAO_CLIENT_ID=your-kakao-client-id
-KAKAO_CLIENT_SECRET=your-kakao-client-secret
-
-# Frontend URL (콜백 리다이렉트용)
-FRONTEND_URL=http://localhost:15173
-```
+### 4. 디렉토리 구조 개편 (안정화 후)
+- 루트의 파편화된 폴더들을 `backend/` 내부로 통합.
 
 ---
 
-## ✅ Verification Plan
-
-### Manual Verification
-
-1. **프론트엔드 빌드 확인**
-   ```bash
-   cd /mnt/z/GitHub/Offline-Lab/frontend && npm run build
-   ```
-
-2. **SSO 로그인 플로우 테스트**
-   - 로그인 모달에서 "Google로 계속하기" 클릭
-   - Google OAuth 화면으로 리다이렉트 확인
-   - 로그인 후 메인 페이지로 돌아와 로그인 상태 확인
-
-3. **카카오 로그인 테스트** (위와 동일한 방식)
-
-### 환경변수 미설정 시
-
-- OAuth 클라이언트 키가 없으면 백엔드가 `400 OAuth not configured` 반환
-- `/api/auth/status` 엔드포인트로 설정 상태 확인 가능
+## 🛠️ Antigravity를 위한 가이드
+내일 회사에서 Antigravity에게 다음과 같이 요청하세요:
+> "QueryCraft 프로젝트 작업을 이어서 할 거야. `docs/IMPLEMENTATION_PLAN.md` 파일을 읽고 현재 상태와 내일 할 일을 파악해줘. 먼저 Supabase 테이블이 안 생기는 문제부터 조사하자."
 
 ---
 
-## ⚠️ User Review Required
-
-> [!IMPORTANT]
-> **OAuth 앱 설정 필요**
-> - Google Cloud Console에서 OAuth 앱 생성 및 Redirect URI 등록 필요
-> - Kakao Developers에서 앱 생성 및 Redirect URI 등록 필요
-> - Redirect URI: `http://localhost:15174/auth/google/callback`, `http://localhost:15174/auth/kakao/callback`
+## 📝 주요 변경 파일 기록
+- `backend/services/db_init.py`: DB 테이블 생성 스크립트
+- `backend/main.py`: 시작 시 초기화 로직 (try-except 적용)
+- `docs/GCP_DEPLOYMENT_GUIDE.md`: 최신 배포 및 워크플로우 가이드
+- `docker-compose.dev.yml`: 로컬 개발용 설정

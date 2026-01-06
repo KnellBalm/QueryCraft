@@ -1,0 +1,39 @@
+# Dev 환경용 docker-compose (내부 워크스테이션)
+# 사용법: docker compose -f docker-compose.dev.yml up -d
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env.dev
+    environment:
+      - DUCKDB_PATH=/app/data/local.duckdb
+      - ENABLE_SCHEDULER=true
+      - RUN_HOUR=0 # UTC 0:00 = KST 9:00
+      - ENV=development
+    ports:
+      - "15174:8000"
+    volumes:
+      - duckdb_data:/app/data
+      - ./problems:/app/problems
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_API_URL=http://localhost:15174
+        - VITE_MIXPANEL_TOKEN=${VITE_MIXPANEL_TOKEN:-dummy}
+    ports:
+      - "15173:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  duckdb_data:
