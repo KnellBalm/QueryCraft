@@ -1,10 +1,9 @@
 ---
 trigger: always_on
-glob:
 description: SQL Labs 프로젝트 작업 시 항상 참고하는 규칙
 ---
 
-# SQL Labs 프로젝트 작업 규칙
+# QueryCraft 프로젝트 작업 규칙
 
 ## 1. 코드 변경 후 배포
 
