@@ -38,7 +38,7 @@ export function MainPage() {
         <div className="main-page">
             {/* 히어로 섹션 */}
             <section className="hero">
-                <h1>🎯 SQL Analytics Lab</h1>
+                <h1>🔧 QueryCraft</h1>
                 <p className="hero-subtitle">실전 SQL 문제를 풀고 데이터 분석 실력을 키워보세요</p>
 
                 {!user && (

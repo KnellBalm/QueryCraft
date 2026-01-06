@@ -44,7 +44,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     };
 
     const handleSocialLogin = (provider: string) => {
-        alert(`${provider} 로그인은 아직 준비 중입니다.`);
+        // 백엔드 OAuth 엔드포인트로 리다이렉트
+        const authUrl = provider === 'Google'
+            ? '/api/auth/google/login'
+            : '/api/auth/kakao/login';
+        window.location.href = authUrl;
     };
 
     return (

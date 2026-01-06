@@ -1,6 +1,6 @@
 # backend/main.py
 """
-SQL Analytics Lab - FastAPI Backend
+QueryCraft - FastAPI Backend
 """
 import os
 from contextlib import asynccontextmanager
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="SQL Analytics Lab API",
+    title="QueryCraft API",
     description="AI 기반 SQL 학습 플랫폼 API",
     version="1.0.0",
     lifespan=lifespan
@@ -58,7 +58,7 @@ async def root():
     """헬스 체크"""
     return {
         "status": "ok",
-        "service": "SQL Analytics Lab API",
+        "service": "QueryCraft API",
         "version": "1.0.0"
     }
 

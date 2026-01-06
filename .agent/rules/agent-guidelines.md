@@ -56,3 +56,10 @@ description: SQL Labs 프로젝트 작업 시 항상 참고하는 규칙
 - 스케줄러: 매일 오전 9시 자동 실행
 - Gemini API 호출은 `api_usage` 테이블에 기록됨
 - 포트: 백엔드 15174, 프론트엔드 15173
+
+## 8. Implementation Plan 관리
+
+- **저장 위치**: 작업 완료 후 implementation plan을 `docs/IMPLEMENTATION_PLAN.md`에 저장
+- **목적**: 어느 컴퓨터에서 작업하든 최신 계획을 참고할 수 있도록 함
+- **업데이트**: 새로운 기능/변경 계획 수립 시 기존 파일 업데이트 또는 교체
+- **Git 커밋**: implementation plan 생성/수정 시 반드시 커밋하여 동기화

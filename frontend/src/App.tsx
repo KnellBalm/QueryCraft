@@ -40,7 +40,7 @@ function App() {
       <Onboarding />
       <div className="app">
         <header className="header">
-          <Link to="/" className="logo">🎯 SQL Analytics Lab</Link>
+          <Link to="/" className="logo">🔧 QueryCraft</Link>
           <nav className="nav">
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
               🧠 PA 연습

@@ -9,7 +9,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(f"{LOG_DIR}/offline_lab.log"),
+        logging.FileHandler(f"{LOG_DIR}/query_craft.log"),
     ],
 )
 

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "offline-lab"
+name = "query-craft"
 version = "0.1.0"
 description = "SQL 분석 연습 및 자동 채점 플랫폼"
 readme = "README.md"

@@ -1,4 +1,4 @@
-# SQL Analytics Lab
+# QueryCraft
 
 > 프로덕트 분석가 양성을 위한 AI 기반 SQL 실습 플랫폼
 
@@ -249,8 +249,8 @@
 
 ```bash
 # 저장소 클론
-git clone https://github.com/your-org/offline_lab.git
-cd offline_lab
+git clone https://github.com/your-org/query-craft.git
+cd query-craft
 
 # 환경변수 설정
 cp .env.example .env
@@ -374,7 +374,7 @@ pg.close()
 ### 7.1 프로젝트 구조
 
 ```
-offline_lab/
+query-craft/
 ├── backend/                    # FastAPI 백엔드
 │   ├── api/                    # API 라우터
 │   │   ├── admin.py            # 관리자 API
@@ -676,6 +676,8 @@ stream_daily_metrics (
 | 분석 KPI & 트래킹 계획 | [docs/KPI_TRACKING_PLAN.md](./docs/KPI_TRACKING_PLAN.md) | Mixpanel 지표 및 Lexicon 가이드 |
 | 이벤트 트래킹 가이드 | [docs/EVENT_TRACKING_GUIDE.md](./docs/EVENT_TRACKING_GUIDE.md) | 구현 가이드 |
 | 이벤트 설계 가이드라인 | [docs/EVENT_DESIGN_GUIDELINE.md](./docs/EVENT_DESIGN_GUIDELINE.md) | 설계 명세 |
+| OAuth 연동 가이드 | [docs/OAUTH_SETUP_GUIDE.md](./docs/OAUTH_SETUP_GUIDE.md) | 구글/카카오 SSO 설정 |
+| GCP 배포 가이드 | [docs/GCP_DEPLOYMENT_GUIDE.md](./docs/GCP_DEPLOYMENT_GUIDE.md) | 클라우드 배포 및 운영 가이드 |
 | API 문서 | http://localhost:8000/docs | Swagger UI |
 
 [↑ 목차로](#목차)
@@ -692,7 +694,8 @@ stream_daily_metrics (
 - [x] 이벤트 트래킹
 
 ### v1.1 (예정)
-- [ ] 사용자 인증 (Google/Kakao)
+- [x] 사용자 인증 (Google/Kakao SSO)
+- [ ] GCP 배포 및 운영 자동화 (진행 중)
 - [ ] 문제 북마크
 - [ ] 풀이 기록 저장
 - [ ] 리더보드

@@ -1,0 +1,69 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # 배포할 브랜치
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast3 # 서울 리전
+  BACKEND_SERVICE: query-craft-backend
+  FRONTEND_SERVICE: query-craft-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authorize Docker
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
+
+      # 1. Backend 빌드 및 푸시
+      - name: Build and Push Backend
+        run: |
+          docker build -t asia-northeast3-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }} -f backend/Dockerfile .
+          docker push asia-northeast3-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }}
+
+      # 2. Frontend 빌드 및 푸시
+      - name: Build and Push Frontend
+        run: |
+          docker build \
+            --build-arg VITE_MIXPANEL_TOKEN=${{ secrets.VITE_MIXPANEL_TOKEN }} \
+            -t asia-northeast3-docker.pkg.dev/$PROJECT_ID/query-craft/frontend:${{ github.sha }} \
+            -f frontend/Dockerfile ./frontend
+          docker push asia-northeast3-docker.pkg.dev/$PROJECT_ID/query-craft/frontend:${{ github.sha }}
+
+      # 3. Backend 배포
+      - name: Deploy Backend to Cloud Run
+        run: |
+          gcloud run deploy $BACKEND_SERVICE \
+            --image asia-northeast3-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }} \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "POSTGRES_DSN=${{ secrets.POSTGRES_DSN }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1"
+
+      # 4. Frontend 배포
+      - name: Deploy Frontend to Cloud Run
+        run: |
+          gcloud run deploy $FRONTEND_SERVICE \
+            --image asia-northeast3-docker.pkg.dev/$PROJECT_ID/offline-lab/frontend:${{ github.sha }} \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated
