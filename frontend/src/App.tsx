@@ -9,7 +9,7 @@ import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { useEffect, useState } from 'react';
 import { statsApi, adminApi } from './api/client';
-import { initAnalytics } from './services/analytics';
+import { initAnalytics, analytics } from './services/analytics';
 import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import type { UserStats } from './types';
@@ -32,6 +32,20 @@ function App() {
       statsApi.me().then(res => setStats(res.data)).catch(() => setStats(null));
     } else {
       setStats(null);
+    }
+  }, [user]);
+
+  // SSO 로그인 성공 감지 (?login=success 파라미터)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'success' && user) {
+      // SSO 로그인 성공 이벤트 트래킹
+      // provider 정보는 user.id에서 추출 (google_xxx, kakao_xxx)
+      const provider = user.id?.startsWith('google_') ? 'google' : 
+                       user.id?.startsWith('kakao_') ? 'kakao' : 'email';
+      analytics.loginSuccess(user.id, provider as 'google' | 'kakao' | 'email');
+      // URL 정리 (파라미터 제거)
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, [user]);
 

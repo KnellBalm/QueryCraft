@@ -1,12 +1,13 @@
 // frontend/src/services/analytics.ts
 /**
- * 이벤트 트래킹 서비스 - Mixpanel 가이드 준수
+ * 이벤트 트래킹 서비스 - Mixpanel + GA4 (GTM) 통합
  * - 이벤트 네이밍: Title Case (동사 + 대상)
  * - Core Action: Problem Solved
  * - 환경 구분: env property
+ * - GA4: GTM dataLayer를 통한 이벤트 전송
  */
 
-// Mixpanel 전역 타입 선언
+// Mixpanel, PostHog, GA4 dataLayer 전역 타입 선언
 declare global {
     interface Window {
         mixpanel?: {
@@ -25,6 +26,7 @@ declare global {
             identify: (userId: string, properties?: object) => void;
             reset: () => void;
         };
+        dataLayer?: Array<Record<string, any>>;
     }
 }
 
@@ -146,6 +148,27 @@ class Analytics {
         return !!(window.mixpanel && typeof window.mixpanel.track === 'function');
     }
 
+    private isGTMReady(): boolean {
+        return Array.isArray(window.dataLayer);
+    }
+
+    /**
+     * GA4 dataLayer push (GTM을 통한 이벤트 전송)
+     */
+    private pushToDataLayer(event: string, properties?: EventProperties) {
+        if (!this.isGTMReady()) return;
+        
+        // GA4 이벤트명은 snake_case로 변환 (Title Case -> snake_case)
+        const ga4EventName = event.toLowerCase().replace(/ /g, '_');
+        
+        window.dataLayer!.push({
+            event: ga4EventName,
+            ...properties
+        });
+        
+        if (this.debugMode) console.log('[GA4/GTM] Push:', ga4EventName, properties);
+    }
+
     /**
      * 사용자 식별 + User Properties 설정
      */
@@ -168,6 +191,16 @@ class Analytics {
         if (this.isPostHogReady()) {
             window.posthog!.identify(userId, userProps);
             if (this.debugMode) console.log('[PostHog] Identified:', userId);
+        }
+
+        // GA4: GTM을 통해 사용자 ID 설정
+        if (this.isGTMReady()) {
+            window.dataLayer!.push({
+                event: 'user_identified',
+                user_id: userId,
+                user_properties: userProps
+            });
+            if (this.debugMode) console.log('[GA4/GTM] User Identified:', userId);
         }
     }
 
@@ -220,6 +253,9 @@ class Analytics {
                 if (this.debugMode) console.warn('[PostHog] Capture failed:', e);
             }
         }
+
+        // GA4: GTM dataLayer를 통한 이벤트 전송
+        this.pushToDataLayer(event, eventData);
     }
 
     // ============ 내부 카운터 관리 ============

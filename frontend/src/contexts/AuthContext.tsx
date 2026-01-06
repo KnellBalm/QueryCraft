@@ -67,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (res.data.success) {
                 // 로그인 성공 후 /auth/me에서 is_admin 포함 전체 정보 조회
                 await refreshUser();
+                // 로그인 성공 이벤트 트래킹
+                analytics.loginSuccess(res.data.user?.id || email, 'email');
                 return { success: true };
             }
             return { success: false, error: '로그인에 실패했습니다' };
@@ -80,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const res = await axios.post('/api/auth/register', { email, password, name }, { withCredentials: true });
             if (res.data.success) {
                 setUser(res.data.user);
+                // 회원가입 성공 이벤트 트래킹
+                analytics.signUpCompleted(res.data.user?.id || email, 'email');
                 return { success: true };
             }
             return { success: false, error: '회원가입에 실패했습니다' };
