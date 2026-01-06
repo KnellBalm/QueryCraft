@@ -7,8 +7,13 @@ COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY . .
+
+# 빌드 인수 설정 (환경변수로 변환)
+ARG VITE_API_URL
 ARG VITE_MIXPANEL_TOKEN
+ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_MIXPANEL_TOKEN=$VITE_MIXPANEL_TOKEN
+
 RUN npm run build
 
 # Production - Cloud Run용 Nginx 설정

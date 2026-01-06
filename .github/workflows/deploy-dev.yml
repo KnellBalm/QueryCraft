@@ -1,20 +1,21 @@
-name: Build and Deploy to Cloud Run
+name: Build and Deploy to Cloud Run (Dev)
 
 on:
   push:
     branches:
-      - main # 운영 배포
-  workflow_dispatch: # 수동 트리거
+      - dev # 개발 브랜치
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-central1
-  BACKEND_SERVICE: query-craft-backend
-  FRONTEND_SERVICE: query-craft-frontend
+  BACKEND_SERVICE: query-craft-backend-dev
+  FRONTEND_SERVICE: query-craft-frontend-dev
 
 jobs:
-  deploy:
+  deploy-dev:
     runs-on: ubuntu-latest
+    environment: development
     permissions:
       contents: "read"
       id-token: "write"
@@ -38,22 +39,22 @@ jobs:
       # 1. Backend 빌드 및 푸시
       - name: Build and Push Backend
         run: |
-          docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }} -f backend/Dockerfile .
-          docker push us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }}
+          docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend-dev:${{ github.sha }} -f backend/Dockerfile .
+          docker push us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend-dev:${{ github.sha }}
 
-      # 2. Backend 먼저 배포 (URL을 얻기 위해)
+      # 2. Backend 배포 (Dev 환경)
       - name: Deploy Backend to Cloud Run
         id: deploy-backend
         run: |
           gcloud run deploy $BACKEND_SERVICE \
-            --image us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend:${{ github.sha }} \
+            --image us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/backend-dev:${{ github.sha }} \
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
             --min-instances 0 \
-            --max-instances 2 \
-            --memory 512Mi \
-            --set-env-vars "POSTGRES_DSN=${{ secrets.POSTGRES_DSN }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,FRONTEND_URL=https://$FRONTEND_SERVICE-${{ secrets.GCP_PROJECT_NUMBER }}.a.run.app"
+            --max-instances 1 \
+            --memory 256Mi \
+            --set-env-vars "POSTGRES_DSN=${{ secrets.POSTGRES_DSN_DEV }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,ENV=development"
 
       # 3. Backend URL 가져오기
       - name: Get Backend URL
@@ -61,36 +62,35 @@ jobs:
         run: |
           BACKEND_URL=$(gcloud run services describe $BACKEND_SERVICE --region $REGION --format 'value(status.url)')
           echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_OUTPUT
-          echo "Backend URL: $BACKEND_URL"
 
-      # 4. Frontend 빌드 (Backend URL 주입)
+      # 4. Frontend 빌드
       - name: Build and Push Frontend
         run: |
           docker build \
             --build-arg VITE_API_URL=${{ steps.get-backend-url.outputs.BACKEND_URL }} \
-            --build-arg VITE_MIXPANEL_TOKEN=${{ secrets.VITE_MIXPANEL_TOKEN }} \
-            -t us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend:${{ github.sha }} \
+            --build-arg VITE_MIXPANEL_TOKEN=${{ secrets.VITE_MIXPANEL_TOKEN_DEV }} \
+            -t us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend-dev:${{ github.sha }} \
             -f frontend/Dockerfile ./frontend
-          docker push us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend:${{ github.sha }}
+          docker push us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend-dev:${{ github.sha }}
 
       # 5. Frontend 배포
       - name: Deploy Frontend to Cloud Run
         run: |
           gcloud run deploy $FRONTEND_SERVICE \
-            --image us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend:${{ github.sha }} \
+            --image us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/frontend-dev:${{ github.sha }} \
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
             --min-instances 0 \
-            --max-instances 2 \
-            --memory 256Mi
+            --max-instances 1 \
+            --memory 128Mi
 
       # 6. 배포 결과 출력
       - name: Show Deployment URLs
         run: |
           echo "============================================"
-          echo "🚀 Deployment Complete!"
+          echo "🧪 Dev Deployment Complete!"
           echo "============================================"
-          echo "Frontend: $(gcloud run services describe $FRONTEND_SERVICE --region $REGION --format 'value(status.url)')"
-          echo "Backend: ${{ steps.get-backend-url.outputs.BACKEND_URL }}"
+          echo "Frontend (Dev): $(gcloud run services describe $FRONTEND_SERVICE --region $REGION --format 'value(status.url)')"
+          echo "Backend (Dev): ${{ steps.get-backend-url.outputs.BACKEND_URL }}"
           echo "============================================"
