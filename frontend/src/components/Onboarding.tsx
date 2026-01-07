@@ -170,14 +170,25 @@ export function Onboarding() {
             return;
         }
 
-        // 요소 찾기 (즉시 + 폴링)
+        // 요소 찾기 (즉시 + 폴링, 최대 2초 후 건너뛰기)
+        const MAX_RETRIES = 20;
+        let retryCount = 0;
+
         const findAndPosition = () => {
             if (currentUpdate !== updateRef.current) return; // 취소됨
 
             const el = document.querySelector(step.target);
             if (!el) {
-                // 100ms 후 재시도 (최대 2초)
-                setTimeout(findAndPosition, 100);
+                retryCount++;
+                if (retryCount < MAX_RETRIES) {
+                    // 100ms 후 재시도
+                    setTimeout(findAndPosition, 100);
+                } else {
+                    // 타임아웃: 해당 스텝 건너뛰기
+                    console.warn(`Onboarding: "${step.target}" not found, skipping step`);
+                    setIsNavigating(false);
+                    setCurrentStep(prev => Math.min(prev + 1, onboardingSteps.length - 1));
+                }
                 return;
             }
 
