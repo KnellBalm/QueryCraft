@@ -164,7 +164,16 @@ async def register(req: RegisterRequest, response: Response):
             "provider": "local"
         })
         
-        response.set_cookie("session_id", session_id, max_age=86400*7, httponly=True)
+        # HTTPS 크로스 도메인을 위한 쿠키 설정
+        is_prod = os.getenv("ENV") == "production"
+        response.set_cookie(
+            "session_id", 
+            session_id, 
+            max_age=86400*7, 
+            httponly=True,
+            secure=is_prod,  # HTTPS에서만 전송
+            samesite='none' if is_prod else 'lax'  # 크로스 사이트 허용
+        )
         return {"success": True, "user": {"id": user_id, "email": req.email, "name": req.name, "nickname": nickname}}
     
     except HTTPException:
@@ -214,7 +223,16 @@ async def login(req: LoginRequest, response: Response):
             "provider": "local"
         })
         
-        response.set_cookie("session_id", session_id, max_age=86400*7, httponly=True)
+        # HTTPS 크로스 도메인을 위한 쿠키 설정
+        is_prod = os.getenv("ENV") == "production"
+        response.set_cookie(
+            "session_id", 
+            session_id, 
+            max_age=86400*7, 
+            httponly=True,
+            secure=is_prod,
+            samesite='none' if is_prod else 'lax'
+        )
         return {"success": True, "user": {"id": user_id, "email": email, "name": name, "nickname": nickname}}
     
     except HTTPException:
@@ -296,7 +314,15 @@ async def google_callback(code: str, response: Response):
     
     # 쿠키 설정 및 프론트엔드로 리다이렉트
     redirect = RedirectResponse(f"{FRONTEND_URL}?login=success")
-    redirect.set_cookie("session_id", session_id, max_age=86400*7, httponly=True)
+    is_prod = os.getenv("ENV") == "production"
+    redirect.set_cookie(
+        "session_id", 
+        session_id, 
+        max_age=86400*7, 
+        httponly=True,
+        secure=is_prod,
+        samesite='none' if is_prod else 'lax'
+    )
     return redirect
 
 
@@ -377,7 +403,15 @@ async def kakao_callback(code: str, response: Response):
     
     # 쿠키 설정 및 프론트엔드로 리다이렉트
     redirect = RedirectResponse(f"{FRONTEND_URL}?login=success")
-    redirect.set_cookie("session_id", session_id, max_age=86400*7, httponly=True)
+    is_prod = os.getenv("ENV") == "production"
+    redirect.set_cookie(
+        "session_id", 
+        session_id, 
+        max_age=86400*7, 
+        httponly=True,
+        secure=is_prod,
+        samesite='none' if is_prod else 'lax'
+    )
     return redirect
 
 
