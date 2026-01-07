@@ -1,0 +1,197 @@
+[
+  {
+    "problem_id": "2026-01-07_commerce_sql_001_set0",
+    "difficulty": "easy",
+    "topic": "revenue",
+    "requester": "경영진",
+    "question": "안녕하세요, 경영진님. 지난 12월 동안의 월별 총 매출(GMV) 추이와 평균 주문 금액(AOV)을 파악하고 싶습니다. 데이터는 'order_time' 기준으로 집계해주세요. 결과는 월별 오름차순으로 정렬해주세요.",
+    "context": "월별 매출 및 평균 주문 단가 변화를 파악하여 비즈니스 성과를 측정하고 미래 전략 수립에 활용하고자 합니다.",
+    "submission_requirements": "결과는 YYYY-MM 형식의 'month' 컬럼 기준으로 오름차순 정렬해야 합니다. 'total_gmv'는 총 매출액, 'average_order_value'는 평균 주문 금액이며, 소수점 둘째 자리까지 반올림하여 표시해주세요.",
+    "answer_sql": "WITH monthly_orders AS (\n    SELECT\n        DATE_TRUNC('month', order_time)::DATE AS order_month,\n        SUM(amount) AS total_gmv\n    FROM pa_orders\n    WHERE order_time >= '2025-12-01' AND order_time < '2026-01-01'\n    GROUP BY 1\n)\nSELECT\n    TO_CHAR(order_month, 'YYYY-MM') AS month,\n    ROUND(total_gmv::NUMERIC, 2) AS total_gmv,\n    ROUND(total_gmv::NUMERIC / COUNT(order_id)::NUMERIC, 2) AS average_order_value\nFROM pa_orders\nWHERE order_time >= '2025-12-01' AND order_time < '2026-01-01'\nGROUP BY 1, total_gmv\nORDER BY 1 ASC;",
+    "expected_description": "월별 총 매출(GMV)과 평균 주문 금액(AOV)을 나타내는 테이블입니다.",
+    "expected_columns": [
+      "month",
+      "total_gmv",
+      "average_order_value"
+    ],
+    "sort_keys": [
+      "month"
+    ],
+    "hint": "pa_orders 테이블의 order_time을 사용하여 월별로 데이터를 집계하세요. SUM 함수로 총 매출을, COUNT 함수와 SUM 함수를 함께 사용하여 평균 주문 금액을 계산할 수 있습니다. 날짜 형식을 'YYYY-MM'으로 변환하고 소수점 반올림을 잊지 마세요.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 3,
+    "expected_result": [],
+    "expected_row_count": 0
+  },
+  {
+    "problem_id": "2026-01-07_commerce_sql_002_set0",
+    "difficulty": "easy",
+    "topic": "funnel",
+    "requester": "PM팀",
+    "question": "안녕하세요, PM팀입니다. 최근 2주간(2025-12-15 ~ 2025-12-29) 'view_product' 이벤트 발생 후 'add_to_cart' 이벤트까지 전환되는 퍼널의 사용자 수를 알고 싶습니다. 각 단계별 사용자 수를 제공해주세요. 최종 결과는 'view_product' 사용자 수 기준 내림차순으로 정렬해주세요.",
+    "context": "상품 상세 페이지에서 장바구니로 이어지는 흐름의 전환율을 파악하여, 사용자가 상품을 인지한 후 구매를 고려하는 단계에서의 이탈 지점을 찾고 개선 방안을 모색하고자 합니다.",
+    "submission_requirements": "각 이벤트가 발생한 고유 사용자 ID 수를 'users_count' 컬럼으로 제공해주세요. 'view_product' 사용자 수 기준으로 내림차순 정렬해주세요. 소수점은 표시하지 않습니다.",
+    "answer_sql": "WITH product_view_users AS (\n    SELECT DISTINCT user_id\n    FROM pa_events\n    WHERE event_name = 'view_product'\n      AND event_time BETWEEN '2025-12-15 00:00:00' AND '2025-12-29 23:59:59'\n),\nadd_to_cart_users AS (\n    SELECT DISTINCT user_id\n    FROM pa_events\n    WHERE event_name = 'add_to_cart'\n      AND event_time BETWEEN '2025-12-15 00:00:00' AND '2025-12-29 23:59:59'\n),\nview_product_counts AS (\n    SELECT COUNT(user_id) AS users_count FROM product_view_users\n),\nadd_to_cart_counts AS (\n    SELECT COUNT(user_id) AS users_count FROM add_to_cart_users\n),\nview_to_cart_users AS (\n    SELECT DISTINCT pu.user_id\n    FROM product_view_users pu\n    JOIN add_to_cart_users atu ON pu.user_id = atu.user_id\n    WHERE EXISTS (\n        SELECT 1\n        FROM pa_events e1\n        JOIN pa_events e2 ON e1.user_id = e2.user_id\n        WHERE e1.event_name = 'view_product'\n          AND e2.event_name = 'add_to_cart'\n          AND e1.event_time < e2.event_time\n          AND e1.user_id = pu.user_id\n          AND e1.event_time BETWEEN '2025-12-15 00:00:00' AND '2025-12-29 23:59:59'\n          AND e2.event_time BETWEEN '2025-12-15 00:00:00' AND '2025-12-29 23:59:59'\n    )\n),\nview_to_cart_counts AS (\n    SELECT COUNT(user_id) AS users_count FROM view_to_cart_users\n)\nSELECT\n    'view_product' AS step,\n    vpc.users_count\nFROM view_product_counts vpc\nUNION ALL\nSELECT\n    'add_to_cart' AS step,\n    atc.users_count\nFROM add_to_cart_counts atc\nUNION ALL\nSELECT\n    'view_to_add_to_cart' AS step,\n    watc.users_count\nFROM view_to_cart_counts watc\nORDER BY users_count DESC;",
+    "expected_description": "'view_product' 이벤트 사용자 수, 'add_to_cart' 이벤트 사용자 수, 그리고 'view_product' 후 'add_to_cart'로 성공적으로 전환된 사용자 수를 나타내는 테이블입니다.",
+    "expected_columns": [
+      "step",
+      "users_count"
+    ],
+    "sort_keys": [
+      "users_count"
+    ],
+    "hint": "각 이벤트별로 고유한 user_id를 추출하고, 두 이벤트 모두에 참여한 사용자 중 view_product 이벤트가 add_to_cart 이벤트보다 먼저 발생한 경우를 찾아야 합니다. CTE(Common Table Expression)를 사용하여 각 단계를 명확히 구분하는 것이 좋습니다.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 3,
+    "expected_result": [
+      {
+        "step": "view_product",
+        "users_count": 19477
+      },
+      {
+        "step": "add_to_cart",
+        "users_count": 6729
+      },
+      {
+        "step": "view_to_add_to_cart",
+        "users_count": 6729
+      }
+    ],
+    "expected_row_count": 3
+  },
+  {
+    "problem_id": "2026-01-07_commerce_sql_003_set0",
+    "difficulty": "medium",
+    "topic": "funnel",
+    "requester": "CX팀",
+    "question": "안녕하세요, CX팀입니다. 장바구니에 상품을 담았으나 실제 구매로 이어지지 않은 고객(Cart Abandonment)의 비율을 분석하고 싶습니다. 'add_to_cart' 이벤트는 발생했지만, 이후 'purchase' 이벤트가 발생하지 않은 사용자들의 세션 수를 기준으로 계산해주세요. 또한, 이탈이 발생한 세션의 'device'별 분포를 알려주세요. 분석 기간은 2025년 12월 전체입니다.",
+    "context": "장바구니 단계에서의 사용자 이탈 원인을 파악하여 구매 전환율을 높이기 위한 전략을 수립하고, 이탈하는 고객 경험을 개선하고자 합니다.",
+    "submission_requirements": "결과는 'abandonment_rate' (이탈률) 기준으로 내림차순 정렬해야 합니다. 'device' 컬럼은 3가지 주요 값(e.g., 'mobile', 'desktop', 'tablet')만 표시해주세요. 이탈률은 소수점 넷째 자리까지 표시합니다.",
+    "answer_sql": "WITH cart_add_sessions AS (\n    SELECT DISTINCT session_id, user_id, device\n    FROM pa_events\n    WHERE event_name = 'add_to_cart'\n      AND event_time BETWEEN '2025-12-01 00:00:00' AND '2025-12-31 23:59:59'\n),\npurchase_sessions AS (\n    SELECT DISTINCT session_id\n    FROM pa_events\n    WHERE event_name = 'purchase'\n      AND event_time BETWEEN '2025-12-01 00:00:00' AND '2025-12-31 23:59:59'\n),\nabandoned_sessions AS (\n    SELECT cas.session_id, cas.device\n    FROM cart_add_sessions cas\n    LEFT JOIN purchase_sessions ps ON cas.session_id = ps.session_id\n    WHERE ps.session_id IS NULL\n),\nsession_counts AS (\n    SELECT COUNT(session_id) AS total_sessions FROM cart_add_sessions\n),\nabandoned_counts AS (\n    SELECT COUNT(session_id) AS abandoned_sessions FROM abandoned_sessions\n),\ndevice_abandonment AS (\n    SELECT\n        CASE\n            WHEN device IN ('mobile', 'tablet', 'desktop') THEN device\n            ELSE 'other' -- 기타 기기 처리\n        END AS device_category,\n        COUNT(DISTINCT asess.session_id) AS abandoned_session_count\n    FROM abandoned_sessions asess\n    GROUP BY device_category\n)\nSELECT\n    da.device_category,\n    ROUND(da.abandoned_session_count::NUMERIC / sc.total_sessions::NUMERIC, 4) AS abandonment_rate\nFROM device_abandonment da\nCROSS JOIN session_counts sc\nWHERE sc.total_sessions > 0 -- division by zero 방지\nORDER BY abandonment_rate DESC;",
+    "expected_description": "각 기기 카테고리별 장바구니 이탈 세션 비율을 나타내는 테이블입니다.",
+    "expected_columns": [
+      "device_category",
+      "abandonment_rate"
+    ],
+    "sort_keys": [
+      "abandonment_rate"
+    ],
+    "hint": "먼저 'add_to_cart' 이벤트가 발생한 모든 세션과 'purchase' 이벤트가 발생한 모든 세션을 분리해야 합니다. 이후, 'add_to_cart' 세션 중 'purchase' 세션에 포함되지 않은 세션들을 찾아 장바구니 이탈 세션으로 정의합니다. 'device' 컬럼의 값들을 적절히 그룹화하는 것도 중요합니다.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 5,
+    "expected_result": [],
+    "expected_row_count": 0
+  },
+  {
+    "problem_id": "2026-01-07_commerce_sql_004_set0",
+    "difficulty": "medium",
+    "topic": "retention",
+    "requester": "그로스팀",
+    "question": "안녕하세요, 그로스팀입니다. 2025년 11월 1일에 가입한 신규 고객 중, 2025년 12월 31일까지 재구매(reorder 또는 purchase)를 완료한 고객의 비율을 분석하고 싶습니다. 즉, 첫 구매 이후 재구매를 한 고객의 비율입니다. 분석 기간은 2025-11-01 ~ 2025-12-31 입니다. 결과는 백분율로 표시해주세요.",
+    "context": "신규 고객의 장기적인 가치를 파악하고, 초기 유입 고객의 유지율 및 재구매 유도 전략의 효과를 측정하고자 합니다.",
+    "submission_requirements": "결과는 'repeat_purchase_rate'로 표시하며, 백분율(%)로 나타내고 소수점 둘째 자리까지 반올림합니다. 결과는 단일 행으로 제공됩니다.",
+    "answer_sql": "WITH first_purchase AS (\n    SELECT\n        user_id,\n        MIN(order_time) AS first_order_time\n    FROM pa_orders\n    WHERE user_id IN (\n        SELECT user_id\n        FROM pa_users\n        WHERE signup_at BETWEEN '2025-11-01 00:00:00' AND '2025-11-01 23:59:59'\n    )\n    GROUP BY user_id\n),\nrepeat_purchase AS (\n    SELECT\n        po.user_id,\n        COUNT(DISTINCT po.order_id) AS purchase_count\n    FROM pa_orders po\n    JOIN first_purchase fp ON po.user_id = fp.user_id\n    WHERE po.order_time > fp.first_order_time\n      AND po.order_time BETWEEN '2025-11-01 00:00:00' AND '2025-12-31 23:59:59'\n    GROUP BY po.user_id\n)\nSELECT\n    ROUND(\n        COUNT(rp.user_id)::NUMERIC / COUNT(fp.user_id)::NUMERIC * 100,\n        2\n    ) AS repeat_purchase_rate\nFROM first_purchase fp\nLEFT JOIN repeat_purchase rp ON fp.user_id = rp.user_id\nWHERE fp.first_order_time BETWEEN '2025-11-01 00:00:00' AND '2025-12-31 23:59:59';",
+    "expected_description": "2025년 11월 1일에 가입한 신규 고객 중, 2025년 12월 31일까지 재구매를 완료한 고객의 비율을 백분율로 나타냅니다.",
+    "expected_columns": [
+      "repeat_purchase_rate"
+    ],
+    "sort_keys": [],
+    "hint": "먼저 2025년 11월 1일에 가입한 사용자를 필터링하고, 해당 사용자들의 첫 구매 시간을 파악해야 합니다. 이후, 첫 구매 시간 이후에 발생한 구매(reorder 또는 purchase)를 재구매로 간주하고, 첫 구매자 대비 재구매자 비율을 계산합니다. COUNT와 NULLIF 함수를 사용하여 division by zero를 방지하세요.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 5,
+    "expected_result": [
+      {
+        "repeat_purchase_rate": 0.0
+      }
+    ],
+    "expected_row_count": 1
+  },
+  {
+    "problem_id": "2026-01-07_commerce_sql_005_set0",
+    "difficulty": "hard",
+    "topic": "segmentation",
+    "requester": "마케팅팀",
+    "question": "안녕하세요, 마케팅팀입니다. 2025년 12월에 구매를 완료한 고객들을 대상으로, 각 고객이 사용한 'channel'별로 구매 기여도(GMV)와 평균 주문 금액(AOV)을 비교 분석하고 싶습니다. 각 채널별로 'purchase' 이벤트가 발생한 사용자 수를 함께 제공해주세요. 결과는 GMV 기준 내림차순으로 정렬해주세요.",
+    "context": "채널별 마케팅 성과를 다각적으로 평가하고, 효과적인 채널에 리소스를 집중하기 위한 의사결정에 활용하고자 합니다.",
+    "submission_requirements": "결과는 'channel', 'total_gmv', 'average_order_value', 'purchase_user_count' 컬럼으로 구성됩니다. 'total_gmv'는 소수점 둘째 자리까지, 'average_order_value'는 소수점 둘째 자리까지 반올림하여 표시합니다. 결과는 'total_gmv' 기준 내림차순으로 정렬합니다.",
+    "answer_sql": "WITH monthly_purchases AS (\n    SELECT\n        o.user_id,\n        o.amount,\n        u.channel\n    FROM pa_orders o\n    JOIN pa_users u ON o.user_id = u.user_id\n    WHERE o.order_time BETWEEN '2025-12-01 00:00:00' AND '2025-12-31 23:59:59'\n),\nchannel_gmv AS (\n    SELECT\n        channel,\n        SUM(amount) AS total_gmv\n    FROM monthly_purchases\n    GROUP BY channel\n),\nchannel_purchase_users AS (\n    SELECT\n        channel,\n        COUNT(DISTINCT user_id) AS purchase_user_count\n    FROM monthly_purchases\n    GROUP BY channel\n)\nSELECT\n    cgu.channel,\n    ROUND(cgu.total_gmv::NUMERIC, 2) AS total_gmv,\n    ROUND(cgu.total_gmv::NUMERIC / cpu.purchase_user_count::NUMERIC, 2) AS average_order_value,\n    cpu.purchase_user_count\nFROM channel_gmv cgu\nJOIN channel_purchase_users cpu ON cgu.channel = cpu.channel\nWHERE cpu.purchase_user_count > 0 -- division by zero 방지\nORDER BY total_gmv DESC;",
+    "expected_description": "2025년 12월에 구매를 완료한 고객들의 채널별 총 매출(GMV), 평균 주문 금액(AOV), 그리고 구매자 수를 나타내는 테이블입니다.",
+    "expected_columns": [
+      "channel",
+      "total_gmv",
+      "average_order_value",
+      "purchase_user_count"
+    ],
+    "sort_keys": [
+      "total_gmv"
+    ],
+    "hint": "pa_orders와 pa_users 테이블을 조인하여 주문 정보와 사용자 채널 정보를 연결해야 합니다. 2025년 12월의 주문 데이터만 필터링하고, 각 채널별로 총 매출(SUM(amount)), 구매 사용자 수(COUNT(DISTINCT user_id))를 집계한 후, 평균 주문 금액을 계산하세요. 'purchase' 이벤트는 pa_orders 테이블의 데이터를 통해 확인할 수 있습니다.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 8,
+    "expected_result": [
+      {
+        "channel": "ad",
+        "total_gmv": 1115770.0,
+        "average_order_value": 24794.89,
+        "purchase_user_count": 45
+      },
+      {
+        "channel": "web",
+        "total_gmv": 784528.0,
+        "average_order_value": 24516.5,
+        "purchase_user_count": 32
+      },
+      {
+        "channel": "referral",
+        "total_gmv": 770881.0,
+        "average_order_value": 24867.13,
+        "purchase_user_count": 31
+      },
+      {
+        "channel": "organic",
+        "total_gmv": 704177.0,
+        "average_order_value": 22005.53,
+        "purchase_user_count": 32
+      }
+    ],
+    "expected_row_count": 4
+  },
+  {
+    "problem_id": "2026-01-07_commerce_sql_006_set0",
+    "difficulty": "hard",
+    "topic": "activation",
+    "requester": "PM팀",
+    "question": "안녕하세요, PM팀입니다. 2025년 11월 1일부터 12월 29일까지 가입한 신규 사용자들이 첫 구매(purchase)까지 도달하는 퍼널의 각 단계별 전환율을 분석하고 싶습니다. 퍼널은 'page_view' -> 'view_product' -> 'add_to_cart' -> 'begin_checkout' -> 'purchase' 순서로 구성됩니다. 각 단계별 사용자 수와 이전 단계 대비 전환율을 제공해주세요. 분석은 'signup_at' 기준 날짜별로 집계합니다.",
+    "context": "신규 사용자가 첫 구매를 완료하기까지 어떤 단계에서 이탈이 많이 발생하는지 파악하여, 사용자가 처음 서비스에 온전하게 적응하고 첫 구매를 완료할 수 있도록 UX/UI 개선 및 온보딩 프로세스를 최적화하고자 합니다.",
+    "submission_requirements": "결과는 'signup_date' 기준 오름차순으로 정렬해야 합니다. 'conversion_rate'는 이전 단계 대비 전환율이며, 백분율(%)로 표시하고 소수점 둘째 자리까지 반올림합니다. 첫 단계('page_view')의 전환율은 100%로 간주합니다.",
+    "answer_sql": "WITH user_event_dates AS (\n    SELECT\n        e.user_id,\n        u.signup_at::DATE AS signup_date,\n        MIN(CASE WHEN e.event_name = 'page_view' THEN e.event_time ELSE NULL END) AS page_view_time,\n        MIN(CASE WHEN e.event_name = 'view_product' THEN e.event_time ELSE NULL END) AS view_product_time,\n        MIN(CASE WHEN e.event_name = 'add_to_cart' THEN e.event_time ELSE NULL END) AS add_to_cart_time,\n        MIN(CASE WHEN e.event_name = 'begin_checkout' THEN e.event_time ELSE NULL END) AS begin_checkout_time,\n        MIN(CASE WHEN e.event_name = 'purchase' THEN e.event_time ELSE NULL END) AS purchase_time\n    FROM pa_events e\n    JOIN pa_users u ON e.user_id = u.user_id\n    WHERE u.signup_at BETWEEN '2025-11-01 00:00:00' AND '2025-12-29 23:59:59'\n      AND e.event_time BETWEEN u.signup_at AND '2025-12-29 23:59:59'\n    GROUP BY 1, 2\n),\nuser_funnel_steps AS (\n    SELECT\n        signup_date,\n        user_id,\n        CASE WHEN page_view_time IS NOT NULL THEN 1 ELSE 0 END AS page_view,\n        CASE WHEN view_product_time IS NOT NULL AND view_product_time >= page_view_time THEN 1 ELSE 0 END AS view_product,\n        CASE WHEN add_to_cart_time IS NOT NULL AND add_to_cart_time >= view_product_time THEN 1 ELSE 0 END AS add_to_cart,\n        CASE WHEN begin_checkout_time IS NOT NULL AND begin_checkout_time >= add_to_cart_time THEN 1 ELSE 0 END AS begin_checkout,\n        CASE WHEN purchase_time IS NOT NULL AND purchase_time >= begin_checkout_time THEN 1 ELSE 0 END AS purchase\n    FROM user_event_dates\n),\ndaily_step_counts AS (\n    SELECT\n        signup_date,\n        SUM(page_view) AS page_view_users,\n        SUM(view_product) AS view_product_users,\n        SUM(add_to_cart) AS add_to_cart_users,\n        SUM(begin_checkout) AS begin_checkout_users,\n        SUM(purchase) AS purchase_users\n    FROM user_funnel_steps\n    GROUP BY 1\n)\nSELECT\n    signup_date,\n    page_view_users,\n    view_product_users,\n    add_to_cart_users,\n    begin_checkout_users,\n    purchase_users,\n    ROUND(CASE WHEN page_view_users > 0 THEN page_view_users::NUMERIC / LAG(page_view_users, 1, page_view_users) OVER (ORDER BY signup_date) * 100 ELSE 0 END, 2) AS page_view_conversion_rate,\n    ROUND(CASE WHEN view_product_users > 0 THEN view_product_users::NUMERIC / LAG(view_product_users, 1, view_product_users) OVER (ORDER BY signup_date) * 100 ELSE 0 END, 2) AS view_product_conversion_rate,\n    ROUND(CASE WHEN add_to_cart_users > 0 THEN add_to_cart_users::NUMERIC / LAG(add_to_cart_users, 1, add_to_cart_users) OVER (ORDER BY signup_date) * 100 ELSE 0 END, 2) AS add_to_cart_conversion_rate,\n    ROUND(CASE WHEN begin_checkout_users > 0 THEN begin_checkout_users::NUMERIC / LAG(begin_checkout_users, 1, begin_checkout_users) OVER (ORDER BY signup_date) * 100 ELSE 0 END, 2) AS begin_checkout_conversion_rate,\n    ROUND(CASE WHEN purchase_users > 0 THEN purchase_users::NUMERIC / LAG(purchase_users, 1, purchase_users) OVER (ORDER BY signup_date) * 100 ELSE 0 END, 2) AS purchase_conversion_rate\nFROM daily_step_counts\nORDER BY signup_date ASC;",
+    "expected_description": "2025년 11월 1일부터 12월 29일까지 가입한 신규 사용자의 날짜별 첫 구매 퍼널 각 단계별 사용자 수와 이전 단계 대비 전환율을 나타내는 테이블입니다.",
+    "expected_columns": [
+      "signup_date",
+      "page_view_users",
+      "view_product_users",
+      "add_to_cart_users",
+      "begin_checkout_users",
+      "purchase_users",
+      "page_view_conversion_rate",
+      "view_product_conversion_rate",
+      "add_to_cart_conversion_rate",
+      "begin_checkout_conversion_rate",
+      "purchase_conversion_rate"
+    ],
+    "sort_keys": [
+      "signup_date"
+    ],
+    "hint": "각 사용자의 첫 구매 퍼널 단계를 추적하기 위해 각 이벤트의 발생 시간을 비교해야 합니다. CTE를 활용하여 사용자의 각 이벤트 발생 여부와 시간을 파악하고, 이를 기반으로 각 날짜별로 각 단계의 사용자 수를 집계합니다. LAG 함수를 사용하여 이전 단계의 사용자 수를 가져와 전환율을 계산하세요. 첫 단계의 전환율은 100%로 설정하고, NULLIF 또는 CASE 문을 사용하여 division by zero를 방지해야 합니다.",
+    "date": "2026-01-07",
+    "set_index": 0,
+    "xp_value": 8,
+    "expected_result": [],
+    "expected_row_count": 0
+  }
+]
