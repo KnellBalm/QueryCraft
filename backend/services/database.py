@@ -10,7 +10,15 @@ from backend.config.db import PostgresEnv, get_duckdb_path
 
 def get_postgres() -> PostgresEngine:
     """PostgreSQL 연결 생성"""
-    return PostgresEngine(PostgresEnv().dsn())
+    env = PostgresEnv()
+    try:
+        return PostgresEngine(env.dsn())
+    except Exception as e:
+        from backend.common.logging import get_logger
+        logger = get_logger(__name__)
+        logger.error(f"PostgreSQL Connection Error: {e}")
+        logger.error(f"Attempted DSN (Masked): {env.masked_dsn()}")
+        raise
 
 
 def get_duckdb() -> DuckDBEngine:
