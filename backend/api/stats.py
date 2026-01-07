@@ -88,7 +88,8 @@ async def get_leaderboard(limit: int = 20):
             return result
     except Exception as e:
         logger.error(f"Failed to get leaderboard: {e}")
-        return []
+        from fastapi import HTTPException
+        raise HTTPException(500, detail=f"Database connection failed: {str(e)}")
 
 
 @router.delete("/reset")

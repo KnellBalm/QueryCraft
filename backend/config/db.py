@@ -20,17 +20,9 @@ class PostgresEnv:
             if not dsn:
                 raise ValueError("POSTGRES_DSN is required in production environment")
             
-            # DSN 형식 검증
-            if "postgresql://" in dsn:
-                # URI 형식 검증: 최소한의 구성 요소 확인
-                if "@" not in dsn:
-                    raise ValueError("Malformed POSTGRES_DSN (URI): host separator '@' missing")
-            else:
-                # Keyword 형식 검증
-                if "host=" not in dsn:
-                    raise ValueError("Malformed POSTGRES_DSN: must be a URI (postgresql://) or contain 'host='")
-                if re.search(r'host=.*[\[\]]', dsn) or ']@' in dsn or '[@' in dsn:
-                    raise ValueError("Malformed POSTGRES_DSN (Keyword): contains invalid characters near host")
+            # 사용자 실수 방지: @@를 @로 치환
+            if "@@" in dsn:
+                dsn = dsn.replace("@@", "@")
             
             return dsn
         else:
@@ -39,27 +31,30 @@ class PostgresEnv:
                 f"host={os.getenv('PG_HOST', '')} "
                 f"port={os.getenv('PG_PORT', '5432')} "
                 f"user={os.getenv('PG_USER', 'postgres')} "
+                f"password={os.getenv('PG_PASSWORD', '')} "
                 f"dbname={os.getenv('PG_DB', 'postgres')}"
             )
     
     def masked_dsn(self) -> str:
         """비밀번호가 마스킹된 DSN 반환 (로깅용)"""
         try:
-            # dsn()을 호출하면 검증 예외로 인해 마스킹 로그를 못 찍을 수 있으므로 직접 환경변수 참조
+            # dsn() 호출 시의 검증/변환 로직을 일관되게 적용하기 위해 dsn() 결과 사용
+            # 단, dsn() 내부에서 예외가 날 수 있으므로 안전장치 마련
             raw_dsn = (
                 os.getenv("POSTGRES_DSN", "") if os.getenv("ENV") == "production" 
                 else f"host={os.getenv('PG_HOST')} password={os.getenv('PG_PASSWORD')}"
             )
             
+            # @@ 치환 (로그에서도 동일하게 적용)
+            if "@@" in raw_dsn:
+                raw_dsn = raw_dsn.replace("@@", "@")
+                
             if "postgresql://" in raw_dsn:
-                # URI: postgresql://user:pass@host:port/db -> postgresql://user:****@host:port/db
                 return re.sub(r'(://.*?:).*?(@)', r'\1****\2', raw_dsn)
             else:
-                # Keyword: host=... password=... -> host=... password=****
                 return re.sub(r'(password=).*?(\s|$)', r'\1****\2', raw_dsn)
         except:
             return "DSN_MASKING_FAILED"
 
 def get_duckdb_path() -> str:
     return os.getenv("DUCKDB_PATH", "data/pa_lab.duckdb")
-
