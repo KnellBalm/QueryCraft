@@ -16,7 +16,7 @@ class PostgresEnv:
         
         if env == "production":
             # 상용 환경: POSTGRES_DSN 직접 사용 (Supabase)
-            dsn = os.getenv("POSTGRES_DSN", "")
+            dsn = os.getenv("POSTGRES_DSN", "").strip()
             if not dsn:
                 raise ValueError("POSTGRES_DSN is required in production environment")
             
@@ -28,11 +28,11 @@ class PostgresEnv:
         else:
             # 개발 환경: 개별 환경변수 조합
             return (
-                f"host={os.getenv('PG_HOST', '')} "
-                f"port={os.getenv('PG_PORT', '5432')} "
-                f"user={os.getenv('PG_USER', 'postgres')} "
-                f"password={os.getenv('PG_PASSWORD', '')} "
-                f"dbname={os.getenv('PG_DB', 'postgres')}"
+                f"host={os.getenv('PG_HOST', '').strip()} "
+                f"port={os.getenv('PG_PORT', '5432').strip()} "
+                f"user={os.getenv('PG_USER', 'postgres').strip()} "
+                f"password={os.getenv('PG_PASSWORD', '').strip()} "
+                f"dbname={os.getenv('PG_DB', 'postgres').strip()}"
             )
     
     def masked_dsn(self) -> str:

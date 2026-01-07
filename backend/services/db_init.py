@@ -93,17 +93,21 @@ def init_database():
             """)
             logger.info("✓ api_usage_logs table ready")
             
-            # 6. logs 테이블
+            # 6. logs 테이블 (시스템 로그)
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS logs (
                     id SERIAL PRIMARY KEY,
-                    timestamp TIMESTAMP DEFAULT NOW(),
-                    level TEXT,
-                    category TEXT,
-                    message TEXT,
-                    extra JSONB
+                    category VARCHAR(50) NOT NULL,
+                    level VARCHAR(20) NOT NULL,
+                    message TEXT NOT NULL,
+                    source VARCHAR(100),
+                    user_id VARCHAR(100),
+                    extra_data TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
             logger.info("✓ logs table ready")
             
             # 관리자 설정

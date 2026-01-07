@@ -3,6 +3,7 @@
 QueryCraft - FastAPI Backend
 """
 import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,9 +21,16 @@ async def lifespan(app: FastAPI):
     """앱 수명 주기 관리 - DB 초기화 및 스케줄러 시작/중지"""
     try:
         from backend.services.db_init import init_database
+        from backend.services.db_logger import PostgresLoggingHandler
         print(f"[INFO] ENV: {os.getenv('ENV', 'not set')}")
         print(f"[INFO] FRONTEND_URL: {os.getenv('FRONTEND_URL', 'not set')}")
         init_database()
+        
+        # DB 핸들러 부착 (이제 테이블이 존재함)
+        db_handler = PostgresLoggingHandler()
+        db_handler.setLevel(logging.WARNING) # 경고 이상만 DB에 저장하여 부하 감소
+        logging.getLogger().addHandler(db_handler)
+        print("[INFO] PostgresLoggingHandler attached.")
     except Exception as e:
         print(f"[WARNING] Database initialization failed: {e}")
         print("[WARNING] App will start anyway, but some features may not work")

@@ -1,20 +1,18 @@
-# backend/services/db_logger.py
-"""중앙 집중식 로깅 서비스 - DB에 로그 저장"""
+import logging
 from datetime import datetime
 from typing import Optional
 from backend.services.database import postgres_connection
-from backend.common.logging import get_logger
 
-logger = get_logger(__name__)
+# 기본 로거
+logger = logging.getLogger(__name__)
 
 # 로그 카테고리
 class LogCategory:
-    PROBLEM_GENERATION = "problem_generation"  # 문제 생성/적재
-    USER_ACTION = "user_action"                # 사용자 행동
-    SCHEDULER = "scheduler"                    # 스케줄러 동작
-    SYSTEM = "system"                          # 시스템 상태/에러
-    API = "api"                                # API 요청
-
+    PROBLEM_GENERATION = "problem_generation"
+    USER_ACTION = "user_action"
+    SCHEDULER = "scheduler"
+    SYSTEM = "system"
+    API = "api"
 
 # 로그 레벨
 class LogLevel:
@@ -23,6 +21,32 @@ class LogLevel:
     ERROR = "error"
     DEBUG = "debug"
 
+class PostgresLoggingHandler(logging.Handler):
+    """표준 logging 모듈과 연동되는 DB 핸들러"""
+    def emit(self, record):
+        try:
+            # 재귀 루프 방지 (db_logger 자체 로그는 DB에 안 쌓음)
+            if record.name == __name__:
+                return
+                
+            message = self.format(record)
+            category = getattr(record, 'category', LogCategory.SYSTEM)
+            
+            with postgres_connection() as pg:
+                pg.execute("""
+                    INSERT INTO logs (category, level, message, source, user_id, extra_data)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    category,
+                    record.levelname.lower(),
+                    message,
+                    record.name,
+                    getattr(record, 'user_id', None),
+                    getattr(record, 'extra_data', None)
+                ))
+        except Exception:
+            # DB 연결 실패 시 조용히 넘김 (GCP 로그가 있으므로)
+            pass
 
 def ensure_logs_table():
     """logs 테이블 생성"""
@@ -40,56 +64,28 @@ def ensure_logs_table():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-            # 인덱스 생성
-            pg.execute("""
-                CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)
-            """)
-            pg.execute("""
-                CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)
-            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
     except Exception as e:
         logger.error(f"Failed to create logs table: {e}")
 
-
-def db_log(
-    category: str,
-    message: str,
-    level: str = LogLevel.INFO,
-    source: str = None,
-    user_id: str = None,
-    extra_data: str = None
-):
-    """DB에 로그 저장"""
+def db_log(category, message, level=LogLevel.INFO, source=None, user_id=None, extra_data=None):
+    """수동 로그 기록 (기존 코드 호환용)"""
     try:
         with postgres_connection() as pg:
             pg.execute("""
                 INSERT INTO logs (category, level, message, source, user_id, extra_data)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (category, level, message, source, user_id, extra_data))
-        
-        # 콘솔에도 출력
-        log_msg = f"[{category}/{level}] {message}"
-        if level == LogLevel.ERROR:
-            logger.error(log_msg)
-        elif level == LogLevel.WARNING:
-            logger.warning(log_msg)
-        else:
-            logger.info(log_msg)
     except Exception as e:
         logger.error(f"Failed to save log to DB: {e}")
 
-
-def get_logs(
-    category: Optional[str] = None,
-    level: Optional[str] = None,
-    limit: int = 100
-) -> list:
-    """로그 조회"""
+def get_logs(category: Optional[str] = None, level: Optional[str] = None, limit: int = 100) -> list:
+    """로그 조회 (관리자용)"""
     try:
         with postgres_connection() as pg:
             conditions = []
             params = []
-            
             if category:
                 conditions.append("category = %s")
                 params.append(category)
@@ -97,37 +93,20 @@ def get_logs(
                 conditions.append("level = %s")
                 params.append(level)
             
-            where_clause = ""
-            if conditions:
-                where_clause = "WHERE " + " AND ".join(conditions)
-            
+            where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
             params.append(limit)
             
             df = pg.fetch_df(f"""
                 SELECT id, category, level, message, source, user_id, extra_data, created_at
-                FROM logs
-                {where_clause}
-                ORDER BY created_at DESC
-                LIMIT %s
+                FROM logs {where_clause}
+                ORDER BY created_at DESC LIMIT %s
             """, params)
             
-            logs = []
-            for _, row in df.iterrows():
-                logs.append({
-                    "id": int(row["id"]),
-                    "category": row["category"],
-                    "level": row["level"],
-                    "message": row["message"],
-                    "source": row["source"],
-                    "user_id": row["user_id"],
-                    "extra_data": row["extra_data"],
-                    "created_at": row["created_at"].isoformat() if row["created_at"] else None
-                })
-            return logs
+            return df.to_dict(orient="records")
     except Exception as e:
         logger.error(f"Failed to get logs: {e}")
         return []
 
-
-# 시작 시 테이블 생성
-ensure_logs_table()
+# 테이블 자동 생성 (모듈 로드 시)
+# 주의: 이 시점에는 아직 DB 설정이 안 되어 있을 수 있으므로 init_database 이후에 다시 호출하는 것이 안전
+# ensure_logs_table()
