@@ -306,10 +306,6 @@ def start_scheduler():
         source="scheduler"
     )
     
-    # 시작 시 오늘 작업 체크 (평일인 경우)
-    today = date.today()
-    if today.weekday() < 5:  # 평일
-        run_weekday_generation()
 
 
 def stop_scheduler():
