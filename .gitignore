@@ -14,3 +14,7 @@ data/*
 # Agent 디렉토리 (rules는 버전 관리)
 .agent/*
 !.agent/rules/
+
+# 생성된 문제 파일 (각 환경에서 자체 생성)
+problems/daily/
+problems/monthly/
