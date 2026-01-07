@@ -137,10 +137,12 @@ async def register(req: RegisterRequest, response: Response):
         raise HTTPException(400, "비밀번호는 4자 이상이어야 합니다")
     
     try:
+        logger.info(f"Registration attempt for email: {req.email}")
         with postgres_connection() as pg:
             # 이메일 중복 확인
             df = pg.fetch_df("SELECT id FROM users WHERE email = %s", [req.email])
             if len(df) > 0:
+                logger.warning(f"Registration failed: Email already exists: {req.email}")
                 raise HTTPException(400, "이미 등록된 이메일입니다")
             
             # 사용자 생성
