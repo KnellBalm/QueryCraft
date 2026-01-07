@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 앱 복사
 COPY . .
 
-# 패키지 설치
-RUN pip install --no-cache-dir -e .
+# PYTHONPATH 설정 (problems 모듈 인식)
+ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
