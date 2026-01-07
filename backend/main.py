@@ -20,25 +20,25 @@ from backend.api.practice import router as practice_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """앱 수명 주기 관리 - DB 초기화 및 스케줄러 시작/중지"""
-    try:
-        from backend.services.db_init import init_database
-        from backend.services.db_logger import PostgresLoggingHandler
-        print(f"[INFO] ENV: {os.getenv('ENV', 'not set')}")
-        print(f"[INFO] FRONTEND_URL: {os.getenv('FRONTEND_URL', 'not set')}")
-        init_database()
-        
-        # DB 핸들러 부착 (이제 테이블이 존재함)
-        db_handler = PostgresLoggingHandler()
-        db_handler.setLevel(logging.WARNING) # 경고 이상만 DB에 저장하여 부하 감소
-        logging.getLogger().addHandler(db_handler)
-        print("[INFO] PostgresLoggingHandler attached.")
-    except Exception as e:
-        print(f"[WARNING] Database initialization failed: {e}")
-        print("[WARNING] App will start anyway, but some features may not work")
+    """앱 수명 주기 관리 - DB 초기화"""
+    import threading
+    
+    def init_background():
+        """백그라운드에서 DB 초기화 (서버 시작 블로킹 방지)"""
+        try:
+            from backend.services.db_init import init_database
+            init_database()
+            print("[INFO] Database initialized in background")
+        except Exception as e:
+            print(f"[WARNING] Background DB init failed: {e}")
+    
+    print(f"[INFO] ENV: {os.getenv('ENV', 'not set')}")
+    print(f"[INFO] Starting server immediately, DB init in background...")
+    
+    # DB 초기화를 백그라운드 스레드에서 실행 (서버 시작 블로킹 없음)
+    threading.Thread(target=init_background, daemon=True).start()
     
     # NOTE: MSA 아키텍처에서는 Cloud Functions가 문제/팁 생성 담당
-    # 스케줄러는 더 이상 필요 없음 (서버 시작 속도 개선)
     yield
 
 
