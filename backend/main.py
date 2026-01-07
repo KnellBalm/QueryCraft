@@ -18,9 +18,10 @@ from backend.api.practice import router as practice_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """앱 수명 주기 관리 - DB 초기화 및 스케줄러 시작/중지"""
-    # DB 초기화 (테이블 생성) - 실패해도 앱은 시작
     try:
         from backend.services.db_init import init_database
+        print(f"[INFO] ENV: {os.getenv('ENV', 'not set')}")
+        print(f"[INFO] FRONTEND_URL: {os.getenv('FRONTEND_URL', 'not set')}")
         init_database()
     except Exception as e:
         print(f"[WARNING] Database initialization failed: {e}")
@@ -57,8 +58,8 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
-    allow_origin_regex=r"https://query-craft-.*\.a\.run\.app" if os.getenv("ENV") == "production" else None,
+    allow_origins=["*"] if os.getenv("ENV") != "production" else origins + ["https://query-craft-frontend-53ngedkhia-uc.a.run.app"], # 숏컷 추가
+    allow_origin_regex=r"https://.*\.a\.run\.app", # 모든 Cloud Run 서브도메인 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
