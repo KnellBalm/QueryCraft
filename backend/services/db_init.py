@@ -110,6 +110,58 @@ def init_database():
             pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
             logger.info("✓ logs table ready")
             
+            # 7. problems 테이블 (파일 → DB 이전)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS problems (
+                    id SERIAL PRIMARY KEY,
+                    problem_date DATE NOT NULL,
+                    data_type VARCHAR(20) NOT NULL,
+                    set_index INTEGER DEFAULT 0,
+                    difficulty VARCHAR(20),
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    initial_sql TEXT,
+                    answer_sql TEXT,
+                    expected_columns JSONB,
+                    hints JSONB,
+                    schema_info TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(problem_date, data_type, set_index, title)
+                )
+            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_date ON problems(problem_date DESC)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_type ON problems(data_type)")
+            logger.info("✓ problems table ready")
+            
+            # 8. daily_tips 테이블
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS daily_tips (
+                    id SERIAL PRIMARY KEY,
+                    tip_date DATE UNIQUE NOT NULL,
+                    content TEXT NOT NULL,
+                    category VARCHAR(50),
+                    model_used VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            logger.info("✓ daily_tips table ready")
+            
+            # 9. worker_logs 테이블 (Cloud Functions 로그)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS worker_logs (
+                    id SERIAL PRIMARY KEY,
+                    job_type VARCHAR(50) NOT NULL,
+                    status VARCHAR(20) NOT NULL,
+                    model_used VARCHAR(50),
+                    tokens_used INTEGER,
+                    duration_ms INTEGER,
+                    result_count INTEGER,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            logger.info("✓ worker_logs table ready")
+            
             # 관리자 설정
             pg.execute("""
                 UPDATE users SET is_admin = TRUE 

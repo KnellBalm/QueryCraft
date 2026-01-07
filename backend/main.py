@@ -38,23 +38,13 @@ async def lifespan(app: FastAPI):
         print("[WARNING] App will start anyway, but some features may not work")
     
     # 스케줄러 시작 (상용 환경에서 자동 활성화)
+    # NOTE: MSA 전환 후에는 Cloud Functions가 문제 생성 담당
+    # 여기서는 스케줄러만 시작하고 문제 생성은 하지 않음
     if os.getenv("ENV") == "production":
         try:
             from backend.scheduler import start_scheduler, stop_scheduler
             start_scheduler()
-            
-            # 배포 직후 오늘 문제가 없으면 즉시 생성
-            from datetime import date
-            import os as os_check
-            today = date.today()
-            pa_exists = os_check.path.exists(f"problems/daily/{today}.json")
-            stream_exists = os_check.path.exists(f"problems/daily/stream_{today}.json")
-            
-            if not pa_exists or not stream_exists:
-                print("[INFO] Generating initial problems for today...")
-                from backend.scheduler import run_weekday_generation
-                run_weekday_generation()
-            
+            print("[INFO] Scheduler started (problem generation handled by Cloud Functions)")
             yield
             stop_scheduler()
         except Exception as e:

@@ -15,13 +15,36 @@ logger = get_logger(__name__)
 load_dotenv()
 
 # -------------------------------------------------
-# Gemini Client
+# Gemini Client & Multi-Model Support
 # -------------------------------------------------
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+# 용도별 모델 설정 (무료 티어 할당량 분산)
+class GeminiModels:
+    PROBLEM = os.getenv("GEMINI_MODEL_PROBLEM", "gemini-2.5-flash")      # 문제 생성
+    GRADING = os.getenv("GEMINI_MODEL_GRADING", "gemini-2.5-flash")      # 채점
+    TIPS = os.getenv("GEMINI_MODEL_TIPS", "gemini-2.5-flash-lite")       # 오늘의 팁 (경량)
+    HINTS = os.getenv("GEMINI_MODEL_HINTS", "gemini-2.5-flash-lite")     # 힌트 (경량)
+    ERROR = os.getenv("GEMINI_MODEL_ERROR", "gemini-3-flash")            # 에러 설명
+    FALLBACK = "gemini-1.5-flash"                                         # 폴백
+
+# 기본 모델 (호환성)
+MODEL = os.getenv("GEMINI_MODEL", GeminiModels.PROBLEM)
+
+
+def get_model_for_purpose(purpose: str) -> str:
+    """용도에 맞는 모델 반환"""
+    mapping = {
+        "problem_generation": GeminiModels.PROBLEM,
+        "grading": GeminiModels.GRADING,
+        "grading_feedback": GeminiModels.GRADING,
+        "tips": GeminiModels.TIPS,
+        "hints": GeminiModels.HINTS,
+        "error_explain": GeminiModels.ERROR,
+    }
+    return mapping.get(purpose, GeminiModels.FALLBACK)
 
 
 # -------------------------------------------------
@@ -32,24 +55,11 @@ def log_api_usage(purpose: str, model: str, input_tokens: int = 0, output_tokens
     try:
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
-            # 테이블 생성 (없으면)
-            pg.execute("""
-                CREATE TABLE IF NOT EXISTS api_usage_logs (
-                    id SERIAL PRIMARY KEY,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    purpose VARCHAR(100),
-                    model VARCHAR(50),
-                    input_tokens INTEGER DEFAULT 0,
-                    output_tokens INTEGER DEFAULT 0,
-                    total_tokens INTEGER DEFAULT 0,
-                    user_id VARCHAR(100)
-                )
-            """)
             pg.execute("""
                 INSERT INTO api_usage_logs (purpose, model, input_tokens, output_tokens, total_tokens, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, [purpose, model, input_tokens, output_tokens, input_tokens + output_tokens, user_id])
-        logger.info(f"API usage logged: {purpose}, tokens={input_tokens + output_tokens}")
+        logger.info(f"API usage logged: {purpose}, model={model}, tokens={input_tokens + output_tokens}")
     except Exception as e:
         logger.error(f"Failed to log API usage: {e}")
 
