@@ -47,10 +47,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS 설정 - 모든 origin 허용
+# CORS 설정
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:15173")
+origins = [
+    FRONTEND_URL,
+    "http://localhost:15173",
+    "http://127.0.0.1:15173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

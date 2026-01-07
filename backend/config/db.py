@@ -22,9 +22,9 @@ class PostgresEnv:
             
             # DSN 형식 검증
             if "postgresql://" in dsn:
-                # URI 형식 검증: @가 없거나 호스트명이 이상한 경우
-                if dsn.count("@") != 1:
-                    raise ValueError("Malformed POSTGRES_DSN (URI): password/host separator '@' missing or multiple")
+                # URI 형식 검증: 최소한의 구성 요소 확인
+                if "@" not in dsn:
+                    raise ValueError("Malformed POSTGRES_DSN (URI): host separator '@' missing")
             else:
                 # Keyword 형식 검증
                 if "host=" not in dsn:
@@ -45,7 +45,12 @@ class PostgresEnv:
     def masked_dsn(self) -> str:
         """비밀번호가 마스킹된 DSN 반환 (로깅용)"""
         try:
-            raw_dsn = self.dsn()
+            # dsn()을 호출하면 검증 예외로 인해 마스킹 로그를 못 찍을 수 있으므로 직접 환경변수 참조
+            raw_dsn = (
+                os.getenv("POSTGRES_DSN", "") if os.getenv("ENV") == "production" 
+                else f"host={os.getenv('PG_HOST')} password={os.getenv('PG_PASSWORD')}"
+            )
+            
             if "postgresql://" in raw_dsn:
                 # URI: postgresql://user:pass@host:port/db -> postgresql://user:****@host:port/db
                 return re.sub(r'(://.*?:).*?(@)', r'\1****\2', raw_dsn)
@@ -53,7 +58,7 @@ class PostgresEnv:
                 # Keyword: host=... password=... -> host=... password=****
                 return re.sub(r'(password=).*?(\s|$)', r'\1****\2', raw_dsn)
         except:
-            return "DSN_ERROR_OR_NOT_SET"
+            return "DSN_MASKING_FAILED"
 
 def get_duckdb_path() -> str:
     return os.getenv("DUCKDB_PATH", "data/pa_lab.duckdb")
