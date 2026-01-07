@@ -101,7 +101,7 @@ async def generate_practice_problem(request: GeneratePracticeRequest):
 async def submit_practice(request: SubmitPracticeRequest, req: Request):
     """연습 문제 제출 및 채점 (레벨업에 반영)"""
     try:
-        from grader.sql_grader import SQLGrader
+        from backend.grader.sql_grader import SQLGrader
         from backend.services.grading_service import save_submission_pg, award_xp
         from backend.api.auth import get_session
         from datetime import date

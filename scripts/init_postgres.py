@@ -1,6 +1,6 @@
 # scripts/init_postgres.py
-from engine.postgres_engine import PostgresEngine
-from config.settings import POSTGRES_DSN
+from backend.engine.postgres_engine import PostgresEngine
+from backend.config.settings import POSTGRES_DSN
 
 DDL = """
 CREATE TABLE IF NOT EXISTS users (

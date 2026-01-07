@@ -3,10 +3,10 @@ from datetime import date
 from pathlib import Path
 import json
 
-from engine.postgres_engine import PostgresEngine
+from backend.engine.postgres_engine import PostgresEngine
 from problems.stream_summary import build_stream_summary
 from problems.prompt_stream import call_gemini
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

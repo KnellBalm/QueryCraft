@@ -4,7 +4,7 @@ Gemini 문제 생성 프롬프트 - Product Type별 맞춤형
 """
 from __future__ import annotations
 
-from generator.product_config import (
+from backend.generator.product_config import (
     get_events_for_type, 
     get_kpi_guide,
     PRODUCT_KPI_GUIDE

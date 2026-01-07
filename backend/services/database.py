@@ -3,9 +3,9 @@
 from contextlib import contextmanager
 from typing import Generator
 
-from engine.postgres_engine import PostgresEngine
-from engine.duckdb_engine import DuckDBEngine
-from config.db import PostgresEnv, get_duckdb_path
+from backend.engine.postgres_engine import PostgresEngine
+from backend.engine.duckdb_engine import DuckDBEngine
+from backend.config.db import PostgresEnv, get_duckdb_path
 
 
 def get_postgres() -> PostgresEngine:

@@ -3,7 +3,7 @@
 DuckDBEngine 단위 테스트
 """
 import pytest
-from engine.duckdb_engine import (
+from backend.engine.duckdb_engine import (
     DuckDBEngine, 
     ALLOWED_TABLES, 
     _validate_identifier, 

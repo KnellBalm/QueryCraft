@@ -4,7 +4,7 @@ Grader 모듈 단위 테스트
 """
 import pytest
 import pandas as pd
-from grader.checker import compare_frames, LogicError
+from backend.grader.checker import compare_frames, LogicError
 
 
 class TestCompareFrames:

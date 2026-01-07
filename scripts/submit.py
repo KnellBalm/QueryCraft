@@ -1,10 +1,10 @@
 # scripts/submit.py
 import json
 from datetime import date, datetime
-from engine.postgres_engine import PostgresEngine
-from engine.duckdb_engine import DuckDBEngine
-from grader.grader import grade, EngineError, LogicError
-from config.db import PostgresEnv
+from backend.engine.postgres_engine import PostgresEngine
+from backend.engine.duckdb_engine import DuckDBEngine
+from backend.grader.grader import grade, EngineError, LogicError
+from backend.config.db import PostgresEnv
 
 def submit():
     today = date.today().isoformat()

@@ -12,7 +12,7 @@ from pydantic import BaseModel
 import httpx
 
 from backend.services.database import postgres_connection
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

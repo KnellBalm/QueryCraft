@@ -1,6 +1,6 @@
 # problems/stream_summary.py
 from __future__ import annotations
-from engine.postgres_engine import PostgresEngine
+from backend.engine.postgres_engine import PostgresEngine
 
 def build_stream_summary(pg: PostgresEngine) -> str:
     """

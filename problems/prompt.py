@@ -5,11 +5,11 @@ prompt_pa와 gemini 모듈을 연결
 """
 from __future__ import annotations
 
-from engine.postgres_engine import PostgresEngine
-from config.db import PostgresEnv
+from backend.engine.postgres_engine import PostgresEngine
+from backend.config.db import PostgresEnv
 from problems.prompt_pa import build_pa_prompt
 from problems.gemini import call_gemini_json
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 
