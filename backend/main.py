@@ -20,26 +20,10 @@ from backend.api.practice import router as practice_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """앱 수명 주기 관리 - DB 초기화"""
-    import threading
-    
-    def init_background():
-        """백그라운드에서 DB 초기화 (서버 시작 블로킹 방지)"""
-        try:
-            from backend.services.db_init import init_database
-            init_database()
-            print("[INFO] Database initialized in background")
-        except Exception as e:
-            print(f"[WARNING] Background DB init failed: {e}")
-    
-    print(f"[INFO] ENV: {os.getenv('ENV', 'not set')}")
-    print(f"[INFO] Starting server immediately, DB init in background...")
-    
-    # DB 초기화를 백그라운드 스레드에서 실행 (서버 시작 블로킹 없음)
-    threading.Thread(target=init_background, daemon=True).start()
-    
-    # NOTE: MSA 아키텍처에서는 Cloud Functions가 문제/팁 생성 담당
+    """앱 수명 주기 관리 - 최소화 (디버깅)"""
+    print("[INFO] Server starting...")
     yield
+    print("[INFO] Server shutting down...")
 
 
 app = FastAPI(
