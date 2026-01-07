@@ -86,7 +86,7 @@ app.add_middleware(
     CORSMiddleware,
     # Production에서는 origins가 비어있어도 allow_origin_regex가 커버함
     allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
-    allow_origin_regex=r"https://.*\.a\.run\.app" if os.getenv("ENV") == "production" else None,
+    allow_origin_regex=r"https://.*.run.app" if os.getenv("ENV") == "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
