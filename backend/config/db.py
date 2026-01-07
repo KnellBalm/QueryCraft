@@ -1,6 +1,7 @@
 # config/db.py
 from __future__ import annotations
 import os
+import re
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
@@ -18,6 +19,11 @@ class PostgresEnv:
             dsn = os.getenv("POSTGRES_DSN", "")
             if not dsn:
                 raise ValueError("POSTGRES_DSN is required in production environment")
+            
+            # DSN 형식 검증 (잘못된 특수문자 감지)
+            if re.search(r'host=.*[\[\]]', dsn) or ']@' in dsn or '[@' in dsn:
+                raise ValueError(f"Malformed POSTGRES_DSN: contains invalid characters near host. Check GCP secrets.")
+            
             return dsn
         else:
             # 개발 환경: 개별 환경변수 조합
@@ -31,3 +37,4 @@ class PostgresEnv:
 
 def get_duckdb_path() -> str:
     return os.getenv("DUCKDB_PATH", "data/pa_lab.duckdb")
+
