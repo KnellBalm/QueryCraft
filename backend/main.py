@@ -5,7 +5,9 @@ QueryCraft - FastAPI Backend
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.problems import router as problems_router
@@ -56,18 +58,35 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """요청 파싱 에러(422/400) 발생 시 상세 내용을 로그에 기록"""
+    from backend.common.logging import get_logger
+    logger = get_logger("validation")
+    
+    error_details = exc.errors()
+    logger.error(f"Validation Error at {request.url.path}: {error_details}")
+    logger.error(f"Request body structure: {exc.body}")
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": error_details, "body": str(exc.body)},
+    )
+
 # CORS 설정
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:15173")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip()
 origins = [
-    FRONTEND_URL,
     "http://localhost:15173",
     "http://127.0.0.1:15173",
 ]
+if FRONTEND_URL:
+    origins.append(FRONTEND_URL)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if os.getenv("ENV") != "production" else origins + ["https://query-craft-frontend-53ngedkhia-uc.a.run.app"], # 숏컷 추가
-    allow_origin_regex=r"https://.*\.a\.run\.app", # 모든 Cloud Run 서브도메인 허용
+    # Production에서는 origins가 비어있어도 allow_origin_regex가 커버함
+    allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
+    allow_origin_regex=r"https://.*\.a\.run\.app" if os.getenv("ENV") == "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
