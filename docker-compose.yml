@@ -24,7 +24,7 @@ services:
       args:
         - VITE_MIXPANEL_TOKEN=${VITE_MIXPANEL_TOKEN}
     ports:
-      - "15173:3000"
+      - "15173:8080"
     depends_on:
       - backend
     restart: unless-stopped
