@@ -146,7 +146,7 @@ async def get_system_status(admin=Depends(require_admin)):
 
 
 @router.post("/generate-problems", response_model=GenerateProblemsResponse)
-async def generate_problems(request: GenerateProblemsRequest):
+async def generate_problems(request: GenerateProblemsRequest, admin=Depends(require_admin)):
     """문제 생성 (PA 또는 Stream)"""
     today = date.today()
     
@@ -205,7 +205,7 @@ async def generate_problems(request: GenerateProblemsRequest):
 
 
 @router.post("/refresh-data", response_model=RefreshDataResponse)
-async def refresh_data(request: RefreshDataRequest):
+async def refresh_data(request: RefreshDataRequest, admin=Depends(require_admin)):
     """데이터 갱신"""
     try:
         from backend.generator.data_generator_advanced import generate_data
@@ -223,6 +223,70 @@ async def refresh_data(request: RefreshDataRequest):
 
 
 
+
+
+
+@router.post("/initial-setup")
+async def initial_setup(admin=Depends(require_admin)):
+    """초기 데이터 셋업 (PA + Stream 데이터 및 문제 생성)"""
+    results = []
+    errors = []
+    
+    try:
+        # 1. PA 데이터 생성
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("pa",))
+            results.append("✓ PA 데이터 생성 완료")
+        except Exception as e:
+            errors.append(f"✗ PA 데이터 생성 실패: {str(e)}")
+        
+        # 2. Stream 데이터 생성
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("stream",))
+            results.append("✓ Stream 데이터 생성 완료")
+        except Exception as e:
+            errors.append(f"✗ Stream 데이터 생성 실패: {str(e)}")
+        
+        # 3. PA 문제 생성
+        try:
+            from problems.generator import generate as gen_problems
+            with postgres_connection() as pg:
+                path = gen_problems(date.today(), pg)
+            results.append(f"✓ PA 문제 생성 완료: {path}")
+        except Exception as e:
+            errors.append(f"✗ PA 문제 생성 실패: {str(e)}")
+        
+        # 4. Stream 문제 생성
+        try:
+            from problems.generator_stream import generate_stream_problems
+            with postgres_connection() as pg:
+                path = generate_stream_problems(date.today(), pg)
+            results.append(f"✓ Stream 문제 생성 완료: {path}")
+        except Exception as e:
+            errors.append(f"✗ Stream 문제 생성 실패: {str(e)}")
+        
+        db_log(
+            category=LogCategory.SYSTEM,
+            message=f"Initial setup completed. Success: {len(results)}, Errors: {len(errors)}",
+            level=LogLevel.INFO if not errors else LogLevel.WARNING,
+            source="admin"
+        )
+        
+        return {
+            "success": len(errors) == 0,
+            "results": results,
+            "errors": errors,
+            "message": f"{len(results)}개 작업 완료, {len(errors)}개 실패"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "results": results,
+            "errors": errors + [f"Unexpected error: {str(e)}"],
+            "message": "초기화 중 오류 발생"
+        }
 
 @router.get("/dataset-versions")
 async def get_dataset_versions():
