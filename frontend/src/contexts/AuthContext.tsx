@@ -1,6 +1,6 @@
 // frontend/src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import axios from 'axios';
+import { api } from '../api/client';
 
 interface User {
     id: string;
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshUser = async () => {
         try {
-            const res = await axios.get('/api/auth/me', { withCredentials: true });
+            const res = await api.get('/auth/me');
             if (res.data.logged_in) {
                 setUser(res.data.user);
             } else {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (email: string, password: string) => {
         try {
-            const res = await axios.post('/api/auth/login', { email, password }, { withCredentials: true });
+            const res = await api.post('/auth/login', { email, password });
             if (res.data.success) {
                 // 로그인 성공 후 /auth/me에서 is_admin 포함 전체 정보 조회
                 await refreshUser();
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const register = async (email: string, password: string, name: string) => {
         try {
-            const res = await axios.post('/api/auth/register', { email, password, name }, { withCredentials: true });
+            const res = await api.post('/auth/register', { email, password, name });
             if (res.data.success) {
                 setUser(res.data.user);
                 // 회원가입 성공 이벤트 트래킹
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async () => {
         try {
-            await axios.post('/api/auth/logout', {}, { withCredentials: true });
+            await api.post('/auth/logout', {});
         } catch {
             // ignore
         }
