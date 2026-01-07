@@ -20,8 +20,20 @@ from backend.api.practice import router as practice_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """앱 수명 주기 관리 - 최소화 (디버깅)"""
+    """앱 수명 주기 관리 - DB 초기화 (백그라운드)"""
+    import threading
+    
+    def init_db_background():
+        try:
+            from backend.services.db_init import init_database
+            init_database()
+            print("[INFO] Database initialized successfully")
+        except Exception as e:
+            print(f"[WARNING] DB init failed: {e}")
+    
     print("[INFO] Server starting...")
+    # DB 초기화를 백그라운드에서 실행 (서버 시작 블로킹 없음)
+    threading.Thread(target=init_db_background, daemon=True).start()
     yield
     print("[INFO] Server shutting down...")
 
