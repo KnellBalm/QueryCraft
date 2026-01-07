@@ -58,6 +58,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
+    allow_origin_regex=r"https://query-craft-.*\.a\.run\.app" if os.getenv("ENV") == "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
