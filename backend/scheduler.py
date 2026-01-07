@@ -111,84 +111,49 @@ def cleanup_old_data():
 
 
 def run_weekday_generation():
-    """월~금 새벽 1:00 실행: PA 문제, Stream 문제, PA 데이터 생성"""
+    """월~금 새벽 1:00 실행: PA 데이터 → PA 문제, Stream 문제 생성"""
     today = date.today()
-    weekday = today.weekday()  # 0=월, 6=일
+    weekday = today.weekday()
     
-    # 주말 체크 (혹시나)
-    if weekday >= 5:  # 토(5), 일(6)
+    if weekday >= 5:
         logger.info(f"[SCHEDULER] Skipping weekday job on weekend: {today}")
         return
     
-    logger.info(f"[SCHEDULER] Starting weekday generation for {today} (weekday={weekday})")
-    
-    db_log(
-        category=LogCategory.SCHEDULER,
-        message=f"평일 문제/데이터 생성 시작: {today}",
-        level=LogLevel.INFO,
-        source="scheduler"
-    )
+    logger.info(f"[SCHEDULER] Starting weekday generation for {today}")
+    db_log(LogCategory.SCHEDULER, f"평일 생성 시작: {today}", LogLevel.INFO, "scheduler")
     
     try:
         from backend.engine.postgres_engine import PostgresEngine
         from backend.config.db import PostgresEnv
-        
         pg = PostgresEngine(PostgresEnv().dsn())
         
-        # 1. PA 문제 생성
-        pa_problem_path = f"problems/daily/{today}.json"
-        if not os.path.exists(pa_problem_path):
-            logger.info("[SCHEDULER] Generating PA problems...")
-            from problems.generator import generate as gen_pa_problems
-            gen_pa_problems(today, pg)
-            db_log(
-                category=LogCategory.PROBLEM_GENERATION,
-                message=f"PA 문제 생성 완료: {today}",
-                level=LogLevel.INFO,
-                source="scheduler"
-            )
-        else:
-            logger.info(f"[SCHEDULER] PA problems already exist: {pa_problem_path}")
+        # 1-2. 데이터 먼저 생성!
+        logger.info("[SCHEDULER] Generating PA/Stream data...")
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("pa", "stream"))
+            logger.info("[SCHEDULER] Data generation done")
+        except Exception as e:
+            logger.warning(f"[SCHEDULER] Data gen warning: {e}")
         
-        # 2. Stream 문제 생성
-        stream_problem_path = f"problems/daily/stream_{today}.json"
-        if not os.path.exists(stream_problem_path):
-            logger.info("[SCHEDULER] Generating Stream problems...")
+        # 3-4. 문제 생성
+        if not os.path.exists(f"problems/daily/{today}.json"):
+            from problems.generator import generate as gen_pa
+            gen_pa(today, pg)
+            db_log(LogCategory.PROBLEM_GENERATION, f"PA 완료: {today}", LogLevel.INFO, "scheduler")
+        
+        if not os.path.exists(f"problems/daily/stream_{today}.json"):
             from problems.generator_stream import generate_stream_problems
             generate_stream_problems(today, pg)
-            db_log(
-                category=LogCategory.PROBLEM_GENERATION,
-                message=f"Stream 문제 생성 완료: {today}",
-                level=LogLevel.INFO,
-                source="scheduler"
-            )
-        else:
-            logger.info(f"[SCHEDULER] Stream problems already exist: {stream_problem_path}")
-        
-        # 3. PA 데이터 생성 (TODO: 실제 PA 데이터 생성 로직)
-        logger.info("[SCHEDULER] PA data generation would run here (if implemented)")
+            db_log(LogCategory.PROBLEM_GENERATION, f"Stream 완료: {today}", LogLevel.INFO, "scheduler")
         
         pg.close()
-        
         last_run_times["weekday_job"] = datetime.now()
-        
-        db_log(
-            category=LogCategory.SCHEDULER,
-            message=f"평일 문제/데이터 생성 완료: {today}",
-            level=LogLevel.INFO,
-            source="scheduler"
-        )
-        logger.info(f"[SCHEDULER] Weekday generation completed for {today}")
-        
+        logger.info(f"[SCHEDULER] Weekday generation completed")
     except Exception as e:
-        error_msg = f"평일 생성 실패: {str(e)}"
-        logger.error(f"[SCHEDULER] {error_msg}")
-        db_log(
-            category=LogCategory.SCHEDULER,
-            message=error_msg,
-            level=LogLevel.ERROR,
-            source="scheduler"
-        )
+        logger.error(f"[SCHEDULER] 평일 생성 실패: {e}")
+        db_log(LogCategory.SCHEDULER, f"실패: {e}", LogLevel.ERROR, "scheduler")
+
 
 
 def run_sunday_generation():
