@@ -37,21 +37,9 @@ async def lifespan(app: FastAPI):
         print(f"[WARNING] Database initialization failed: {e}")
         print("[WARNING] App will start anyway, but some features may not work")
     
-    # 스케줄러 시작 (상용 환경에서 자동 활성화)
-    # NOTE: MSA 전환 후에는 Cloud Functions가 문제 생성 담당
-    # 여기서는 스케줄러만 시작하고 문제 생성은 하지 않음
-    if os.getenv("ENV") == "production":
-        try:
-            from backend.scheduler import start_scheduler, stop_scheduler
-            start_scheduler()
-            print("[INFO] Scheduler started (problem generation handled by Cloud Functions)")
-            yield
-            stop_scheduler()
-        except Exception as e:
-            print(f"[WARNING] Scheduler failed: {e}")
-            yield
-    else:
-        yield
+    # NOTE: MSA 아키텍처에서는 Cloud Functions가 문제/팁 생성 담당
+    # 스케줄러는 더 이상 필요 없음 (서버 시작 속도 개선)
+    yield
 
 
 app = FastAPI(
