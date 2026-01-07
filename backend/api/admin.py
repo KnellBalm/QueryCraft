@@ -208,7 +208,7 @@ async def generate_problems(request: GenerateProblemsRequest):
 async def refresh_data(request: RefreshDataRequest):
     """데이터 갱신"""
     try:
-        from generator.data_generator_advanced import generate_data
+        from backend.generator.data_generator_advanced import generate_data
         
         if request.data_type == "pa":
             generate_data(modes=("pa",))

@@ -13,10 +13,10 @@ import psycopg2.extras
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from generator import config as cfg
-from generator.utils import generate_session_id, generate_ts
-from config.db import PostgresEnv, get_duckdb_path
-from common.logging import get_logger
+from backend.generator import config as cfg
+from backend.generator.utils import generate_session_id, generate_ts
+from backend.config.db import PostgresEnv, get_duckdb_path
+from backend.common.logging import get_logger
 
 load_dotenv()
 logger = get_logger(__name__)
@@ -298,8 +298,8 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
         save_to: 저장 대상 ('postgres', 'duckdb')
         product_type: 사용할 Product Type (None이면 랜덤 선택)
     """
-    from generator.product_config import select_product_type, get_events_for_type
-    from generator.product_profiles import get_profile
+    from backend.generator.product_config import select_product_type, get_events_for_type
+    from backend.generator.product_profiles import get_profile
     
     # Product Type 선택
     if product_type is None:

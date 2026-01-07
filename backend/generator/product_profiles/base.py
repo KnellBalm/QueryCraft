@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
-from generator.product_config import (
+from backend.generator.product_config import (
     get_events_for_type,
     get_probabilities_for_type,
     get_flow_for_type,

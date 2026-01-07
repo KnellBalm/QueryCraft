@@ -2,8 +2,8 @@
 """
 데이터베이스 초기화 - 백엔드 시작 시 모든 테이블 생성
 """
-from common.connections import postgres_connection
-from common.logging import get_logger
+from backend.common.connections import postgres_connection
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -9,7 +9,7 @@ from datetime import date, timedelta, datetime
 import os
 import glob
 
-from common.logging import get_logger
+from backend.common.logging import get_logger
 from backend.services.db_logger import db_log, LogCategory, LogLevel
 
 logger = get_logger(__name__)
@@ -130,8 +130,8 @@ def run_weekday_generation():
     )
     
     try:
-        from engine.postgres_engine import PostgresEngine
-        from config.db import PostgresEnv
+        from backend.engine.postgres_engine import PostgresEngine
+        from backend.config.db import PostgresEnv
         
         pg = PostgresEngine(PostgresEnv().dsn())
         

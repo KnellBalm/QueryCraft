@@ -6,11 +6,11 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from engine.postgres_engine import PostgresEngine
-from engine.duckdb_engine import DuckDBEngine
+from backend.engine.postgres_engine import PostgresEngine
+from backend.engine.duckdb_engine import DuckDBEngine
 from problems.gemini import grade_pa_submission
-from common.logging import get_logger
-from config.db import PostgresEnv, get_duckdb_path
+from backend.common.logging import get_logger
+from backend.config.db import PostgresEnv, get_duckdb_path
 
 logger = get_logger(__name__)
 

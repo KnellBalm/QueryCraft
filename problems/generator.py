@@ -5,8 +5,8 @@ from pathlib import Path
 from datetime import date
 from problems.templates import build_expected_sql
 from problems.prompt import build_prompt
-from engine.postgres_engine import PostgresEngine
-from common.logging import get_logger
+from backend.engine.postgres_engine import PostgresEngine
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

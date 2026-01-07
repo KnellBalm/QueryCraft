@@ -8,9 +8,9 @@ from datetime import date
 from pathlib import Path
 from typing import List
 
-from engine.postgres_engine import PostgresEngine
+from backend.engine.postgres_engine import PostgresEngine
 from problems.gemini import call_gemini_json
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -7,7 +7,7 @@ from backend.schemas.submission import UserStats, SubmissionHistory
 from backend.services.stats_service import get_user_stats, get_submission_history
 from backend.services.database import postgres_connection
 from backend.api.auth import get_session
-from common.logging import get_logger
+from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -13,12 +13,12 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from engine.postgres_engine import PostgresEngine
-from engine.duckdb_engine import DuckDBEngine
-from generator.data_generator_advanced import generate_data
-from config.db import PostgresEnv
+from backend.engine.postgres_engine import PostgresEngine
+from backend.engine.duckdb_engine import DuckDBEngine
+from backend.generator.data_generator_advanced import generate_data
+from backend.config.db import PostgresEnv
 
-from common.logging import get_logger
+from backend.common.logging import get_logger
 logger = get_logger(__name__)
 
 # -------------------------------------------------
