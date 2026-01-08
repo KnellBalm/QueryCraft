@@ -6,9 +6,10 @@ const getApiBase = () => {
     if (import.meta.env.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
-    // 브라우저 환경에서는 현재 호스트 사용, 포트만 15174로 변경
+    // 개발 모드: Nginx 프록시(/api)를 사용하도록 상대 경로 반환
+    // 운영 모드(Cloud Run): VITE_API_URL이 주입되므로 위에서 걸러짐
     if (typeof window !== 'undefined') {
-        return `http://${window.location.hostname}:15174`;
+        return '/api';
     }
     return 'http://localhost:15174';
 };

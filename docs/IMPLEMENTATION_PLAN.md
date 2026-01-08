@@ -22,6 +22,30 @@ Cloud Run (API)              Cloud Functions (Workers)
 - `functions/tip_worker/main.py` - 팁 생성 워커
 - `functions/deploy.sh` - 수동 배포 스크립트
 
+### [MODIFY] [nginx.conf](file:///home/naca11/QueryCraft/frontend/nginx.conf)
+Nginx 시작 시 호스트 해석 실패로 인한 컨테이너 실행 오류(Cloud Run)를 방지하기 위해 `proxy_pass` 설정을 변수 방식으로 변경합니다.
+
+### [MODIFY] [client.ts](file:///home/naca11/QueryCraft/frontend/src/api/client.ts)
+개발 서버에서 IP로 접속 시 직접 백엔드 포트(15174)를 호출하여 CORS 오류가 발생하는 것을 방지하기 위해, 상대 경로 `/api`를 사용하여 Nginx 프록시를 경유하도록 수정합니다.
+
+---
+
+## 2026-01-08: 프론트엔드 배포 및 CORS 이슈 해결
+
+### 이슈 사항
+1. **Cloud Run 배포 실패**: `nginx.conf`에 추가된 `http://backend:8000/`을 Nginx 시작 시 해석하려다 실패함.
+2. **개발 서버 CORS**: 프론트엔드에서 직접 백엔드 포트를 호출하여 브라우저 정책에 걸림.
+
+### 변경 사항
+
+#### [MODIFY] [nginx.conf](file:///home/naca11/QueryCraft/frontend/nginx.conf)
+- `resolver` 추가 및 `set` 변수를 사용한 `proxy_pass` 설정 (Lazy resolution).
+- 이로 인해 운영 환경에서 `backend` 호스트가 없어도 Nginx가 정상 시작됨.
+
+#### [MODIFY] [client.ts](file:///home/naca11/QueryCraft/frontend/src/api/client.ts)
+- `VITE_API_URL`이 없는 경우 기본값을 `/api` (상대 경로)로 설정.
+- 개발 서버(15173)에서 `/api`로 요청 시 Nginx가 이를 백엔드(15174)로 포워딩하여 CORS 우회.
+
 ### 3. 멀티모델 Gemini 구현 ✅
 | 용도 | 모델 |
 |------|------|
