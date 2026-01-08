@@ -54,24 +54,24 @@ function App() {
       <Onboarding />
       <div className="app">
         <header className="header">
-          <Link to="/" className="logo">QueryCraft</Link>
+          <Link to="/" className="logo">🔧 QueryCraft</Link>
           <nav className="nav">
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-              PA 연습
+              🧠 PA 연습
             </NavLink>
             <NavLink to="/stream" className={({ isActive }) => isActive ? 'active' : ''}>
-              Stream 연습
+              📊 스트림 연습
             </NavLink>
             <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-              무한 연습
+              🎯 무한 연습
             </NavLink>
           </nav>
           <div className="user-stats">
             {user && stats && (
               <>
-                <span className="streak">{stats.streak}일 연속</span>
+                <span className="streak">🔥 {stats.streak}일</span>
                 <span className="level">{stats.level}</span>
-                <span className="correct">{stats.correct}문제</span>
+                <span className="correct">✅ {stats.correct}</span>
               </>
             )}
             <button onClick={toggleTheme} className="theme-toggle" title={theme === 'light' ? '다크 모드' : '라이트 모드'}>
