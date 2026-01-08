@@ -17,28 +17,42 @@ from backend.services.db_logger import get_logs, db_log, LogCategory, LogLevel
 
 
 async def require_admin(request: Request):
-    """관리자 권한 체크"""
+    """관리자 권한 체크 (상세 로깅 포함)"""
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+    
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(403, "관리자 권한이 필요합니다")
+        logger.warning("Admin access denied: No session cookie")
+        raise HTTPException(403, "로그인이 필요합니다 (세션 없음)")
     
     session = get_session(session_id)
     if not session:
-        raise HTTPException(403, "관리자 권한이 필요합니다")
+        logger.warning(f"Admin access denied: Session not found (id={session_id[:8]}...)")
+        raise HTTPException(403, "세션이 만료되었습니다. 다시 로그인해주세요")
     
     user_email = session.get("user", {}).get("email", "")
+    if not user_email:
+        logger.warning("Admin access denied: No email in session")
+        raise HTTPException(403, "세션 정보가 올바르지 않습니다")
     
     # DB에서 is_admin 확인
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df("SELECT is_admin FROM public.users WHERE email = %s", [user_email])
-            if len(df) == 0 or not df.iloc[0].get('is_admin', False):
-                raise HTTPException(403, "관리자 권한이 필요합니다")
+            if len(df) == 0:
+                logger.warning(f"Admin access denied: User not found ({user_email})")
+                raise HTTPException(403, "사용자 정보를 찾을 수 없습니다")
+            if not df.iloc[0].get('is_admin', False):
+                logger.warning(f"Admin access denied: Not admin ({user_email})")
+                raise HTTPException(403, "관리자 권한이 없습니다")
     except HTTPException:
         raise
-    except Exception:
-        raise HTTPException(403, "관리자 권한이 필요합니다")
+    except Exception as e:
+        logger.error(f"Admin check DB error: {e}")
+        raise HTTPException(500, f"권한 확인 중 오류 발생: {str(e)}")
     
+    logger.info(f"Admin access granted: {user_email}")
     return session
 
 

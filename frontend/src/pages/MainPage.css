@@ -1,152 +1,229 @@
-/* frontend/src/pages/MainPage.css */
-.main-page {
-    max-width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    margin: 0 auto;
-    padding: 1.5rem;
-    box-sizing: border-box;
+/* frontend/src/pages/MainPage.css - IT 스타트업 스타일 */
+
+/* =============================================
+   CSS 변수 (색상 팔레트)
+============================================= */
+:root {
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-hero: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    --gradient-card-pa: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    --gradient-card-stream: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --gradient-card-practice: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
 }
 
-/* 히어로 섹션 */
+/* =============================================
+   메인 컨테이너
+============================================= */
+.main-page {
+    max-width: 1200px;
+    width: 100%;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+/* =============================================
+   히어로 섹션 - 애니메이션 그라디언트
+============================================= */
 .hero {
     text-align: center;
-    padding: 2.5rem 1.5rem;
-    background: linear-gradient(135deg, var(--accent-color), #6366f1);
-    border-radius: 16px;
+    padding: 4rem 2rem;
+    background: var(--gradient-hero);
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+    border-radius: 24px;
     color: white;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    animation: heroGlow 10s linear infinite;
+}
+
+@keyframes heroGlow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .hero h1 {
-    font-size: 2rem;
-    margin: 0 0 0.5rem;
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 0.75rem;
+    position: relative;
+    z-index: 1;
+    letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
+    font-size: 1.25rem;
+    opacity: 0.95;
     margin: 0;
+    position: relative;
+    z-index: 1;
+    font-weight: 400;
 }
 
 .hero-cta {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50px;
     display: inline-block;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
 }
 
-/* 퀵 액션 섹션 */
+.hero-cta:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* =============================================
+   퀵 액션 섹션
+============================================= */
 .quick-actions-section {
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 }
 
 .quick-actions-section h2 {
     color: var(--text-primary);
-    margin: 0 0 1rem;
-    font-size: 1.2rem;
+    margin: 0 0 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
 }
 
 .action-card {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.25rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
     text-decoration: none;
-    color: var(--text-primary);
-    transition: transform 0.2s, box-shadow 0.2s;
+    color: white;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
 }
 
-.action-card::before {
+.action-card.pa {
+    background: var(--gradient-card-pa);
+}
+
+.action-card.stream {
+    background: var(--gradient-card-stream);
+}
+
+.action-card.practice {
+    background: var(--gradient-card-practice);
+}
+
+.action-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.action-card::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-}
-
-.action-card.pa::before {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-}
-
-.action-card.stream::before {
-    background: linear-gradient(90deg, #10b981, #34d399);
-}
-
-.action-card.practice::before {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
-}
-
-.action-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .action-card .icon {
-    font-size: 1.75rem;
+    font-size: 2.5rem;
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .action-card h3 {
-    margin: 0 0 0.25rem;
-    font-size: 1rem;
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .action-card p {
     margin: 0;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    font-size: 0.9rem;
+    opacity: 0.9;
+    flex-grow: 1;
 }
 
 .action-card .badge {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    background: var(--bg-tertiary);
-    border-radius: 10px;
-    color: var(--text-muted);
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    font-weight: 600;
 }
 
-/* 메인 콘텐츠 (2컬럼) */
+/* =============================================
+   메인 콘텐츠 (2컬럼)
+============================================= */
 .main-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 2rem;
+    margin-bottom: 3rem;
 }
 
-@media (max-width: 768px) {
-    .main-content {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* 리더보드 */
+/* =============================================
+   리더보드
+============================================= */
 .leaderboard-section {
     background: var(--bg-primary);
-    border-radius: 12px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
 }
 
 .leaderboard-section h2 {
-    margin: 0 0 1rem;
+    margin: 0 0 1.25rem;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .leaderboard table {
@@ -156,7 +233,7 @@
 
 .leaderboard th,
 .leaderboard td {
-    padding: 0.6rem 0.5rem;
+    padding: 0.85rem 0.75rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
 }
@@ -165,19 +242,30 @@
     color: var(--text-muted);
     font-weight: 600;
     font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .leaderboard td {
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+}
+
+.leaderboard tr:last-child td {
+    border-bottom: none;
 }
 
 .leaderboard tr.highlight {
     background: rgba(99, 102, 241, 0.1);
 }
 
+.leaderboard tr:hover {
+    background: var(--bg-secondary);
+}
+
 .leaderboard .rank {
-    width: 40px;
+    width: 50px;
+    font-size: 1.1rem;
 }
 
 .leaderboard .nickname {
@@ -186,128 +274,173 @@
 
 .leaderboard .correct {
     color: var(--success-color);
+    font-weight: 600;
 }
 
 .leaderboard .streak {
     color: #f59e0b;
+    font-weight: 600;
 }
 
 .leaderboard .level {
     color: var(--accent-color);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 .empty-state {
     text-align: center;
-    padding: 2rem;
+    padding: 3rem;
     color: var(--text-muted);
 }
 
 .empty-state .hint {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     margin-top: 0.5rem;
+    opacity: 0.8;
 }
 
 .loading {
     text-align: center;
-    padding: 2rem;
+    padding: 3rem;
     color: var(--text-muted);
 }
 
-/* SQL 팁 */
+/* =============================================
+   SQL 팁
+============================================= */
 .tips-section {
     background: var(--bg-primary);
-    border-radius: 12px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
 }
 
 .tips-section h2 {
-    margin: 0 0 1rem;
+    margin: 0 0 1.25rem;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .tip-card {
-    background: var(--bg-tertiary);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .tip-card:last-child {
     margin-bottom: 0;
 }
 
+.tip-card:hover {
+    transform: translateX(4px);
+    border-color: var(--accent-color);
+}
+
 .tip-card h4 {
     margin: 0 0 0.5rem;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .tip-card p {
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.75rem;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 .tip-card code {
     display: block;
-    background: var(--bg-primary);
-    padding: 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
     color: var(--accent-color);
     overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', monospace;
 }
 
-/* 하단 섹션 */
+/* =============================================
+   하단 섹션
+============================================= */
 .footer-section {
-    background: var(--bg-tertiary);
-    border-radius: 12px;
-    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
 }
 
 .footer-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
 }
 
 .footer-item {
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
     align-items: flex-start;
 }
 
 .footer-icon {
-    font-size: 1.5rem;
+    font-size: 2rem;
+    line-height: 1;
 }
 
 .footer-item h4 {
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.35rem;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .footer-item p {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
-/* 모바일 대응 */
+/* =============================================
+   반응형 디자인
+============================================= */
+@media (max-width: 1200px) {
+    .main-page {
+        padding: 1.5rem;
+    }
+}
+
 @media (max-width: 900px) {
     .main-page {
         padding: 1rem;
+    }
+
+    .hero {
+        padding: 3rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .hero h1 {
+        font-size: 2.25rem;
     }
 
     .quick-actions {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -317,31 +450,42 @@
     }
 
     .hero {
-        padding: 1.5rem 1rem;
-        border-radius: 12px;
+        padding: 2.5rem 1.25rem;
+        border-radius: 16px;
     }
 
     .hero h1 {
-        font-size: 1.4rem;
+        font-size: 1.75rem;
     }
 
     .hero-subtitle {
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
 
     .quick-actions {
         grid-template-columns: 1fr;
-        gap: 0.75rem;
+        gap: 1rem;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+    .action-card {
+        min-height: 140px;
+        padding: 1.5rem 1.25rem;
     }
 
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 0.5rem 0.3rem;
-        font-size: 0.8rem;
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .leaderboard-section,
+    .tips-section {
+        padding: 1.25rem;
+        border-radius: 16px;
+    }
+
+    .leaderboard th,
+    .leaderboard td {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.85rem;
     }
 }

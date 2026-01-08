@@ -162,7 +162,19 @@ def init_database():
             """)
             logger.info("✓ worker_logs table ready")
 
-            # 10. [분석용] stream_events & stream_daily_metrics
+            # 10. persistent_sessions 테이블 (다중 인스턴스 세션 공유)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.persistent_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_data JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    expires_at TIMESTAMP NOT NULL
+                )
+            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires ON public.persistent_sessions(expires_at)")
+            logger.info("✓ persistent_sessions table ready")
+
+            # 11. [분석용] stream_events & stream_daily_metrics
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.stream_events (
                     user_id INT,

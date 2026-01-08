@@ -26,8 +26,8 @@ KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", "")
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:15173")
 
-# 세션 저장소 (간단한 인메모리, 프로덕션에서는 Redis 사용)
-sessions: dict[str, dict] = {}
+# 세션 만료 기간 (7일)
+SESSION_EXPIRE_DAYS = 7
 
 
 class LoginResponse(BaseModel):
@@ -37,18 +37,66 @@ class LoginResponse(BaseModel):
 
 
 def create_session(user_data: dict) -> str:
-    """세션 생성"""
+    """세션 생성 (PostgreSQL 저장)"""
+    import json
     session_id = secrets.token_hex(32)
-    sessions[session_id] = {
-        "user": user_data,
-        "created_at": datetime.now().isoformat()
-    }
+    expires_at = datetime.now() + timedelta(days=SESSION_EXPIRE_DAYS)
+    
+    try:
+        with postgres_connection() as pg:
+            pg.execute("""
+                INSERT INTO public.persistent_sessions (session_id, user_data, expires_at)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (session_id) DO UPDATE SET user_data = EXCLUDED.user_data, expires_at = EXCLUDED.expires_at
+            """, (session_id, json.dumps(user_data), expires_at))
+        logger.info(f"Session created for user: {user_data.get('email', 'unknown')}")
+    except Exception as e:
+        logger.error(f"Failed to create session: {e}")
+    
     return session_id
 
 
 def get_session(session_id: str) -> Optional[dict]:
-    """세션 조회"""
-    return sessions.get(session_id)
+    """세션 조회 (PostgreSQL에서)"""
+    import json
+    if not session_id:
+        return None
+    
+    try:
+        with postgres_connection() as pg:
+            # 만료된 세션 정리 (주기적)
+            pg.execute("DELETE FROM public.persistent_sessions WHERE expires_at < NOW()")
+            
+            # 세션 조회
+            df = pg.fetch_df(
+                "SELECT user_data, expires_at FROM public.persistent_sessions WHERE session_id = %s",
+                [session_id]
+            )
+            if len(df) == 0:
+                return None
+            
+            row = df.iloc[0]
+            user_data = row["user_data"]
+            
+            # JSONB는 이미 dict로 반환될 수 있음
+            if isinstance(user_data, str):
+                user_data = json.loads(user_data)
+            
+            return {"user": user_data}
+    except Exception as e:
+        logger.error(f"Failed to get session: {e}")
+        return None
+
+
+def delete_session(session_id: str):
+    """세션 삭제 (PostgreSQL에서)"""
+    if not session_id:
+        return
+    try:
+        with postgres_connection() as pg:
+            pg.execute("DELETE FROM public.persistent_sessions WHERE session_id = %s", [session_id])
+    except Exception as e:
+        logger.error(f"Failed to delete session: {e}")
 
 
 def ensure_users_table():
@@ -453,8 +501,8 @@ async def get_me(request: Request):
 async def logout(request: Request, response: Response):
     """로그아웃"""
     session_id = request.cookies.get("session_id")
-    if session_id and session_id in sessions:
-        del sessions[session_id]
+    if session_id:
+        delete_session(session_id)
     
     response.delete_cookie("session_id")
     return {"success": True}
