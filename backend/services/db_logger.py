@@ -34,7 +34,7 @@ class PostgresLoggingHandler(logging.Handler):
             
             with postgres_connection() as pg:
                 pg.execute("""
-                    INSERT INTO logs (category, level, message, source, user_id, extra_data)
+                    INSERT INTO public.logs (category, level, message, source, user_id, extra_data)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
                     category,
@@ -53,7 +53,7 @@ def ensure_logs_table():
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS logs (
+                CREATE TABLE IF NOT EXISTS public.logs (
                     id SERIAL PRIMARY KEY,
                     category VARCHAR(50) NOT NULL,
                     level VARCHAR(20) NOT NULL,
@@ -64,8 +64,8 @@ def ensure_logs_table():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)")
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON public.logs(category)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON public.logs(created_at DESC)")
     except Exception as e:
         logger.error(f"Failed to create logs table: {e}")
 
@@ -74,7 +74,7 @@ def db_log(category, message, level=LogLevel.INFO, source=None, user_id=None, ex
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                INSERT INTO logs (category, level, message, source, user_id, extra_data)
+                INSERT INTO public.logs (category, level, message, source, user_id, extra_data)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (category, level, message, source, user_id, extra_data))
     except Exception as e:
@@ -98,7 +98,7 @@ def get_logs(category: Optional[str] = None, level: Optional[str] = None, limit:
             
             df = pg.fetch_df(f"""
                 SELECT id, category, level, message, source, user_id, extra_data, created_at
-                FROM logs {where_clause}
+                FROM public.logs {where_clause}
                 ORDER BY created_at DESC LIMIT %s
             """, params)
             

@@ -56,7 +56,7 @@ def ensure_users_table():
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS users (
+                CREATE TABLE IF NOT EXISTS public.users (
                     id TEXT PRIMARY KEY,
                     email TEXT UNIQUE NOT NULL,
                     name TEXT,
@@ -70,17 +70,17 @@ def ensure_users_table():
                 )
             """)
             # 새 컬럼 추가 (기존 테이블 호환)
-            pg.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT")
-            pg.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname TEXT")
-            pg.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0")
-            pg.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1")
-            pg.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
+            pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT")
+            pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS nickname TEXT")
+            pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0")
+            pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1")
+            pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
             # 관리자 설정
-            pg.execute("UPDATE users SET is_admin = TRUE WHERE email IN ('naca11@mobigen.com', 'naca11@naver.com')")
+            pg.execute("UPDATE public.users SET is_admin = TRUE WHERE email IN ('naca11@mobigen.com', 'naca11@naver.com')")
             
             # 사용자별 문제 세트 할당 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS user_problem_sets (
+                CREATE TABLE IF NOT EXISTS public.user_problem_sets (
                     user_id TEXT NOT NULL,
                     session_date DATE NOT NULL,
                     data_type VARCHAR(20) NOT NULL,
@@ -140,7 +140,7 @@ async def register(req: RegisterRequest, response: Response):
         logger.info(f"Registration attempt for email: {req.email}")
         with postgres_connection() as pg:
             # 이메일 중복 확인
-            df = pg.fetch_df("SELECT id FROM users WHERE email = %s", [req.email])
+            df = pg.fetch_df("SELECT id FROM public.users WHERE email = %s", [req.email])
             if len(df) > 0:
                 logger.warning(f"Registration failed: Email already exists: {req.email}")
                 raise HTTPException(400, "이미 등록된 이메일입니다")
@@ -151,7 +151,7 @@ async def register(req: RegisterRequest, response: Response):
             nickname = req.name  # 초기 닉네임은 이름과 동일
             
             pg.execute("""
-                INSERT INTO users (id, email, name, nickname, password_hash, provider)
+                INSERT INTO public.users (id, email, name, nickname, password_hash, provider)
                 VALUES (%s, %s, %s, %s, %s, 'local')
             """, (user_id, req.email, req.name, nickname, pw_hash))
         
@@ -193,7 +193,7 @@ async def login(req: LoginRequest, response: Response):
         with postgres_connection() as pg:
             df = pg.fetch_df("""
                 SELECT id, email, name, nickname, password_hash, provider 
-                FROM users WHERE email = %s
+                FROM public.users WHERE email = %s
             """, [req.email])
             
             if len(df) == 0:
@@ -435,7 +435,7 @@ async def get_me(request: Request):
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df(
-                "SELECT is_admin, xp, level, created_at FROM users WHERE id = %s",
+                "SELECT is_admin, xp, level, created_at FROM public.users WHERE id = %s",
                 [user["id"]]
             )
             if len(df) > 0:
@@ -474,7 +474,7 @@ def save_user(user_id: str, email: str, name: str, provider: str):
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                INSERT INTO users (id, email, name, nickname, provider)
+                INSERT INTO public.users (id, email, name, nickname, provider)
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname
             """, (user_id, email, name, name, provider))  # nickname = name 초기값
@@ -506,7 +506,7 @@ async def update_nickname(req: UpdateNicknameRequest, request: Request):
     try:
         with postgres_connection() as pg:
             pg.execute(
-                "UPDATE users SET nickname = %s WHERE id = %s",
+                "UPDATE public.users SET nickname = %s WHERE id = %s",
                 (new_nickname, user_id)
             )
         
@@ -537,8 +537,8 @@ async def delete_account(request: Request, response: Response):
     try:
         with postgres_connection() as pg:
             # 관련 데이터 삭제 (submissions는 user_id 없음)
-            pg.execute("DELETE FROM user_problem_sets WHERE user_id = %s", [user_id])
-            pg.execute("DELETE FROM users WHERE id = %s", [user_id])
+            pg.execute("DELETE FROM public.user_problem_sets WHERE user_id = %s", [user_id])
+            pg.execute("DELETE FROM public.users WHERE id = %s", [user_id])
         
         # 세션 삭제
         if session_id in sessions:

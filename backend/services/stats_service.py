@@ -19,7 +19,7 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
                     SELECT 
                         COUNT(*) as total,
                         SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-                    FROM submissions
+                    FROM public.submissions
                     WHERE user_id = %s
                 """, [user_id])
             else:
@@ -27,7 +27,7 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
                     SELECT 
                         COUNT(*) as total,
                         SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
-                    FROM submissions
+                    FROM public.submissions
                 """)
         
         total = int(df.iloc[0]["total"]) if len(df) > 0 else 0
@@ -56,7 +56,7 @@ def get_streak(user_id: Optional[str] = None) -> dict:
             if user_id:
                 df = pg.fetch_df("""
                     SELECT DISTINCT session_date::date as session_date
-                    FROM submissions 
+                    FROM public.submissions 
                     WHERE user_id = %s
                     ORDER BY session_date DESC 
                     LIMIT 30
@@ -64,7 +64,7 @@ def get_streak(user_id: Optional[str] = None) -> dict:
             else:
                 df = pg.fetch_df("""
                     SELECT DISTINCT session_date::date as session_date
-                    FROM submissions 
+                    FROM public.submissions 
                     ORDER BY session_date DESC 
                     LIMIT 30
                 """)
@@ -103,7 +103,7 @@ def get_level(user_id: Optional[str] = None) -> dict:
                             END
                         ), 0) as total_score,
                         COUNT(*) as correct_count
-                    FROM submissions
+                    FROM public.submissions
                     WHERE is_correct = true AND user_id = %s
                 """, [user_id])
             else:
@@ -118,7 +118,7 @@ def get_level(user_id: Optional[str] = None) -> dict:
                             END
                         ), 0) as total_score,
                         COUNT(*) as correct_count
-                    FROM submissions
+                    FROM public.submissions
                     WHERE is_correct = true
                 """)
         total_score = int(df.iloc[0]["total_score"]) if len(df) > 0 else 0
@@ -187,7 +187,7 @@ def get_submission_history(limit: int = 20, data_type: str = None, user_id: Opti
             
             df = pg.fetch_df(f"""
                 SELECT problem_id, data_type, is_correct, feedback, submitted_at
-                FROM submissions
+                FROM public.submissions
                 {where_clause}
                 ORDER BY submitted_at DESC
                 LIMIT %s

@@ -9,6 +9,9 @@ class PostgresEngine:
     def __init__(self, dsn: str):
         self.conn = psycopg2.connect(dsn)
         self.conn.autocommit = True
+        # 세션 기본 스키마를 public으로 설정 (사용자 쿼리 편의성 및 안정성)
+        with self.conn.cursor() as cur:
+            cur.execute("SET search_path TO public")
 
     def execute(self, sql: str, params: Iterable[Any] | None = None) -> None:
         with self.conn.cursor() as cur:
