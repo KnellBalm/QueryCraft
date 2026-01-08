@@ -161,6 +161,83 @@ def init_database():
                 )
             """)
             logger.info("✓ worker_logs table ready")
+
+            # 10. [분석용] stream_events & stream_daily_metrics
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS stream_events (
+                    user_id INT,
+                    session_id TEXT,
+                    event_name TEXT,
+                    event_time TIMESTAMP,
+                    device TEXT,
+                    channel TEXT
+                );
+            """)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS stream_daily_metrics (
+                    date DATE,
+                    revenue DOUBLE PRECISION,
+                    purchases INT
+                );
+            """)
+            logger.info("✓ stream tables ready")
+
+            # 11. [분석용] PA 테이블 (pa_users, pa_sessions, pa_events, pa_orders)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS pa_users (
+                    user_id TEXT PRIMARY KEY,
+                    signup_at TIMESTAMP NOT NULL,
+                    country TEXT NOT NULL,
+                    channel TEXT NOT NULL
+                );
+            """)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS pa_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+                    started_at TIMESTAMP NOT NULL,
+                    device TEXT NOT NULL
+                );
+            """)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS pa_events (
+                    event_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+                    session_id TEXT NOT NULL REFERENCES pa_sessions(session_id),
+                    event_time TIMESTAMP NOT NULL,
+                    event_name TEXT NOT NULL
+                );
+            """)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS pa_orders (
+                    order_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+                    order_time TIMESTAMP NOT NULL,
+                    amount INT NOT NULL
+                );
+            """)
+            logger.info("✓ PA tables ready")
+
+            # 12. dataset_versions & current_product_type
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS dataset_versions (
+                    version_id SERIAL PRIMARY KEY,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    generator_type TEXT,
+                    start_date DATE,
+                    end_date DATE,
+                    n_users BIGINT,
+                    n_events BIGINT
+                );
+            """)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS current_product_type (
+                    id INT PRIMARY KEY DEFAULT 1,
+                    product_type TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            logger.info("✓ versioning tables ready")
             
             # 관리자 설정
             pg.execute("""
