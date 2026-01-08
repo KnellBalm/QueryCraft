@@ -15,33 +15,19 @@ GRADING_SCHEMA = "grading"
 
 
 def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
-    """문제 로드 - 모든 세트 파일 검색"""
-    today = date.today().isoformat()
+    """문제 로드 - 모든 파일 검색 (오늘 날짜뿐만 아니라 과거 문제도)"""
     problems_dir = Path("problems/daily")
     
-    # 검색할 파일 경로들
+    # 모든 파일에서 검색
     if data_type == "stream":
-        # 오늘 파일 먼저, 없으면 모든 stream 파일 검색
-        paths = [problems_dir / f"stream_{today}.json"]
-        if not paths[0].exists():
-            paths = sorted(problems_dir.glob("stream_*.json"), reverse=True)
+        # 모든 stream 파일 검색 (최신 순)
+        paths = sorted(problems_dir.glob("stream_*.json"), reverse=True)
     else:
-        # 다중 세트 파일들도 검색
-        paths = [
-            problems_dir / f"{today}.json",
-            problems_dir / f"{today}_set0.json",
-            problems_dir / f"{today}_set1.json",
-            problems_dir / f"{today}_set2.json",
-        ]
-        # 오늘 파일이 없으면 가장 최근 날짜 파일들 검색
-        if not any(p.exists() for p in paths):
-            all_files = sorted(problems_dir.glob("20??-??-??*.json"), reverse=True)
-            paths = [f for f in all_files if not f.name.startswith("stream_")]
+        # 모든 PA 파일 검색 (최신 순)
+        all_files = sorted(problems_dir.glob("20??-??-??*.json"), reverse=True)
+        paths = [f for f in all_files if not f.name.startswith("stream_")]
     
     for path in paths:
-        if not path.exists():
-            continue
-        
         try:
             problems = json.loads(path.read_text(encoding="utf-8"))
             for p in problems:
