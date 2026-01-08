@@ -249,10 +249,10 @@ export function Workspace({ dataType }: WorkspaceProps) {
             <div className="left-panel" style={{ width: `${leftWidth}%` }}>
                 <div className="panel-tabs">
                     <button className={activeTab === 'problem' ? 'active' : ''} onClick={() => { setActiveTab('problem'); analytics.tabChanged('problem', dataType); }}>
-                        📌 문제
+                        문제
                     </button>
                     <button className={activeTab === 'schema' ? 'active' : ''} onClick={() => { setActiveTab('schema'); analytics.schemaViewed(dataType); }}>
-                        📋 스키마
+                        스키마
                     </button>
                 </div>
 
@@ -293,7 +293,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                         </div>
                                         {selectedProblem.context && (
                                             <div className="slack-context">
-                                                💡 {renderMarkdown(selectedProblem.context)}
+                                                ℹ️ {renderMarkdown(selectedProblem.context)}
                                             </div>
                                         )}
                                     </div>
@@ -301,7 +301,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
                                 {selectedProblem.expected_columns && (
                                     <div className="section">
-                                        <div className="section-title">📊 결과 컬럼</div>
+                                        <div className="section-title">결과 컬럼</div>
                                         <div className="columns-box">
                                             {selectedProblem.expected_columns.map((col, i) => (
                                                 <code key={i}>{col}</code>
@@ -361,7 +361,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             <div className="right-panel" ref={rightPanelRef} style={{ width: `${100 - leftWidth}%` }}>
                 <div className="editor-section" style={{ height: `${editorHeightPercent}%` }}>
                     <div className="editor-header">
-                        <span>💻 SQL</span>
+                        <span>SQL 에디터</span>
                         <span className="shortcut">Ctrl+Enter로 실행</span>
                     </div>
                     <div className="editor-shell">
@@ -380,14 +380,14 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     </div>
                     <div className="editor-actions">
                         <button onClick={handleExecute} disabled={loading} className="btn-execute">
-                            {loading ? '⏳ 실행 중...' : '▶️ 실행'}
+                            {loading ? '실행 중...' : '실행'}
                         </button>
                         <div className="spacer" />
                         <button onClick={handleHint} disabled={hinting || !selectedProblem} className="btn-hint">
-                            {hinting ? '💭 생각 중...' : '💡 도움'}
+                            {hinting ? '생각 중...' : '힌트'}
                         </button>
                         <button onClick={handleSubmit} disabled={submitting || !selectedProblem} className="btn-submit">
-                            {submitting ? '🔄 채점 중...' : '✅ 제출'}
+                            {submitting ? '채점 중...' : '제출'}
                         </button>
                     </div>
                 </div>
@@ -396,7 +396,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
                 <div className="result-section">
                     <div className="result-header">
-                        <span>📊 실행 결과</span>
+                        <span>실행 결과</span>
                         {result?.execution_time_ms && (
                             <span className="exec-time">{result.execution_time_ms.toFixed(0)}ms</span>
                         )}
@@ -408,7 +408,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             <div className="loading-state">
                                 <div className="loading-spinner" />
                                 <div className="loading-text">
-                                    {submitting ? '🤔 채점 중입니다...' : '💭 AI가 힌트를 생성하고 있습니다...'}
+                                    {submitting ? '채점 중입니다...' : 'AI가 힌트를 생성하고 있습니다...'}
                                 </div>
                             </div>
                         )}
@@ -416,7 +416,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         {/* 힌트 */}
                         {hint && !submitting && !hinting && (
                             <div className="hint-result">
-                                <div className="hint-title">💡 AI 힌트</div>
+                                <div className="hint-title">AI 힌트</div>
                                 <div className="hint-content">{hint}</div>
                             </div>
                         )}
@@ -425,7 +425,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         {submitResult && !submitting && (
                             <div className={`submit-result ${submitResult.is_correct ? 'correct' : 'wrong'}`}>
                                 <div className="result-icon">
-                                    {submitResult.is_correct ? '✅ 정답입니다!' : '❌ 틀렸습니다'}
+                                    {submitResult.is_correct ? '정답입니다!' : '오답입니다'}
                                 </div>
                                 <div className="feedback">{submitResult.feedback}</div>
                             </div>
@@ -437,7 +437,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         )}
 
                         {result && !result.success && !submitting && !hinting && (
-                            <div className="error-result">❌ {result.error}</div>
+                            <div className="error-result">오류: {result.error}</div>
                         )}
 
                         {!result && !submitResult && !hint && !submitting && !hinting && (
