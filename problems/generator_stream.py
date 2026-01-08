@@ -103,7 +103,7 @@ def build_stream_prompt(data_summary: str, n: int = 6) -> str:
   "answer_sql": "PostgreSQL 정답 SQL",
   "expected_columns": ["col1", "col2"],
   "sort_keys": ["정렬 기준 컬럼"],
-  "hint": "힌트"
+  "hint": "문제 해결 접근법 힌트 (예: '먼저 날짜별로 그룹화하고, 전환율을 계산한 후, 상위 N개를 추출하세요')"
 }}
 
 [CRITICAL - submission_requirements 작성 가이드]

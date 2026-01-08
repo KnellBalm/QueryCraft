@@ -178,7 +178,7 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
   "expected_description": "기대 결과 테이블 설명",
   "expected_columns": ["col1", "col2", "..."],
   "sort_keys": ["정렬 기준 컬럼 - 필수"],
-  "hint": "SQL 작성 힌트 (사용해야 할 함수, 조인 방법 등)"
+  "hint": "문제 해결 접근법 힌트 (예: '먼저 날짜별로 그룹화하고, 각 그룹에서 이벤트 발생 여부를 확인한 후, 비율을 계산하세요')"
 }}
 
 [데이터 스키마 - answer_sql 작성 시 반드시 사용]
