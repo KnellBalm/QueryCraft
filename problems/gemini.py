@@ -58,7 +58,7 @@ def log_api_usage(purpose: str, model: str, input_tokens: int = 0, output_tokens
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
             pg.execute("""
-                INSERT INTO api_usage_logs (purpose, model, input_tokens, output_tokens, total_tokens, user_id)
+                INSERT INTO public.api_usage_logs (purpose, model, input_tokens, output_tokens, total_tokens, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, [purpose, model, input_tokens, output_tokens, input_tokens + output_tokens, user_id])
         logger.info(f"API usage logged: {purpose}, model={model}, tokens={input_tokens + output_tokens}")
