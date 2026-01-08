@@ -82,13 +82,13 @@ def init_database():
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.api_usage_logs (
                     id SERIAL PRIMARY KEY,
-                    user_id TEXT,
-                    endpoint TEXT NOT NULL,
-                    model TEXT,
-                    input_tokens INTEGER,
-                    output_tokens INTEGER,
-                    cost_usd DECIMAL(10, 6),
-                    created_at TIMESTAMP DEFAULT NOW()
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    purpose VARCHAR(100),
+                    model VARCHAR(50),
+                    input_tokens INTEGER DEFAULT 0,
+                    output_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    user_id TEXT
                 )
             """)
             logger.info("✓ api_usage_logs table ready")
