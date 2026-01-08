@@ -74,26 +74,30 @@ def cleanup_old_data():
             except (ValueError, IndexError):
                 continue
         
-        # 3. 오래된 grading 테이블 삭제
+        # 3. 오래된 grading 테이블 삭제 (grading 스키마가 존재할 경우에만)
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
-            tables_df = pg.fetch_df("""
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'grading' AND table_name LIKE 'expected_%'
-            """)
-            
-            for _, row in tables_df.iterrows():
-                table_name = row["table_name"]
-                try:
-                    if len(table_name) > 19 and table_name[9:19].count("-") == 2:
-                        date_str = table_name[9:19]
-                        table_date = date.fromisoformat(date_str)
-                        if table_date < cutoff_date:
-                            pg.execute(f"DROP TABLE IF EXISTS grading.{table_name}")
-                            deleted_tables += 1
-                            logger.info(f"[CLEANUP] Dropped old grading table: {table_name}")
-                except (ValueError, IndexError):
-                    continue
+            schema_check = pg.fetch_df("SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'grading'")
+            if len(schema_check) > 0:
+                tables_df = pg.fetch_df("""
+                    SELECT table_name FROM information_schema.tables 
+                    WHERE table_schema = 'grading' AND table_name LIKE 'expected_%'
+                """)
+                
+                for _, row in tables_df.iterrows():
+                    table_name = row["table_name"]
+                    try:
+                        if len(table_name) > 19 and table_name[9:19].count("-") == 2:
+                            date_str = table_name[9:19]
+                            table_date = date.fromisoformat(date_str)
+                            if table_date < cutoff_date:
+                                pg.execute(f"DROP TABLE IF EXISTS grading.{table_name}")
+                                deleted_tables += 1
+                                logger.info(f"[CLEANUP] Dropped old grading table: {table_name}")
+                    except (ValueError, IndexError):
+                        continue
+            else:
+                logger.info("[CLEANUP] 'grading' schema not found, skipping grading table cleanup")
         
         last_run_times["cleanup_job"] = datetime.now()
         

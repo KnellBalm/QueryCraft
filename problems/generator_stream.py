@@ -30,7 +30,7 @@ def get_stream_data_summary(pg: PostgresEngine) -> str:
         
         for table_name, columns in tables_info:
             try:
-                df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM {table_name}")
+                df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM public.{table_name}")
                 count = int(df.iloc[0]["cnt"])
                 summary_lines.append(f"- {table_name}: {count:,}건")
                 summary_lines.append(f"  컬럼: {columns}")
@@ -39,7 +39,7 @@ def get_stream_data_summary(pg: PostgresEngine) -> str:
         
         # 이벤트 유형
         try:
-            df = pg.fetch_df("SELECT DISTINCT event_name FROM stream_events LIMIT 10")
+            df = pg.fetch_df("SELECT DISTINCT event_name FROM public.stream_events LIMIT 10")
             event_names = [row["event_name"] for _, row in df.iterrows()]
             summary_lines.append(f"\n## 이벤트 유형 (event_name)")
             summary_lines.append(", ".join(event_names))
@@ -52,7 +52,7 @@ def get_stream_data_summary(pg: PostgresEngine) -> str:
                 SELECT 
                     MIN(event_time)::date as min_date,
                     MAX(event_time)::date as max_date
-                FROM stream_events
+                FROM public.stream_events
             """)
             min_date = date_df.iloc[0]["min_date"]
             max_date = date_df.iloc[0]["max_date"]
