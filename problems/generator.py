@@ -131,18 +131,53 @@ def generate_single_set(today: date, pg: PostgresEngine, set_index: int) -> list
     return problems
 
 
+def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_type: str):
+    """문제를 PostgreSQL DB에 저장"""
+    logger.info(f"saving {len(problems)} problems to DB for {today}")
+    
+    for p in problems:
+        try:
+            # Table schema in db_init.py:
+            # problem_date, data_type, set_index, difficulty, title, description, 
+            # initial_sql, answer_sql, expected_columns, hints, schema_info
+            
+            # Problem schema fields to map:
+            # problem_id, difficulty, topic, question, expected_columns, sort_keys, expected_result
+            
+            pg.execute("""
+                INSERT INTO public.problems (
+                    problem_date, data_type, set_index, difficulty, title, 
+                    description, answer_sql, expected_columns, hints
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (problem_date, data_type, set_index, title) 
+                DO UPDATE SET 
+                    difficulty = EXCLUDED.difficulty,
+                    description = EXCLUDED.description,
+                    answer_sql = EXCLUDED.answer_sql,
+                    expected_columns = EXCLUDED.expected_columns,
+                    hints = EXCLUDED.hints,
+                    updated_at = NOW()
+            """, [
+                today, 
+                data_type, 
+                p.get("set_index", 0), 
+                p.get("difficulty"), 
+                p.get("problem_id"), # title 대신 id 사용 (유니크 식별자)
+                json.dumps(p, ensure_ascii=False), # 전체 내용을 description에 저장
+                p.get("answer_sql"),
+                json.dumps(p.get("expected_columns", []), ensure_ascii=False),
+                json.dumps({"hint": p.get("hint"), "expected_result": p.get("expected_result")}, ensure_ascii=False)
+            ])
+        except Exception as e:
+            logger.error(f"Failed to save problem {p.get('problem_id')} to DB: {e}")
+
+
 def generate(today: date, pg: PostgresEngine) -> str:
-    """3개 문제 세트 생성 - 월별 JSON에 누적"""
+    """3개 문제 세트 생성 - 월별 JSON에 누적 + DB 저장"""
     logger.info(f"start generating {NUM_PROBLEM_SETS} PA problem sets for {today}")
     
     month_str = today.strftime("%Y-%m")
     monthly_data = load_monthly_file(month_str)
-    
-    # 오늘 날짜 문제가 이미 있는지 확인
-    existing_dates = set(p.get("date") for p in monthly_data["problems"])
-    if today.isoformat() in existing_dates:
-        logger.info(f"problems for {today} already exist in monthly file, skipping")
-        return str(PROBLEM_DIR / f"pa_{month_str}.json")
     
     all_problems = []
     for set_idx in range(NUM_PROBLEM_SETS):
@@ -152,16 +187,22 @@ def generate(today: date, pg: PostgresEngine) -> str:
         except Exception as e:
             logger.error(f"Failed to generate set {set_idx}: {e}")
     
-    # 월별 파일에 추가
+    if not all_problems:
+        return ""
+
+    # 1. DB 저장 (가장 중요)
+    save_problems_to_db(pg, all_problems, today, "pa")
+    
+    # 2. 월별 파일에 추가
     monthly_data["problems"].extend(all_problems)
     save_monthly_file(month_str, monthly_data)
     
-    # 기존 daily 폴더 호환을 위해 오늘 문제만 별도 저장
+    # 3. 기존 daily 폴더 호환을 위해 오늘 문제만 별도 저장
     daily_path = Path("problems/daily") / f"{today}.json"
     with open(daily_path, "w", encoding="utf-8") as f:
         json.dump(all_problems, f, ensure_ascii=False, indent=2)
     
-    # 세트별 파일도 저장 (호환성)
+    # 4. 세트별 파일도 저장 (호환성)
     for set_idx in range(NUM_PROBLEM_SETS):
         set_problems = [p for p in all_problems if p.get("set_index") == set_idx]
         if set_problems:
@@ -169,5 +210,5 @@ def generate(today: date, pg: PostgresEngine) -> str:
             with open(set_path, "w", encoding="utf-8") as f:
                 json.dump(set_problems, f, ensure_ascii=False, indent=2)
     
-    logger.info(f"generated {len(all_problems)} problems for {today}")
+    logger.info(f"generated and saved {len(all_problems)} problems for {today}")
     return str(PROBLEM_DIR / f"pa_{month_str}.json")
