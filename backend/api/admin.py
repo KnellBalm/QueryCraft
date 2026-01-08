@@ -758,28 +758,22 @@ async def trigger_daily_generation(request: Request):
             logger.warning(f"[TRIGGER] Data gen error: {e}")
         
         # 2. PA 문제 생성
-        if not os.path.exists(f"problems/daily/{today}.json"):
-            try:
-                from problems.generator import generate as gen_pa
-                gen_pa(today, pg)
-                results["pa_problems"] = True
-                logger.info("[TRIGGER] PA problems generated")
-            except Exception as e:
-                logger.warning(f"[TRIGGER] PA problem gen error: {e}")
-        else:
-            results["pa_problems"] = True  # 이미 존재
+        try:
+            from problems.generator import generate as gen_pa
+            gen_pa(today, pg)
+            results["pa_problems"] = True
+            logger.info("[TRIGGER] PA problems generated")
+        except Exception as e:
+            logger.warning(f"[TRIGGER] PA problem gen error: {e}")
         
         # 3. Stream 문제 생성
-        if not os.path.exists(f"problems/daily/stream_{today}.json"):
-            try:
-                from problems.generator_stream import generate_stream_problems
-                generate_stream_problems(today, pg)
-                results["stream_problems"] = True
-                logger.info("[TRIGGER] Stream problems generated")
-            except Exception as e:
-                logger.warning(f"[TRIGGER] Stream problem gen error: {e}")
-        else:
-            results["stream_problems"] = True  # 이미 존재
+        try:
+            from problems.generator_stream import generate_stream_problems
+            generate_stream_problems(today, pg)
+            results["stream_problems"] = True
+            logger.info("[TRIGGER] Stream problems generated")
+        except Exception as e:
+            logger.warning(f"[TRIGGER] Stream problem gen error: {e}")
         
         db_log(LogCategory.SCHEDULER, f"일일 생성 완료: {results}", LogLevel.INFO, "trigger")
         

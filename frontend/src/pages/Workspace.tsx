@@ -27,6 +27,7 @@ interface CompletedStatus {
 
 export function Workspace({ dataType }: WorkspaceProps) {
     const [problems, setProblems] = useState<Problem[]>([]);
+    const [isFetching, setIsFetching] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [tables, setTables] = useState<Schema[]>([]);
     const [sql, setSql] = useState('');
@@ -47,46 +48,50 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const selectedProblem = problems[selectedIndex] || null;
 
     // 데이터 로드
-    useEffect(() => {
-        async function load() {
-            try {
-                const [problemsRes, schemaRes] = await Promise.all([
-                    problemsApi.list(dataType),
-                    problemsApi.schema(dataType),
-                ]);
-                const newProblems = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
-                setProblems(newProblems);
-                setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
-                setSelectedIndex(0);
-                setSubmitResult(null);
-                setResult(null);
-                setHint(null);
-                setSql('');
+    const loadData = useCallback(async () => {
+        setIsFetching(true);
+        try {
+            const [problemsRes, schemaRes] = await Promise.all([
+                problemsApi.list(dataType),
+                problemsApi.schema(dataType),
+            ]);
+            const newProblems = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
+            setProblems(newProblems);
+            setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
+            setSelectedIndex(0);
+            setSubmitResult(null);
+            setResult(null);
+            setHint(null);
+            setSql('');
 
-                // 문제 ID 비교하여 새 문제 세트면 제출 기록 초기화
-                const savedKey = `completed_${dataType}`;
-                const savedProblemIdsKey = `problem_ids_${dataType}`;
-                const currentProblemIds = newProblems.map((p: any) => p.problem_id).join(',');
-                const savedProblemIds = localStorage.getItem(savedProblemIdsKey);
+            // 문제 ID 비교하여 새 문제 세트면 제출 기록 초기화
+            const savedKey = `completed_${dataType}`;
+            const savedProblemIdsKey = `problem_ids_${dataType}`;
+            const currentProblemIds = newProblems.map((p: any) => p.problem_id).join(',');
+            const savedProblemIds = localStorage.getItem(savedProblemIdsKey);
 
-                if (savedProblemIds !== currentProblemIds) {
-                    // 새 문제 세트 - 기존 제출 기록 초기화
-                    localStorage.removeItem(savedKey);
-                    localStorage.setItem(savedProblemIdsKey, currentProblemIds);
-                    setCompletedStatus({});
-                } else {
-                    // 같은 문제 세트 - 저장된 기록 복원
-                    const saved = localStorage.getItem(savedKey);
-                    if (saved) {
-                        try { setCompletedStatus(JSON.parse(saved)); } catch { }
-                    }
+            if (savedProblemIds !== currentProblemIds) {
+                // 새 문제 세트 - 기존 제출 기록 초기화
+                localStorage.removeItem(savedKey);
+                localStorage.setItem(savedProblemIdsKey, currentProblemIds);
+                setCompletedStatus({});
+            } else {
+                // 같은 문제 세트 - 저장된 기록 복원
+                const saved = localStorage.getItem(savedKey);
+                if (saved) {
+                    try { setCompletedStatus(JSON.parse(saved)); } catch { }
                 }
-            } catch (error) {
-                console.error('Failed to load data:', error);
             }
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setIsFetching(false);
         }
-        load();
     }, [dataType]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     // Analytics: 페이지 로드 및 문제 선택 추적
     useEffect(() => {
@@ -316,7 +321,32 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
                         {problems.length === 0 && (
                             <div className="no-problems">
-                                오늘 {dataType.toUpperCase()} 문제가 없습니다.
+                                {isFetching ? (
+                                    <div className="fetching-state">
+                                        <div className="loading-spinner" />
+                                        <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...</p>
+                                    </div>
+                                ) : (
+                                    <div className="empty-state">
+                                        <p>오늘 {dataType.toUpperCase()} 문제가 없습니다.</p>
+                                        <button
+                                            onClick={loadData}
+                                            className="btn-refresh"
+                                            style={{
+                                                marginTop: '1.5rem',
+                                                padding: '0.6rem 1.2rem',
+                                                background: 'var(--accent-color)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            🔄 다시 검색하기
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

@@ -89,5 +89,5 @@ async def get_problem_detail(
     
     return ProblemDetailResponse(
         problem=problem,
-        table_schema=get_table_schema("pa_" if data_type == "pa" else "stream_")
+        tables=get_table_schema("pa_" if data_type == "pa" else "stream_")
     )

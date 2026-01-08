@@ -48,54 +48,75 @@ def get_problems(
     target_date: Optional[date] = None,
     user_id: Optional[str] = None
 ) -> List[Problem]:
-    """문제 목록 조회 (사용자별 세트 할당)"""
+    """문제 목록 조회 (DB 우선, 파일 폴백)"""
     if target_date is None:
         target_date = date.today()
     
     # 사용자 세트 인덱스 조회
     set_index = get_user_set_index(user_id, target_date, data_type)
     
-    # 파일 경로 결정
-    if data_type == "pa":
-        # 먼저 세트 파일 시도
-        path = PROBLEM_DIR / f"{target_date}_set{set_index}.json"
-        if not path.exists():
-            # 세트 파일 없으면 기본 파일 사용 (호환성)
-            path = PROBLEM_DIR / f"{target_date}.json"
-        
-        # 오늘 파일이 없으면 가장 최근 파일 사용
-        if not path.exists():
-            pa_files = sorted(PROBLEM_DIR.glob("*_set*.json"), reverse=True)
-            if pa_files:
-                path = pa_files[0]
-    else:
-        # Stream 문제 (아직 세트 미지원)
-        path = PROBLEM_DIR / f"stream_{target_date}.json"
-        
-        # 오늘 파일이 없으면 가장 최근 stream 파일 사용
-        if not path.exists():
-            stream_files = sorted(PROBLEM_DIR.glob("stream_*.json"), reverse=True)
-            if stream_files:
-                path = stream_files[0]
+    problems_data = []
     
-    if not path.exists():
+    # 1. DB에서 조회 시도
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT description FROM public.problems 
+                WHERE problem_date = %s AND data_type = %s AND set_index = %s
+                ORDER BY id ASC
+            """, [target_date.isoformat(), data_type, set_index])
+            
+            if len(df) > 0:
+                for _, row in df.iterrows():
+                    problems_data.append(json.loads(row["description"]))
+    except Exception as e:
+        print(f"Failed to fetch problems from DB: {e}")
+
+    # 2. DB에 없으면 파일에서 조회 (폴백)
+    if not problems_data:
+        path = None
+        if data_type == "pa":
+            path = PROBLEM_DIR / f"{target_date}_set{set_index}.json"
+            if not path.exists():
+                path = PROBLEM_DIR / f"{target_date}.json"
+            
+            if not path.exists():
+                pa_files = sorted(PROBLEM_DIR.glob("*_set*.json"), reverse=True)
+                if pa_files: path = pa_files[0]
+        else:
+            path = PROBLEM_DIR / f"stream_{target_date}.json"
+            if not path.exists():
+                stream_files = sorted(PROBLEM_DIR.glob("stream_*.json"), reverse=True)
+                if stream_files: path = stream_files[0]
+        
+        if path and path.exists():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    all_data = json.load(f)
+                    problems_data = [p for p in all_data if p.get("set_index", 0) == set_index]
+                    if not problems_data:
+                        problems_data = all_data
+            except:
+                pass
+    
+    if not problems_data:
         return []
-    
-    with open(path, encoding="utf-8") as f:
-        problems_data = json.load(f)
     
     # 완료 상태 조회
     completed_map = get_submission_status(target_date, user_id)
     
     problems = []
     for p in problems_data:
-        problem = Problem(**p)
-        if problem.problem_id in completed_map:
-            problem.is_completed = True
-            problem.is_correct = completed_map[problem.problem_id]
-        else:
-            problem.is_completed = False
-        problems.append(problem)
+        try:
+            problem = Problem(**p)
+            if problem.problem_id in completed_map:
+                problem.is_completed = True
+                problem.is_correct = completed_map[problem.problem_id]
+            else:
+                problem.is_completed = False
+            problems.append(problem)
+        except Exception as e:
+            print(f"Error parsing problem data: {e}")
     
     return problems
 
@@ -106,7 +127,35 @@ def get_problem_by_id(
     target_date: Optional[date] = None,
     user_id: Optional[str] = None
 ) -> Optional[Problem]:
-    """문제 상세 조회"""
+    """문제 상세 조회 (DB 우선)"""
+    # 1. DB에서 직접 id로 조회 시도
+    try:
+        if target_date is None:
+            target_date = date.today()
+
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT description FROM public.problems 
+                WHERE title = %s OR description->>'problem_id' = %s
+                LIMIT 1
+            """, [problem_id, problem_id])
+            
+            if len(df) > 0:
+                p_data = json.loads(df.iloc[0]["description"])
+                problem = Problem(**p_data)
+                
+                # 완료 상태 추가
+                completed_map = get_submission_status(target_date, user_id)
+                if problem.problem_id in completed_map:
+                    problem.is_completed = True
+                    problem.is_correct = completed_map[problem.problem_id]
+                else:
+                    problem.is_completed = False
+                return problem
+    except Exception as e:
+        print(f"Failed to fetch problem by id from DB: {e}")
+
+    # 2. 없으면 전체 리스트에서 검색 (폴백)
     problems = get_problems(data_type, target_date, user_id)
     for p in problems:
         if p.problem_id == problem_id:

@@ -126,6 +126,7 @@ def init_database():
                     hints JSONB,
                     schema_info TEXT,
                     created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
                     UNIQUE(problem_date, data_type, set_index, title)
                 )
             """)

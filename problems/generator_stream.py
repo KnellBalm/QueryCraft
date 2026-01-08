@@ -151,28 +151,56 @@ def save_monthly_file(month_str: str, data: dict):
     logger.info(f"saved monthly stream file to {path}")
 
 
+def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_type: str):
+    """문제를 PostgreSQL DB에 저장"""
+    logger.info(f"saving {len(problems)} stream problems to DB for {today}")
+    
+    for p in problems:
+        try:
+            pg.execute("""
+                INSERT INTO public.problems (
+                    problem_date, data_type, set_index, difficulty, title, 
+                    description, answer_sql, expected_columns, hints
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (problem_date, data_type, set_index, title) 
+                DO UPDATE SET 
+                    difficulty = EXCLUDED.difficulty,
+                    description = EXCLUDED.description,
+                    answer_sql = EXCLUDED.answer_sql,
+                    expected_columns = EXCLUDED.expected_columns,
+                    hints = EXCLUDED.hints,
+                    updated_at = NOW()
+            """, [
+                today, 
+                data_type, 
+                p.get("set_index", 0), 
+                p.get("difficulty"), 
+                p.get("problem_id"), 
+                json.dumps(p, ensure_ascii=False), # 전체 내용
+                p.get("answer_sql"),
+                json.dumps(p.get("expected_columns", []), ensure_ascii=False),
+                json.dumps({"hint": p.get("hint"), "expected_result": p.get("expected_result")}, ensure_ascii=False)
+            ])
+        except Exception as e:
+            logger.error(f"Failed to save stream problem {p.get('problem_id')} to DB: {e}")
+
+
 def generate_stream_problems(target_date: date, pg: PostgresEngine) -> str:
-    """Stream 문제 생성 - 월별 JSON에 누적"""
+    """Stream 문제 생성 - 월별 JSON에 누적 + DB 저장"""
     logger.info("generating stream problems for %s", target_date)
     
     month_str = target_date.strftime("%Y-%m")
     monthly_data = load_monthly_file(month_str)
     
-    # 오늘 날짜 문제가 이미 있는지 확인
-    existing_dates = set(p.get("date") for p in monthly_data["problems"])
-    if target_date.isoformat() in existing_dates:
-        logger.info(f"stream problems for {target_date} already exist, skipping")
-        return str(PROBLEM_DIR / f"stream_{month_str}.json")
-    
-    # 데이터 요약
-    data_summary = get_stream_data_summary(pg)
-    logger.info("stream data summary:\n%s", data_summary)
-    
     # 프롬프트 빌드 및 Gemini 호출
+    data_summary = get_stream_data_summary(pg)
     prompt = build_stream_prompt(data_summary, n=6)
     problems = call_gemini_json(prompt)
     logger.info("generated %d stream problems from Gemini", len(problems))
     
+    if not problems:
+        return ""
+
     # 문제에 메타데이터 및 정답 결과 추가
     for p in problems:
         original_id = p["problem_id"]
@@ -190,27 +218,28 @@ def generate_stream_problems(target_date: date, pg: PostgresEngine) -> str:
             else:
                 p["xp_value"] = 8
         
-        # 정답 결과 데이터 생성 (JSON에 직접 저장)
+        # 정답 결과 데이터 생성
         answer_sql = p.get("answer_sql")
         if answer_sql:
             expected_result = get_expected_result(pg, answer_sql)
             p["expected_result"] = expected_result
             p["expected_row_count"] = len(expected_result)
-            logger.info(f"generated expected_result for {p['problem_id']} with {len(expected_result)} rows")
         else:
-            logger.warning("answer_sql missing for %s", p['problem_id'])
             p["expected_result"] = []
             p["expected_row_count"] = 0
     
-    # 월별 파일에 추가
+    # 1. DB 저장
+    save_problems_to_db(pg, problems, target_date, "stream")
+
+    # 2. 월별 파일에 추가
     monthly_data["problems"].extend(problems)
     save_monthly_file(month_str, monthly_data)
     
-    # 기존 daily 폴더 호환을 위해 저장
+    # 3. 기존 daily 폴더 호환
     os.makedirs("problems/daily", exist_ok=True)
     daily_path = f"problems/daily/stream_{target_date.isoformat()}.json"
     with open(daily_path, "w", encoding="utf-8") as f:
         json.dump(problems, f, ensure_ascii=False, indent=2)
     
-    logger.info("saved stream problems to %s", daily_path)
+    logger.info("saved stream problems to DB and %s", daily_path)
     return str(PROBLEM_DIR / f"stream_{month_str}.json")
