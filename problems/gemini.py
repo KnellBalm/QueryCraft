@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 import json
 import re
+import time
+import random
 from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
@@ -64,15 +66,45 @@ def log_api_usage(purpose: str, model: str, input_tokens: int = 0, output_tokens
         logger.error(f"Failed to log API usage: {e}")
 
 
+def _call_gemini_with_retry(model: str, contents: str, purpose: str = "general", max_retries: int = 3):
+    """Gemini API 호출 (503/429 발생 시 재시도 + 마지막에 모델 폴백)"""
+    current_model = model
+    
+    for i in range(max_retries):
+        try:
+            return client.models.generate_content(model=current_model, contents=contents)
+        except Exception as e:
+            err_str = str(e)
+            # 재시도 가능한 에러 체크 (503: Overloaded, 429: Rate Limit)
+            if any(code in err_str for code in ["503", "429", "UNAVAILABLE", "ResourceExhausted"]) or "overloaded" in err_str.lower():
+                # 2번째 재시도부터는 모델을 폴백 모델로 변경 시도
+                if i >= 1 and current_model != GeminiModels.FALLBACK:
+                    logger.warning(f"[GEMINI] High load detected. Falling back to {GeminiModels.FALLBACK}")
+                    current_model = GeminiModels.FALLBACK
+                
+                wait_time = (2 ** i) + (random.random() * 2)
+                logger.warning(f"[GEMINI] API Error ({purpose}, retry {i+1}/{max_retries}): {e}. Waiting {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                continue
+            
+            logger.error(f"[GEMINI] Non-retryable API Error ({purpose}): {e}")
+            raise e
+            
+    # 마지막 시도 (폴백 모델 강제 적용)
+    logger.info(f"[GEMINI] Final attempt for {purpose} with {GeminiModels.FALLBACK}")
+    return client.models.generate_content(model=GeminiModels.FALLBACK, contents=contents)
+
+
 # -------------------------------------------------
 # 1️⃣ 문제 출제용 (JSON 강제)
 # -------------------------------------------------
 def call_gemini_json(prompt: str, purpose: str = "problem_generation") -> list[dict]:
     logger.info(f"calling gemini for {purpose}")
 
-    response = client.models.generate_content(
+    response = _call_gemini_with_retry(
         model=MODEL,
         contents=prompt,
+        purpose=purpose
     )
 
     raw_text = response.text.strip()
@@ -181,9 +213,10 @@ def grade_pa_submission(
     # ---------------------------------------------
     # Gemini 호출
     # ---------------------------------------------
-    response = client.models.generate_content(
+    response = _call_gemini_with_retry(
         model=MODEL,
         contents=prompt,
+        purpose="grading_feedback"
     )
 
     feedback = response.text.strip()

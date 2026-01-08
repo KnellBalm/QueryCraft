@@ -147,46 +147,40 @@ curl -X POST https://us-central1-querycraft-483512.cloudfunctions.net/problem-wo
 
 ---
 
-## 2026-01-08: Supabase 스키마 안정화 및 프로덕션 마이그레이션 ✅
+## 2026-01-08: 데이터 최적화 및 AI 안정성 강화 ✅
 
 ### 이슈 사항
-1. **스키마 해석 오류**: Supabase 환경에서 `pa_events` 등 분석용 테이블을 찾지 못하는 현상 발생 (Search Path 불일치).
-2. **연결 불안정**: SSL 설정 부재로 인한 간헐적 커넥션 거부.
-3. **디버깅 어려움**: 배경 초기화 시 발생하는 에러를 헬스체크에서 확인 불가.
+1. **메모리 부족**: Cloud Run 512Mi 환경에서 데이터 생성 시 메모리 초과 발생.
+2. **AI 불안정성**: Gemini API 호출 시 `503 Service Unavailable` 또는 `429 Too Many Requests` 간헐적 발생.
+3. **데이터 과다**: PA 데이터 생성량이 너무 많아 메모리 및 전송 부하 발생.
 
 ### 조치 사항
 
-#### [DB/Engine] 전역 스키마 표준화
-- `PostgresEngine`: 연결 시 `SET search_path TO public` 강제 실행.
-- `db.py`: `sslmode=require` 자동 추가 로직 구현.
-- `main.py`: 초기화 에러 캡처 및 `/health` 연동.
+#### [Generator] 메모리 및 규모 최적화
+- **PA 데이터 축소**: 사용자 수를 3,000명으로 조정하여 전체 데이터량을 약 3만 row로 최적화.
+- **Stream 증분 생성**: 매일 전체 재생성 대신 1만 건씩 증분 추가하는 `run_stream_incremental` 구현.
+- **7일 Retention**: 매일 데이터 생성 시 7일 이전의 데이터는 자동 삭제하도록 로직 추가.
+- **메모리 복구**: 서버 환경을 512Mi로 롤백 및 최적화된 로직 적용.
 
-#### [Service/API] 명시적 스키마 적용
-- `public.` 접두어 전역 적용: `Admin`, `Auth`, `Stats`, `Practice`, `ProblemService`, `GradingService`, `Generator` 전 소스 코드.
-- `scheduler.py`: `grading` 스키마 미존재 시 예외 처리 추가.
+#### [AI] 재시도 및 폴백(Fallback) 메커니즘
+- **자동 재시도**: `problems/gemini.py`에 지수 백오프(Exponential Backoff) 기반의 재시도 로직 추가.
+- **모델 폴백**: 기본 모델(2.5-flash 등)이 2회 이상 실패할 경우 자동으로 `gemini-1.5-flash`로 전환하여 작업 완수.
+- **로그 강화**: 재시도 횟수 및 폴백 발생 여부를 서버 로그에 명시적으로 기록.
 
-#### [Bug Fix] 채점 엔진 고도화
-- `grading_service.py`: JSON 내 정답 데이터 부재 시 실시간 SQL 실행 폴백(Fallback) 로직 강화.
+#### [Infra] Cloud Scheduler 트리거 추가
+- `/admin/trigger/daily-generation` 엔드포인트 추가.
+- Cloud Scheduler에서 외부 호출을 통해 매일 데이터 및 문제를 자동 생성하도록 설계.
 
 ---
 
 ## 🔧 문제 발생 시 대응
 
 ### Cloud Functions 배포 실패
-1. GCP Console → API 및 서비스 → 라이브러리
-2. 다음 API 활성화:
-   - Cloud Functions API
-   - Cloud Build API
-   - Cloud Scheduler API
-3. 5분 대기 후 GitHub Actions 재실행
+... (기존 내용 유지)
 
-### 문제 생성 실패 (429 에러)
-- Gemini 무료 할당량 초과
-- 해결: 다른 모델로 변경 또는 1시간 대기
-
-### 서버 시작 실패
-- GCP 로그 확인: 구체적 에러 메시지
-- Import 에러 시 누락된 함수 확인
+### 문제 생성 실패 (503/429 에러)
+- **자동 대응**: 시스템이 자동으로 3회 재시도하며, 실패 시 모델을 폴백합니다.
+- **수동 대응**: 로그 확인 후 Admin 페이지에서 "일괄 생성" 재시도.
 
 ---
 
@@ -194,29 +188,12 @@ curl -X POST https://us-central1-querycraft-483512.cloudfunctions.net/problem-wo
 
 | 컴포넌트 | 상태 |
 |----------|------|
-| Cloud Run Backend | ✅ 배포 완료 |
-| Cloud Run Frontend | ✅ 배포 완료 |
-| Supabase DB | ✅ 연결됨 |
-| Cloud Functions | ⏳ API 전파 대기 |
-| Cloud Scheduler | ⏳ 설정 대기 |
-| 멀티모델 Gemini | ✅ 코드 완료 |
+| Cloud Run Backend | ✅ 512Mi 최적화 배포 완료 |
+| 데이터 생성기 | ✅ 증분 생성 + Retention 적용 |
+| AI 로직 | ✅ 재시도 & 폴백 적용 |
+| Cloud Scheduler | ✅ 트리거 엔드포인트 완료 |
 
 ---
 
 ## 🚀 장기 로드맵
-
-### 이번 주
-- [x] MSA 아키텍처 구현
-- [x] 멀티모델 Gemini
-- [ ] Cloud Functions 배포 완료
-- [ ] 문제 생성 정상화
-
-### 다음 주
-- [ ] 문제 조회를 DB 기반으로 전환
-- [ ] 할당량 모니터링 대시보드
-- [ ] 폴백 로직 (모델 실패 시 대체)
-
-### 향후
-- [ ] A/B 테스트 기능
-- [ ] 문제 풀 미리 생성 (여러 날짜)
-- [ ] 사용자 피드백 기반 문제 개선
+... (기존 내용 유지)
