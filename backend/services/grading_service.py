@@ -307,7 +307,7 @@ def save_submission_pg(
         with postgres_connection() as pg:
             # submissions 테이블 생성 (없으면)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS submissions (
+                CREATE TABLE IF NOT EXISTS public.submissions (
                     id SERIAL PRIMARY KEY,
                     session_date DATE NOT NULL,
                     problem_id VARCHAR(100) NOT NULL,
@@ -321,11 +321,11 @@ def save_submission_pg(
                 )
             """)
             # user_id, xp_earned 컬럼 추가 (기존 테이블 호환)
-            pg.execute("ALTER TABLE submissions ADD COLUMN IF NOT EXISTS user_id VARCHAR(100)")
-            pg.execute("ALTER TABLE submissions ADD COLUMN IF NOT EXISTS xp_earned INTEGER DEFAULT 0")
+            pg.execute("ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS user_id VARCHAR(100)")
+            pg.execute("ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS xp_earned INTEGER DEFAULT 0")
             
             pg.execute("""
-                INSERT INTO submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id)
+                INSERT INTO public.submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id))
     except Exception:
@@ -341,7 +341,7 @@ def award_xp(user_id: str, xp_amount: int):
         with postgres_connection() as pg:
             # XP 추가 및 레벨 계산 (100 XP당 1레벨)
             pg.execute("""
-                UPDATE users 
+                UPDATE public.users 
                 SET xp = xp + %s,
                     level = ((xp + %s) / 100) + 1
                 WHERE id = %s
