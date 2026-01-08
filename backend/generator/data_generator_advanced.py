@@ -277,6 +277,40 @@ def generate_stream_events(
     if events_batch or daily_batch:
         yield events_batch, daily_batch
 
+def run_stream(save_to=("postgres",), progress_callback: Optional[ProgressCallback] = None):
+    """Stream 데이터 생성 및 저장"""
+    logger.info("start Stream generator")
+    users = generate_stream_users()
+    
+    pg_con = pg_cur = None
+    if "postgres" in save_to:
+        pg_con = _connect_postgres()
+        pg_cur = pg_con.cursor()
+        init_postgres_schema(pg_cur)
+        truncate_targets(pg_cur=pg_cur, modes=("stream",))
+
+    total_events = 0
+    for events_batch, daily_batch in generate_stream_events(users, progress_callback):
+        if pg_cur:
+            from psycopg2.extras import execute_values
+            if events_batch:
+                execute_values(pg_cur, """
+                    INSERT INTO stream_events (user_id, session_id, event_name, event_time, device, channel) 
+                    VALUES %s
+                """, events_batch)
+            if daily_batch:
+                execute_values(pg_cur, """
+                    INSERT INTO stream_daily_metrics (date, revenue, purchases) 
+                    VALUES %s
+                """, daily_batch)
+            total_events += len(events_batch)
+
+    if pg_cur: pg_cur.close()
+    if pg_con: pg_con.close()
+    
+    logger.info("Stream generator finished: events=%d", total_events)
+    return total_events
+
 # ------------------------------------------------------------
 # PA 데이터 생성 (Product Profile 기반 + 고속 COPY 인서트)
 # ------------------------------------------------------------
