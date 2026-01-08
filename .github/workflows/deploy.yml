@@ -53,7 +53,7 @@ jobs:
             --port 8080 \
             --min-instances 0 \
             --max-instances 2 \
-            --memory 1Gi \
+            --memory 768Mi \
             --timeout 300 \
             --set-env-vars "ENV=production,POSTGRES_DSN=${{ secrets.POSTGRES_DSN }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }}"
 
