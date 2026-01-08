@@ -55,7 +55,7 @@ async def generate_practice_problem(request: GeneratePracticeRequest):
         # 현재 프로덕트 타입 가져오기
         try:
             with postgres_connection() as pg:
-                df = pg.fetch_df("SELECT product_type FROM current_product_type WHERE id = 1")
+                df = pg.fetch_df("SELECT product_type FROM public.current_product_type WHERE id = 1")
             product_type = df.iloc[0]["product_type"] if len(df) > 0 else "commerce"
         except:
             product_type = "commerce"

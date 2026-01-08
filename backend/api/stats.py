@@ -53,8 +53,8 @@ async def get_leaderboard(limit: int = 20):
                         COALESCE(u.nickname, u.name, 'Anonymous') as nickname,
                         COUNT(DISTINCT CASE WHEN s.is_correct THEN s.session_date END) as correct_days,
                         COUNT(CASE WHEN s.is_correct THEN 1 END) as correct_count
-                    FROM users u
-                    LEFT JOIN submissions s ON s.user_id = u.id
+                    FROM public.users u
+                    LEFT JOIN public.submissions s ON s.user_id = u.id
                     GROUP BY u.id, u.nickname, u.name
                 )
                 SELECT 
@@ -111,13 +111,13 @@ async def reset_my_stats(request: Request):
         
         with postgres_connection() as pg:
             # 1. 제출 기록 삭제
-            pg.execute("DELETE FROM submissions WHERE user_id = %s", [user_id])
+            pg.execute("DELETE FROM public.submissions WHERE user_id = %s", [user_id])
             
             # 2. 문제 세트 할당 삭제 (연속 출석 관련)
-            pg.execute("DELETE FROM user_problem_sets WHERE user_id = %s", [user_id])
+            pg.execute("DELETE FROM public.user_problem_sets WHERE user_id = %s", [user_id])
             
             # 3. XP 및 레벨 초기화
-            pg.execute("UPDATE users SET xp = 0 WHERE id = %s", [user_id])
+            pg.execute("UPDATE public.users SET xp = 0 WHERE id = %s", [user_id])
         
         logger.info(f"User {user['email']} reset their stats completely")
         return {"success": True, "message": "모든 학습 기록이 초기화되었습니다"}
