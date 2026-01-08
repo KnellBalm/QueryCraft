@@ -110,10 +110,18 @@ def build_stream_prompt(data_summary: str, n: int = 6) -> str:
 def get_expected_result(pg: PostgresEngine, answer_sql: str, limit: int = 1000) -> list:
     """정답 SQL 실행하여 결과 데이터 반환"""
     try:
-        # 세미콜론 제거 (서브쿼리 감싸기 위해)
-        clean_sql = answer_sql.strip().rstrip(";")
+        # Remove SQL comments (single-line -- and multi-line /* */)
+        import re
+        # Remove multi-line comments /* ... */
+        clean_sql = re.sub(r'/\*.*?\*/', '', answer_sql, flags=re.DOTALL)
+        # Remove single-line comments --
+        clean_sql = re.sub(r'--[^\n]*', '', clean_sql)
+        # Remove extra whitespace and semicolons
+        clean_sql = clean_sql.strip().rstrip(";")
+        
         limited_sql = f"SELECT * FROM ({clean_sql}) AS _result LIMIT {limit}"
         df = pg.fetch_df(limited_sql)
+
         
         result = []
         for _, row in df.iterrows():
