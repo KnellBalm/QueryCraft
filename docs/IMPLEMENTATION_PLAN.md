@@ -140,10 +140,33 @@ curl -X POST https://us-central1-querycraft-483512.cloudfunctions.net/problem-wo
 ```
 
 #### 4. 서비스 동작 확인
-- [ ] 문제 목록 표시
-- [ ] SQL 실행 기능
-- [ ] 채점 기능
-- [ ] 리더보드
+- [x] 문제 목록 표시
+- [x] SQL 실행 기능
+- [x] 채점 기능 (SQL 실시간 실행 폴백 추가)
+- [x] 리더보드 (public. 스키마 대응)
+
+---
+
+## 2026-01-08: Supabase 스키마 안정화 및 프로덕션 마이그레이션 ✅
+
+### 이슈 사항
+1. **스키마 해석 오류**: Supabase 환경에서 `pa_events` 등 분석용 테이블을 찾지 못하는 현상 발생 (Search Path 불일치).
+2. **연결 불안정**: SSL 설정 부재로 인한 간헐적 커넥션 거부.
+3. **디버깅 어려움**: 배경 초기화 시 발생하는 에러를 헬스체크에서 확인 불가.
+
+### 조치 사항
+
+#### [DB/Engine] 전역 스키마 표준화
+- `PostgresEngine`: 연결 시 `SET search_path TO public` 강제 실행.
+- `db.py`: `sslmode=require` 자동 추가 로직 구현.
+- `main.py`: 초기화 에러 캡처 및 `/health` 연동.
+
+#### [Service/API] 명시적 스키마 적용
+- `public.` 접두어 전역 적용: `Admin`, `Auth`, `Stats`, `Practice`, `ProblemService`, `GradingService`, `Generator` 전 소스 코드.
+- `scheduler.py`: `grading` 스키마 미존재 시 예외 처리 추가.
+
+#### [Bug Fix] 채점 엔진 고도화
+- `grading_service.py`: JSON 내 정답 데이터 부재 시 실시간 SQL 실행 폴백(Fallback) 로직 강화.
 
 ---
 
