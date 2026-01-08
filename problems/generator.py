@@ -16,7 +16,7 @@ PROBLEM_DIR.mkdir(parents=True, exist_ok=True)
 # 기존 daily 폴더도 유지 (호환성)
 Path("problems/daily").mkdir(parents=True, exist_ok=True)
 
-NUM_PROBLEM_SETS = 1  # 하루에 생성할 문제 세트 수 (1세트 = 6문제)
+NUM_PROBLEM_SETS = 2  # 하루에 생성할 문제 세트 수 (2세트 = 12문제)
 
 REQUIRED_FIELDS = {
     "problem_id",
