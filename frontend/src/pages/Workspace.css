@@ -255,6 +255,7 @@
     font-size: 1.1rem;
     text-shadow: 0 0 10px var(--accent-glow);
     animation: pulse 2s infinite;
+    text-align: center;
 }
 
 .empty-state p {
