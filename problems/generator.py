@@ -144,6 +144,17 @@ def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_ty
             # Problem schema fields to map:
             # problem_id, difficulty, topic, question, expected_columns, sort_keys, expected_result
             
+            def clean_nan(obj):
+                if isinstance(obj, float) and (obj != obj): # check for NaN
+                    return None
+                if isinstance(obj, dict):
+                    return {k: clean_nan(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [clean_nan(v) for v in obj]
+                return obj
+
+            p_clean = clean_nan(p)
+            
             pg.execute("""
                 INSERT INTO public.problems (
                     problem_date, data_type, set_index, difficulty, title, 
@@ -160,13 +171,13 @@ def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_ty
             """, [
                 today, 
                 data_type, 
-                p.get("set_index", 0), 
-                p.get("difficulty"), 
-                p.get("problem_id"), # title 대신 id 사용 (유니크 식별자)
-                json.dumps(p, ensure_ascii=False), # 전체 내용을 description에 저장
-                p.get("answer_sql"),
-                json.dumps(p.get("expected_columns", []), ensure_ascii=False),
-                json.dumps({"hint": p.get("hint"), "expected_result": p.get("expected_result")}, ensure_ascii=False)
+                p_clean.get("set_index", 0), 
+                p_clean.get("difficulty"), 
+                p_clean.get("problem_id"), 
+                json.dumps(p_clean, ensure_ascii=False),
+                p_clean.get("answer_sql"),
+                json.dumps(p_clean.get("expected_columns", []), ensure_ascii=False),
+                json.dumps({"hint": p_clean.get("hint"), "expected_result": p_clean.get("expected_result")}, ensure_ascii=False)
             ])
         except Exception as e:
             logger.error(f"Failed to save problem {p.get('problem_id')} to DB: {e}")

@@ -55,7 +55,7 @@ jobs:
             --max-instances 2 \
             --memory 512Mi \
             --timeout 300 \
-            --set-env-vars "ENV=production,POSTGRES_DSN=${{ secrets.POSTGRES_DSN }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1"
+            --set-env-vars "ENV=production,POSTGRES_DSN=${{ secrets.POSTGRES_DSN }},GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }}"
 
       # 3. Backend URL 가져오기
       - name: Get Backend URL
@@ -101,7 +101,7 @@ jobs:
             --allow-unauthenticated \
             --memory=512Mi \
             --timeout=540s \
-            --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},POSTGRES_DSN=${{ secrets.POSTGRES_DSN }}"
+            --set-env-vars="SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }},BACKEND_URL=${{ steps.get-backend-url.outputs.BACKEND_URL }}"
 
       # 7. Cloud Functions 배포 (Tip Worker) - 실패해도 계속 진행
       - name: Deploy Tip Worker Function

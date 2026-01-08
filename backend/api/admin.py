@@ -775,6 +775,15 @@ async def trigger_daily_generation(request: Request):
         except Exception as e:
             logger.warning(f"[TRIGGER] Stream problem gen error: {e}")
         
+        # 4. 오늘의 팁 생성
+        try:
+            from backend.services.tip_service import generate_tip_of_the_day
+            generate_tip_of_the_day(today)
+            results["daily_tip"] = True
+            logger.info("[TRIGGER] Daily tip generated")
+        except Exception as e:
+            logger.warning(f"[TRIGGER] Tip gen error: {e}")
+        
         db_log(LogCategory.SCHEDULER, f"일일 생성 완료: {results}", LogLevel.INFO, "trigger")
         
     except Exception as e:
@@ -782,3 +791,16 @@ async def trigger_daily_generation(request: Request):
         results["error"] = str(e)
     
     return results
+
+
+@router.post("/trigger/daily-tip")
+async def trigger_daily_tip(request: Request):
+    """오늘의 팁 생성 트리거 (독립 호출용)"""
+    expected_key = os.environ.get("SCHEDULER_API_KEY", "")
+    provided_key = request.headers.get("X-Scheduler-Key", "")
+    
+    if not expected_key or provided_key != expected_key:
+        raise HTTPException(403, "Invalid API key")
+    
+    from backend.services.tip_service import generate_tip_of_the_day
+    return generate_tip_of_the_day(date.today())
