@@ -1,0 +1,25 @@
+name: Dev Server Deploy
+
+on:
+  push:
+    branches:
+      - dev # 개발 브랜치
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Dev Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}
+          username: ${{ secrets.DEV_SERVER_USER }}
+          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          script: |
+            cd ~/QueryCraft
+            git pull origin dev
+            docker compose down
+            docker compose build backend
+            docker compose up -d
+            echo "✅ Dev server deployed successfully"
