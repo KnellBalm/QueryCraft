@@ -3,11 +3,8 @@
 QueryCraft - FastAPI Backend
 """
 import os
-import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.problems import router as problems_router
@@ -20,22 +17,48 @@ from backend.api.practice import router as practice_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """앱 수명 주기 관리 - DB 초기화 (백그라운드)"""
+    """앱 수명 주기 관리 - DB 초기화 및 스케줄러 시작/중지"""
     import threading
     
-    def init_db_background():
+    # DB 초기화 (백그라운드에서 실행 - 서버 시작 블로킹 방지)
+    def init_background():
         try:
             from backend.services.db_init import init_database
             init_database()
             print("[INFO] Database initialized successfully")
         except Exception as e:
-            print(f"[WARNING] DB init failed: {e}")
+            print(f"[WARNING] Database initialization failed: {e}")
     
-    print("[INFO] Server starting...")
-    # DB 초기화를 백그라운드에서 실행 (서버 시작 블로킹 없음)
-    threading.Thread(target=init_db_background, daemon=True).start()
+    threading.Thread(target=init_background, daemon=True).start()
+    
+    # 스케줄러 시작 (프로덕션에서 자동 활성화)
+    scheduler_started = False
+    if os.getenv("ENV") == "production":
+        try:
+            from backend.scheduler import start_scheduler, stop_scheduler
+            
+            def start_scheduler_background():
+                import time
+                time.sleep(5)  # DB 초기화 대기
+                try:
+                    start_scheduler()
+                    print("[INFO] Scheduler started in background")
+                except Exception as e:
+                    print(f"[WARNING] Scheduler start failed: {e}")
+            
+            threading.Thread(target=start_scheduler_background, daemon=True).start()
+            scheduler_started = True
+        except Exception as e:
+            print(f"[WARNING] Scheduler import failed: {e}")
+    
     yield
-    print("[INFO] Server shutting down...")
+    
+    if scheduler_started:
+        try:
+            from backend.scheduler import stop_scheduler
+            stop_scheduler()
+        except:
+            pass
 
 
 app = FastAPI(
@@ -45,35 +68,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """요청 파싱 에러(422/400) 발생 시 상세 내용을 로그에 기록"""
-    from backend.common.logging import get_logger
-    logger = get_logger("validation")
-    
-    error_details = exc.errors()
-    logger.error(f"Validation Error at {request.url.path}: {error_details}")
-    logger.error(f"Request body structure: {exc.body}")
-    
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": error_details, "body": str(exc.body)},
-    )
-
-# CORS 설정
-FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip()
-origins = [
-    "http://localhost:15173",
-    "http://127.0.0.1:15173",
-]
-if FRONTEND_URL:
-    origins.append(FRONTEND_URL)
-
+# CORS 설정 - 모든 origin 허용
 app.add_middleware(
     CORSMiddleware,
-    # Production에서는 origins가 비어있어도 allow_origin_regex가 커버함
-    allow_origins=origins if os.getenv("ENV") == "production" else ["*"],
-    allow_origin_regex=r"https://.*.run.app" if os.getenv("ENV") == "production" else None,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
