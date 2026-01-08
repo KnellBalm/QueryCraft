@@ -54,9 +54,9 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     problemsApi.list(dataType),
                     problemsApi.schema(dataType),
                 ]);
-                const newProblems = problemsRes.data.problems;
+                const newProblems = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
                 setProblems(newProblems);
-                setTables(schemaRes.data);
+                setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
                 setSelectedIndex(0);
                 setSubmitResult(null);
                 setResult(null);
@@ -254,7 +254,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 {activeTab === 'problem' ? (
                     <div className="problem-panel">
                         <div className="problem-list">
-                            {problems.map((p, idx) => (
+                            {Array.isArray(problems) && problems.map((p, idx) => (
                                 <button
                                     key={p.problem_id}
                                     className={`problem-item ${selectedIndex === idx ? 'active' : ''}`}

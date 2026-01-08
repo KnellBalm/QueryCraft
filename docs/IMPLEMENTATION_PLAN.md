@@ -22,6 +22,37 @@ Cloud Run (API)              Cloud Functions (Workers)
 - `functions/tip_worker/main.py` - 팁 생성 워커
 - `functions/deploy.sh` - 수동 배포 스크립트
 
+### [MODIFY] [data_generator_advanced.py](file:///home/naca11/QueryCraft/backend/generator/data_generator_advanced.py)
+DuckDB 의존성을 제거하고 모든 데이터(PA, Stream)를 Supabase(PostgreSQL)에 생성하도록 수정합니다. `TRUNCATE CASCADE`를 적용하여 외래 키 문제를 해결합니다.
+
+### [MODIFY] [problem_service.py](file:///home/naca11/QueryCraft/backend/services/problem_service.py)
+`get_table_schema` 함수가 DuckDB를 거치지 않고 PostgreSQL의 `information_schema`에서 모든 분석용 테이블 정보를 가져오도록 수정합니다.
+
+### [MODIFY] [MainPage.tsx](file:///home/naca11/QueryCraft/frontend/src/pages/MainPage.tsx) / [Workspace.tsx](file:///home/naca11/QueryCraft/frontend/src/pages/Workspace.tsx)
+API 응답이 배열이 아닌 경우(에러 등)에 대비하여 `.map()` 호출 전 방어 코드를 추가하거나 초기값을 엄격히 관리합니다.
+
+---
+
+## 2026-01-08: 데이터셋 Supabase 통합 및 안정성 개선
+
+### 이슈 사항
+1. **프론트엔드 크래시**: API 에러 응답 시 `.map()` 호출로 인한 런타임 오류.
+2. **테이블 누락**: `pa_events` 등 분석용 테이블이 로컬 DB나 DuckDB에 분산되어 있어 사용자가 찾지 못함.
+
+### 변경 사항
+
+#### [DB/Generator] 데이터셋 Supabase 통합
+- `data_generator_advanced.py`: `run_stream`, `run_pa`가 오직 PostgreSQL(Supabase)만 사용하도록 변경.
+- `init_postgres_schema`: 모든 테이블(`pa_`, `stream_`) 생성 보장.
+- `truncate_targets`: `TRUNCATE ... CASCADE` 적용.
+
+#### [Backend] 서비스 로직 통합
+- `problem_service.py`: `get_table_schema` 통합.
+- `database.py`: 커넥션 관리 재점검.
+
+#### [Frontend] 런타임 에러 방지
+- `Array.isArray()` 체크 또는 기본값 `[]` 강제 적용.
+
 ### [MODIFY] [nginx.conf](file:///home/naca11/QueryCraft/frontend/nginx.conf)
 Nginx 시작 시 호스트 해석 실패로 인한 컨테이너 실행 오류(Cloud Run)를 방지하기 위해 `proxy_pass` 설정을 변수 방식으로 변경합니다.
 

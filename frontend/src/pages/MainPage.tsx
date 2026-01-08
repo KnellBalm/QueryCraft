@@ -25,7 +25,8 @@ export function MainPage() {
     const loadLeaderboard = async () => {
         try {
             const res = await statsApi.leaderboard();
-            setLeaderboard(res.data || []);
+            // 배열인지 확인
+            setLeaderboard(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error('Failed to load leaderboard:', err);
             setLeaderboard([]);
@@ -96,7 +97,7 @@ export function MainPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {leaderboard.map((entry, idx) => (
+                                    {Array.isArray(leaderboard) && leaderboard.map((entry, idx) => (
                                         <tr key={idx} className={entry.nickname === user?.nickname ? 'highlight' : ''}>
                                             <td className="rank">
                                                 {entry.rank === 1 && '🥇'}

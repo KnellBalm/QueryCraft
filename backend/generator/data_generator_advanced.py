@@ -47,9 +47,8 @@ def _connect_postgres():
     return con
 
 def _connect_duckdb():
-    path = get_duckdb_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    return duckdb.connect(path)
+    # DuckDB 미사용 (Supabase 통합)
+    return None
 
 # ------------------------------------------------------------
 # 스키마 초기화
@@ -188,23 +187,14 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     """)
 
 def truncate_targets(pg_cur=None, duck_con=None, modes=("stream","pa")):
-    logger.info("truncate targets: %s", modes)
+    logger.info("truncate targets (PostgreSQL only): %s", modes)
 
     if pg_cur is not None:
+        # 외래 키 제약 조건 때문에 CASCADE 사용
         if "stream" in modes:
-            pg_cur.execute("TRUNCATE stream_events, stream_daily_metrics;")
+            pg_cur.execute("TRUNCATE stream_events, stream_daily_metrics CASCADE;")
         if "pa" in modes:
-            pg_cur.execute("TRUNCATE pa_orders, pa_events, pa_sessions, pa_users;")
-
-    if duck_con is not None:
-        if "stream" in modes:
-            duck_con.execute("DELETE FROM stream_events;")
-            duck_con.execute("DELETE FROM stream_daily_metrics;")
-        if "pa" in modes:
-            duck_con.execute("DELETE FROM pa_orders;")
-            duck_con.execute("DELETE FROM pa_events;")
-            duck_con.execute("DELETE FROM pa_sessions;")
-            duck_con.execute("DELETE FROM pa_users;")
+            pg_cur.execute("TRUNCATE pa_orders, pa_events, pa_sessions, pa_users CASCADE;")
 
 # ------------------------------------------------------------
 # Stream 데이터 생성
@@ -430,7 +420,7 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
 # 엔트리포인트
 # ------------------------------------------------------------
 def generate_data(
-    save_to: Sequence[str] = tuple(cfg.GENERATOR_TARGETS),
+    save_to: Sequence[str] = ("postgres",),  # Supabase 통합
     modes: Sequence[str] = tuple(cfg.GENERATOR_MODES),
     progress_callback: Optional[ProgressCallback] = None,
 ):

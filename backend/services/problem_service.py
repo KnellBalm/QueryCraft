@@ -135,12 +135,13 @@ def get_submission_status(target_date: date, user_id: Optional[str] = None) -> D
 
 
 def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
-    """테이블 스키마 조회"""
+    """테이블 스키마 조회 - PostgreSQL(Supabase)로 단일화"""
     tables = []
     
     try:
         with postgres_connection() as pg:
-            # 테이블 목록
+            # 테이블 목록 (prefix에 상관없이 pa_와 stream_ 모두 조회가 필요할 수도 있지만, 현재는 prefix 필터 유지)
+            # 사용자가 특정 모드(PA/Stream)로 진입했을 때 해당 테이블들만 보여주기 위함
             table_df = pg.fetch_df(f"""
                 SELECT table_name 
                 FROM information_schema.tables 
@@ -168,19 +169,19 @@ def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
                     for _, c in col_df.iterrows()
                 ]
                 
-                # 행 수
+                # 행 수 (Supabase/PostgreSQL 속도 최적화를 위해 간단한 COUNT 사용)
                 try:
                     count_df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM {tbl_name}")
                     row_count = int(count_df.iloc[0]["cnt"])
                 except:
-                    row_count = None
+                    row_count = 0
                 
                 tables.append(TableSchema(
                     table_name=tbl_name,
                     columns=columns,
                     row_count=row_count
                 ))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error fetching schema: {e}")
     
     return tables
