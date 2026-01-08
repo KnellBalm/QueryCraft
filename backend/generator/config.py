@@ -43,7 +43,9 @@ STREAM_END_DATE = TODAY
 # ------------------------------
 # Stream User 설정
 # ------------------------------
-STREAM_N_USERS = _env_int("STREAM_N_USERS", 50_000)
+STREAM_N_USERS = _env_int("STREAM_N_USERS", 5_000)  # 증분 생성용
+STREAM_DAILY_EVENTS = _env_int("STREAM_DAILY_EVENTS", 10_000)  # 매일 1만 row
+STREAM_RETENTION_DAYS = _env_int("STREAM_RETENTION_DAYS", 7)  # 7일 보관
 STREAM_NEW_USERS_DAILY = (
     _env_int("STREAM_NEW_USERS_DAILY_MIN", 50),
     _env_int("STREAM_NEW_USERS_DAILY_MAX", 300),
@@ -80,8 +82,8 @@ STREAM_PROMOTION_DAYS = random.sample(
 # ------------------------------
 # PA 설정 (정답 비교/무결성 목적)
 # ------------------------------
-PA_NUM_USERS = _env_int("PA_NUM_USERS", 50_000)
-PA_SIGNUP_WINDOW_DAYS = _env_int("PA_SIGNUP_WINDOW_DAYS", 60)
+PA_NUM_USERS = _env_int("PA_NUM_USERS", 3_000)  # 3천명 → 약 3만 row
+PA_SIGNUP_WINDOW_DAYS = _env_int("PA_SIGNUP_WINDOW_DAYS", 30)
 
 PA_SESSIONS_PER_USER = (
     _env_int("PA_SESSIONS_PER_USER_MIN", 1),

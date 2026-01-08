@@ -451,19 +451,129 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
     return product_type  # 사용된 product_type 반환
 
 # ------------------------------------------------------------
+# Stream 증분 생성 (매일 1만 row)
+# ------------------------------------------------------------
+def run_stream_incremental(target_date: date = None):
+    """오늘 날짜의 Stream 이벤트만 증분 생성 (1만 row)"""
+    from datetime import date as dt_date
+    from psycopg2.extras import execute_values
+    
+    target = target_date or dt_date.today()
+    target_str = str(target)
+    
+    logger.info(f"[STREAM_INCR] Generating {cfg.STREAM_DAILY_EVENTS} events for {target_str}")
+    
+    pg_con = _connect_postgres()
+    pg_cur = pg_con.cursor()
+    init_postgres_schema(pg_cur)
+    
+    # 해당 날짜 데이터가 이미 있으면 스킵
+    pg_cur.execute("SELECT COUNT(*) FROM public.stream_events WHERE event_time::date = %s", [target])
+    existing = pg_cur.fetchone()[0]
+    if existing > 0:
+        logger.info(f"[STREAM_INCR] {target_str} already has {existing} events, skipping")
+        pg_cur.close()
+        pg_con.close()
+        return existing
+    
+    # 이벤트 생성
+    events = []
+    revenue_today = 0
+    purchase_count = 0
+    
+    events_per_batch = cfg.STREAM_DAILY_EVENTS
+    users_to_generate = min(events_per_batch // 3, 5000)  # 대략 사용자당 3개 이벤트 가정
+    
+    for i in range(users_to_generate):
+        user_id = random.randint(1, 100000)
+        session_id = generate_session_id()
+        device = random.choice(cfg.STREAM_DEVICES)
+        channel = random.choice(cfg.STREAM_CHANNELS)
+        
+        # visit 이벤트
+        events.append((user_id, session_id, "visit", generate_ts(target_str), device, channel))
+        
+        if random.random() < cfg.STREAM_PROB_VIEW:
+            events.append((user_id, session_id, "view_product", generate_ts(target_str), device, channel))
+        if random.random() < cfg.STREAM_PROB_CART:
+            events.append((user_id, session_id, "add_to_cart", generate_ts(target_str), device, channel))
+        if random.random() < cfg.STREAM_PROB_CHECKOUT:
+            events.append((user_id, session_id, "checkout", generate_ts(target_str), device, channel))
+        if random.random() < cfg.STREAM_PROB_PURCHASE:
+            revenue_today += random.randint(5, 200)
+            purchase_count += 1
+            events.append((user_id, session_id, "purchase", generate_ts(target_str), device, channel))
+        
+        if len(events) >= events_per_batch:
+            break
+    
+    # 삽입
+    if events:
+        execute_values(pg_cur, """
+            INSERT INTO public.stream_events (user_id, session_id, event_name, event_time, device, channel) 
+            VALUES %s
+        """, events)
+    
+    # daily_metrics 삽입
+    pg_cur.execute("""
+        INSERT INTO public.stream_daily_metrics (date, revenue, purchases) 
+        VALUES (%s, %s, %s)
+        ON CONFLICT DO NOTHING
+    """, (target_str, float(revenue_today), purchase_count))
+    
+    pg_cur.close()
+    pg_con.close()
+    
+    logger.info(f"[STREAM_INCR] Generated {len(events)} events for {target_str}")
+    return len(events)
+
+
+def cleanup_old_stream_data():
+    """7일 이상 된 Stream 데이터 삭제"""
+    from datetime import date as dt_date
+    
+    cutoff = dt_date.today() - timedelta(days=cfg.STREAM_RETENTION_DAYS)
+    
+    logger.info(f"[STREAM_CLEANUP] Deleting data older than {cutoff}")
+    
+    pg_con = _connect_postgres()
+    pg_cur = pg_con.cursor()
+    
+    # 이벤트 삭제
+    pg_cur.execute("DELETE FROM public.stream_events WHERE event_time::date < %s", [cutoff])
+    events_deleted = pg_cur.rowcount
+    
+    # daily_metrics 삭제
+    pg_cur.execute("DELETE FROM public.stream_daily_metrics WHERE date < %s", [cutoff])
+    metrics_deleted = pg_cur.rowcount
+    
+    pg_cur.close()
+    pg_con.close()
+    
+    logger.info(f"[STREAM_CLEANUP] Deleted {events_deleted} events, {metrics_deleted} metrics older than {cutoff}")
+    return events_deleted, metrics_deleted
+
+
+# ------------------------------------------------------------
 # 엔트리포인트
 # ------------------------------------------------------------
 def generate_data(
     save_to: Sequence[str] = ("postgres",),  # Supabase 통합
     modes: Sequence[str] = tuple(cfg.GENERATOR_MODES),
     progress_callback: Optional[ProgressCallback] = None,
+    incremental: bool = False,  # True면 증분 생성
 ):
     start = datetime.now()
-    logger.info("generate_data start save_to=%s modes=%s", save_to, modes)
+    logger.info("generate_data start save_to=%s modes=%s incremental=%s", save_to, modes, incremental)
 
     if "stream" in modes:
-        logger.info("running stream generator")
-        run_stream(save_to=save_to, progress_callback=progress_callback)
+        if incremental:
+            logger.info("running stream incremental generator")
+            run_stream_incremental()
+            cleanup_old_stream_data()
+        else:
+            logger.info("running stream full generator")
+            run_stream(save_to=save_to, progress_callback=progress_callback)
 
     if "pa" in modes:
         logger.info("running pa generator")
@@ -477,3 +587,4 @@ def generate_data(
 
 if __name__ == "__main__":
     generate_data()
+

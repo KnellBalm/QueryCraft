@@ -135,7 +135,9 @@ def run_weekday_generation():
         logger.info("[SCHEDULER] Generating PA/Stream data...")
         try:
             from backend.generator.data_generator_advanced import generate_data
-            generate_data(modes=("pa", "stream"))
+            # PA는 전체 생성, Stream은 증분 생성
+            generate_data(modes=("pa",), incremental=False)  # PA 전체
+            generate_data(modes=("stream",), incremental=True)  # Stream 증분 + 7일 정리
             logger.info("[SCHEDULER] Data generation done")
         except Exception as e:
             logger.warning(f"[SCHEDULER] Data gen warning: {e}")
