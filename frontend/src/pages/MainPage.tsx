@@ -25,7 +25,6 @@ export function MainPage() {
     const loadLeaderboard = async () => {
         try {
             const res = await statsApi.leaderboard();
-            // 배열인지 확인
             setLeaderboard(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error('Failed to load leaderboard:', err);
@@ -37,125 +36,140 @@ export function MainPage() {
 
     return (
         <div className="main-page">
-            {/* 히어로 섹션 */}
+            {/* 히어로 - 미니멀 대형 타이포 */}
             <section className="hero">
-                <h1>🔧 QueryCraft</h1>
-                <p className="hero-subtitle">실전 SQL 문제를 풀고 데이터 분석 실력을 키워보세요</p>
-
-                {!user && (
-                    <p className="hero-cta">로그인하고 나만의 성적을 기록하세요!</p>
-                )}
+                <div className="hero-content">
+                    <span className="hero-label">SQL Practice Platform</span>
+                    <h1>
+                        Master Data Analysis<br />
+                        <span className="accent">One Query at a Time</span>
+                    </h1>
+                    <p className="hero-desc">
+                        실전 SQL 문제를 매일 풀고, 데이터 분석 역량을 체계적으로 성장시키세요.
+                    </p>
+                    {!user ? (
+                        <p className="hero-cta">로그인하고 학습을 시작하세요 →</p>
+                    ) : (
+                        <Link to="/pa" className="hero-button">
+                            오늘의 문제 풀기 →
+                        </Link>
+                    )}
+                </div>
             </section>
 
-            {/* 퀵 액션 카드 */}
-            <section className="quick-actions-section">
-                <h2>📚 연습 모드 선택</h2>
-                <div className="quick-actions">
-                    <Link to="/pa" className="action-card pa">
-                        <span className="icon">🧠</span>
-                        <h3>PA 연습</h3>
-                        <p>Product Analytics 실전 문제</p>
-                        <span className="badge">매일 새 문제</span>
+            {/* 모드 선택 - 에디토리얼 카드 */}
+            <section className="modes-section">
+                <div className="section-header">
+                    <span className="section-number">01</span>
+                    <h2>Practice Modes</h2>
+                </div>
+                <div className="modes-grid">
+                    <Link to="/pa" className="mode-card">
+                        <div className="mode-number">01</div>
+                        <div className="mode-content">
+                            <h3>PA 연습</h3>
+                            <p>Product Analytics 실전 문제</p>
+                            <span className="mode-tag">Daily</span>
+                        </div>
+                        <span className="mode-arrow">→</span>
                     </Link>
-                    <Link to="/stream" className="action-card stream">
-                        <span className="icon">📊</span>
-                        <h3>스트림 연습</h3>
-                        <p>Streaming 데이터 분석</p>
-                        <span className="badge">실시간 처리</span>
+                    <Link to="/stream" className="mode-card">
+                        <div className="mode-number">02</div>
+                        <div className="mode-content">
+                            <h3>스트림 연습</h3>
+                            <p>Streaming 데이터 분석</p>
+                            <span className="mode-tag">Real-time</span>
+                        </div>
+                        <span className="mode-arrow">→</span>
                     </Link>
-                    <Link to="/practice" className="action-card practice">
-                        <span className="icon">🎯</span>
-                        <h3>무한 연습</h3>
-                        <p>AI 생성 무제한 문제</p>
-                        <span className="badge">∞ 무제한</span>
+                    <Link to="/practice" className="mode-card">
+                        <div className="mode-number">03</div>
+                        <div className="mode-content">
+                            <h3>무한 연습</h3>
+                            <p>AI가 생성하는 무제한 문제</p>
+                            <span className="mode-tag">Infinite</span>
+                        </div>
+                        <span className="mode-arrow">→</span>
                     </Link>
                 </div>
             </section>
 
-            {/* 메인 콘텐츠: 리더보드 + 팁 */}
-            <div className="main-content">
+            {/* 리더보드 & 팁 - 2컬럼 */}
+            <div className="content-grid">
                 {/* 리더보드 */}
                 <section className="leaderboard-section">
-                    <h2>🏆 리더보드</h2>
+                    <div className="section-header">
+                        <span className="section-number">02</span>
+                        <h2>Leaderboard</h2>
+                    </div>
                     {loading ? (
-                        <div className="loading">불러오는 중...</div>
+                        <div className="loading-state">Loading...</div>
                     ) : leaderboard.length === 0 ? (
                         <div className="empty-state">
                             <p>아직 기록이 없습니다</p>
-                            <p className="hint">문제를 풀고 첫 번째 기록을 남겨보세요!</p>
+                            <span>첫 번째 문제를 풀어보세요</span>
                         </div>
                     ) : (
-                        <div className="leaderboard">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>순위</th>
-                                        <th>닉네임</th>
-                                        <th>정답</th>
-                                        <th>연속</th>
-                                        <th>레벨</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {Array.isArray(leaderboard) && leaderboard.map((entry, idx) => (
-                                        <tr key={idx} className={entry.nickname === user?.nickname ? 'highlight' : ''}>
-                                            <td className="rank">
-                                                {entry.rank === 1 && '🥇'}
-                                                {entry.rank === 2 && '🥈'}
-                                                {entry.rank === 3 && '🥉'}
-                                                {entry.rank > 3 && entry.rank}
-                                            </td>
-                                            <td className="nickname">{entry.nickname}</td>
-                                            <td className="correct">{entry.correct}</td>
-                                            <td className="streak">{entry.streak}일</td>
-                                            <td className="level">{entry.level}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="leaderboard-list">
+                            {leaderboard.slice(0, 5).map((entry, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`leaderboard-item ${entry.nickname === user?.nickname ? 'is-me' : ''}`}
+                                >
+                                    <span className="lb-rank">
+                                        {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
+                                    </span>
+                                    <span className="lb-name">{entry.nickname}</span>
+                                    <span className="lb-stats">
+                                        <span className="lb-correct">{entry.correct}</span>
+                                        <span className="lb-streak">{entry.streak}d</span>
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </section>
 
                 {/* SQL 팁 */}
                 <section className="tips-section">
-                    <h2>💡 오늘의 SQL 팁</h2>
+                    <div className="section-header">
+                        <span className="section-number">03</span>
+                        <h2>Today's Tip</h2>
+                    </div>
                     <div className="tip-card">
-                        <h4>Window Functions 활용하기</h4>
-                        <p>ROW_NUMBER(), RANK(), DENSE_RANK()를 사용하면 순위를 쉽게 계산할 수 있어요.</p>
+                        <h4>Window Functions</h4>
+                        <p>ROW_NUMBER(), RANK(), DENSE_RANK()로 순위를 계산하세요.</p>
                         <code>ROW_NUMBER() OVER (PARTITION BY category ORDER BY sales DESC)</code>
                     </div>
                     <div className="tip-card">
-                        <h4>날짜 함수 마스터하기</h4>
-                        <p>DATE_TRUNC, EXTRACT를 활용하면 시계열 분석이 편리해집니다.</p>
+                        <h4>Date Functions</h4>
+                        <p>DATE_TRUNC으로 시계열 데이터를 집계하세요.</p>
                         <code>DATE_TRUNC('month', created_at)</code>
                     </div>
                 </section>
             </div>
 
-            {/* 하단 안내 */}
-            <section className="footer-section">
-                <div className="footer-content">
-                    <div className="footer-item">
-                        <span className="footer-icon">⏱️</span>
-                        <div>
-                            <h4>매일 연습</h4>
-                            <p>새로운 문제가 매일 생성됩니다</p>
-                        </div>
+            {/* 하단 특징 */}
+            <section className="features-section">
+                <div className="feature">
+                    <span className="feature-icon">⏱</span>
+                    <div>
+                        <h4>Daily Problems</h4>
+                        <p>매일 새로운 문제 제공</p>
                     </div>
-                    <div className="footer-item">
-                        <span className="footer-icon">📈</span>
-                        <div>
-                            <h4>실력 추적</h4>
-                            <p>정답률과 연속 일수 기록</p>
-                        </div>
+                </div>
+                <div className="feature">
+                    <span className="feature-icon">📊</span>
+                    <div>
+                        <h4>Progress Tracking</h4>
+                        <p>학습 현황 실시간 추적</p>
                     </div>
-                    <div className="footer-item">
-                        <span className="footer-icon">🤖</span>
-                        <div>
-                            <h4>AI 힌트</h4>
-                            <p>막히면 AI에게 힌트를 받아보세요</p>
-                        </div>
+                </div>
+                <div className="feature">
+                    <span className="feature-icon">🤖</span>
+                    <div>
+                        <h4>AI Hints</h4>
+                        <p>막히면 AI에게 힌트 요청</p>
                     </div>
                 </div>
             </section>
