@@ -189,20 +189,33 @@ def grade_submission(
             if expected_result and len(expected_result) > 0:
                 expected_df = pd.DataFrame(expected_result)
             else:
-                # 기존 방식: grading 테이블에서 정답 로드 (하위 호환성)
-                expected_meta = problem.get("expected_meta", {})
-                grading_table = expected_meta.get("grading_table")
-                if not grading_table:
-                    grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
-                try:
-                    expected_df = pg.fetch_df(f"SELECT * FROM {grading_table}")
-                except Exception as e:
-                    return SubmitResponse(
-                        is_correct=False,
-                        feedback=f"정답 데이터를 찾을 수 없습니다.",
-                        execution_time_ms=0,
-                        diff=str(e)
-                    )
+                # [개선] JSON에 없으면 정답 SQL을 실시간으로 실행
+                answer_sql = problem.get("answer_sql")
+                if answer_sql:
+                    try:
+                        expected_df = pg.fetch_df(answer_sql.strip().rstrip(";"))
+                    except Exception as e:
+                        return SubmitResponse(
+                            is_correct=False,
+                            feedback=f"정답 SQL 실행 오류: {str(e)}",
+                            execution_time_ms=0,
+                            diff=str(e)
+                        )
+                else:
+                    # 기존 방식: grading 테이블에서 정답 로드 (하위 호환성)
+                    expected_meta = problem.get("expected_meta", {})
+                    grading_table = expected_meta.get("grading_table")
+                    if not grading_table:
+                        grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
+                    try:
+                        expected_df = pg.fetch_df(f"SELECT * FROM {grading_table}")
+                    except Exception as e:
+                        return SubmitResponse(
+                            is_correct=False,
+                            feedback=f"정답 데이터를 찾을 수 없습니다. (JSON/DB/SQL 모두 부재)",
+                            execution_time_ms=0,
+                            diff=str(e)
+                        )
         
         # 3. 결과 비교
         is_correct, feedback = compare_results(user_df, expected_df, sort_keys)
