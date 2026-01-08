@@ -57,7 +57,7 @@ def init_postgres_schema(cur) -> None:
     logger.info("init postgres schema")
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS stream_events (
+    CREATE TABLE IF NOT EXISTS public.stream_events (
         user_id INT,
         session_id TEXT,
         event_name TEXT,
@@ -67,7 +67,7 @@ def init_postgres_schema(cur) -> None:
     );
     """)
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS stream_daily_metrics (
+    CREATE TABLE IF NOT EXISTS public.stream_daily_metrics (
         date DATE,
         revenue DOUBLE PRECISION,
         purchases INT
@@ -75,7 +75,7 @@ def init_postgres_schema(cur) -> None:
     """)
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS dataset_versions (
+    CREATE TABLE IF NOT EXISTS public.dataset_versions (
       version_id BIGSERIAL PRIMARY KEY,
       created_at TIMESTAMP,
       generator_type TEXT,
@@ -87,7 +87,7 @@ def init_postgres_schema(cur) -> None:
     """)
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS pa_users (
+    CREATE TABLE IF NOT EXISTS public.pa_users (
       user_id TEXT PRIMARY KEY,
       signup_at TIMESTAMP NOT NULL,
       country TEXT NOT NULL,
@@ -95,26 +95,26 @@ def init_postgres_schema(cur) -> None:
     );
     """)
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS pa_sessions (
+    CREATE TABLE IF NOT EXISTS public.pa_sessions (
       session_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+      user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
       started_at TIMESTAMP NOT NULL,
       device TEXT NOT NULL
     );
     """)
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS pa_events (
+    CREATE TABLE IF NOT EXISTS public.pa_events (
       event_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES pa_users(user_id),
-      session_id TEXT NOT NULL REFERENCES pa_sessions(session_id),
+      user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
+      session_id TEXT NOT NULL REFERENCES public.pa_sessions(session_id) ON DELETE CASCADE,
       event_time TIMESTAMP NOT NULL,
       event_name TEXT NOT NULL
     );
     """)
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS pa_orders (
+    CREATE TABLE IF NOT EXISTS public.pa_orders (
       order_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+      user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
       order_time TIMESTAMP NOT NULL,
       amount INT NOT NULL
     );
@@ -192,9 +192,9 @@ def truncate_targets(pg_cur=None, duck_con=None, modes=("stream","pa")):
     if pg_cur is not None:
         # 외래 키 제약 조건 때문에 CASCADE 사용
         if "stream" in modes:
-            pg_cur.execute("TRUNCATE stream_events, stream_daily_metrics CASCADE;")
+            pg_cur.execute("TRUNCATE public.stream_events, public.stream_daily_metrics CASCADE;")
         if "pa" in modes:
-            pg_cur.execute("TRUNCATE pa_orders, pa_events, pa_sessions, pa_users CASCADE;")
+            pg_cur.execute("TRUNCATE public.pa_orders, public.pa_events, public.pa_sessions, public.pa_users CASCADE;")
 
 # ------------------------------------------------------------
 # Stream 데이터 생성
