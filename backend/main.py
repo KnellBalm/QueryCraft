@@ -82,10 +82,15 @@ if os.getenv("ENV") == "production":
         allow_headers=["*"],
     )
 else:
-    # 개발: 모든 origin 허용 (credentials 없이)
+    # 개발: localhost 및 개발서버 IP 허용
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:15173", "http://127.0.0.1:15173", "http://localhost:3000"],
+        allow_origins=[
+            "http://localhost:15173", 
+            "http://127.0.0.1:15173", 
+            "http://localhost:3000",
+            "http://192.168.101.224:15173",  # 개발서버 IP
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
