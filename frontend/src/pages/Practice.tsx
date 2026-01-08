@@ -283,13 +283,36 @@ export default function Practice() {
                                 )}
                             </div>
                         ) : (
-                            <div className="no-problems" style={{ textAlign: 'center', padding: '3rem' }}>
-                                <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
-                                    🎲 "새 문제 생성" 버튼을 클릭하세요!
-                                </p>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                    Gemini AI가 현재 데이터셋에 맞는 문제를 생성합니다.
-                                </p>
+                            <div className="no-problems">
+                                {generating ? (
+                                    <div className="fetching-state">
+                                        <div className="loading-spinner" />
+                                        <p>Gemini AI가 새로운 문제를 생성하고 있습니다...</p>
+                                    </div>
+                                ) : (
+                                    <div className="empty-state">
+                                        <p>🎲 "새 문제 생성" 버튼을 클릭하세요!</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                            실시간으로 분석 데이터셋에 기반한 업무 요청이 생성됩니다.
+                                        </p>
+                                        <button
+                                            onClick={generateProblem}
+                                            className="btn-refresh"
+                                            style={{
+                                                marginTop: '1.5rem',
+                                                padding: '0.6rem 1.2rem',
+                                                background: 'var(--accent-color)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            🚀 무한 연습 시작하기
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
