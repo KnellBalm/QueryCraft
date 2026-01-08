@@ -288,6 +288,58 @@ async def initial_setup(admin=Depends(require_admin)):
             "message": "초기화 중 오류 발생"
         }
 
+
+@router.post("/trigger-now")
+async def trigger_generation_now(admin=Depends(require_admin)):
+    """즉시 문제/데이터 생성 실행 (스케줄러 수동 트리거)"""
+    results = []
+    errors = []
+    
+    from datetime import date
+    today = date.today()
+    
+    try:
+        # 1. 데이터 생성 (PA + Stream)
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("pa", "stream"))
+            results.append("✓ PA/Stream 데이터 생성 완료")
+        except Exception as e:
+            errors.append(f"✗ 데이터 생성 실패: {str(e)}")
+        
+        # 2. PA 문제 생성
+        try:
+            from problems.generator import generate as gen_pa
+            with postgres_connection() as pg:
+                path = gen_pa(today, pg)
+            results.append(f"✓ PA 문제 생성 완료: {path}")
+        except Exception as e:
+            errors.append(f"✗ PA 문제 생성 실패: {str(e)}")
+        
+        # 3. Stream 문제 생성
+        try:
+            from problems.generator_stream import generate_stream_problems
+            with duckdb_connection() as duck:
+                path = generate_stream_problems(target_date=today, duck=duck)
+            results.append(f"✓ Stream 문제 생성 완료: {path}")
+        except Exception as e:
+            errors.append(f"✗ Stream 문제 생성 실패: {str(e)}")
+        
+        return {
+            "success": len(errors) == 0,
+            "date": today.isoformat(),
+            "results": results,
+            "errors": errors,
+            "message": f"완료 ({len(results)}개 성공, {len(errors)}개 실패)"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "results": results,
+            "errors": errors + [str(e)],
+            "message": "예기치 않은 오류"
+        }
+
 @router.get("/dataset-versions")
 async def get_dataset_versions():
     """데이터셋 버전 이력 조회"""

@@ -68,14 +68,28 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS 설정 - 모든 origin 허용
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS 설정 - 환경별 분리
+if os.getenv("ENV") == "production":
+    # 프로덕션: 특정 도메인만 허용
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
+        ],
+        allow_origin_regex=r"https://.*\.run\.app",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # 개발: 모든 origin 허용 (credentials 없이)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:15173", "http://127.0.0.1:15173", "http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # 라우터 등록
 app.include_router(problems_router)
