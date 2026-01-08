@@ -15,18 +15,21 @@ class PostgresEnv:
         env = os.getenv("ENV", "development")
         
         if env == "production":
-            # 상용 환경: POSTGRES_DSN 직접 사용 (Supabase)
+            # 프로덕션: 반드시 POSTGRES_DSN 사용 (Supabase)
             dsn = os.getenv("POSTGRES_DSN", "").strip()
             if not dsn:
                 raise ValueError("POSTGRES_DSN is required in production environment")
-            
-            # 사용자 실수 방지: @@를 @로 치환
             if "@@" in dsn:
                 dsn = dsn.replace("@@", "@")
             
+            # Supabase 연결 안정성을 위해 sslmode=require 추가 (명시적으로 없는 경우)
+            if "sslmode=" not in dsn:
+                separator = "&" if "?" in dsn else "?"
+                dsn += f"{separator}sslmode=require"
+                
             return dsn
         else:
-            # 개발 환경: 개별 환경변수 조합
+            # 개발 환경: 로컬 PostgreSQL 환경변수 사용
             return (
                 f"host={os.getenv('PG_HOST', '').strip()} "
                 f"port={os.getenv('PG_PORT', '5432').strip()} "

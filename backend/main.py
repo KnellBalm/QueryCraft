@@ -27,14 +27,14 @@ async def lifespan(app: FastAPI):
         global init_status
         try:
             from backend.services.db_init import init_database
-            success = init_database()
+            success, error_msg = init_database()
             if success:
                 init_status["initialized"] = True
                 print("[INFO] Database initialized successfully")
             else:
-                init_status["error"] = "Initialization function returned False"
+                init_status["error"] = error_msg or "Unknown error during initialization"
         except Exception as e:
-            error_msg = f"Database initialization failed: {str(e)}"
+            error_msg = f"Critical failure in init thread: {str(e)}"
             init_status["error"] = error_msg
             print(f"[WARNING] {error_msg}")
     

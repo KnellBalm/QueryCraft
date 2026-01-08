@@ -246,8 +246,9 @@ def init_database():
             """)
             
             logger.info("✅ Database initialization completed successfully!")
-            return True
+            return True, None
             
     except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        return False
+        err = str(e)
+        logger.error(f"Database initialization failed: {err}")
+        return False, err
