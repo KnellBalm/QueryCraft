@@ -10,7 +10,7 @@ from backend.schemas.problem import Problem, TableSchema, TableColumn
 from backend.services.database import postgres_connection, duckdb_connection
 
 PROBLEM_DIR = Path("problems/daily")
-NUM_PROBLEM_SETS = 3
+NUM_PROBLEM_SETS = 2
 
 
 def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str) -> int:
