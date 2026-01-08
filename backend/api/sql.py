@@ -57,13 +57,20 @@ async def submit_answer(request: SubmitRequest, req: Request):
         if session and session.get("user"):
             user_id = session["user"].get("id")
     
-    return grade_submission(
+    result = grade_submission(
         problem_id=request.problem_id,
         sql=request.sql,
         data_type=getattr(request, 'data_type', 'pa'),
         note=request.note,
         user_id=user_id
     )
+    
+    # 문제를 찾을 수 없는 경우 404 에러 반환
+    if not result.is_correct and result.feedback == "문제를 찾을 수 없습니다.":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="문제를 찾을 수 없습니다.")
+        
+    return result
 
 
 @router.post("/hint", response_model=HintResponse)
