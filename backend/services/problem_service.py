@@ -23,7 +23,7 @@ def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str
         with postgres_connection() as pg:
             # 기존 할당 확인
             df = pg.fetch_df("""
-                SELECT set_index FROM user_problem_sets 
+                SELECT set_index FROM public.user_problem_sets 
                 WHERE user_id = %s AND session_date = %s AND data_type = %s
             """, [user_id, target_date.isoformat(), data_type])
             
@@ -33,7 +33,7 @@ def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str
             # 새 할당 (랜덤)
             set_index = random.randint(0, NUM_PROBLEM_SETS - 1)
             pg.execute("""
-                INSERT INTO user_problem_sets (user_id, session_date, data_type, set_index)
+                INSERT INTO public.user_problem_sets (user_id, session_date, data_type, set_index)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (user_id, session_date, data_type) DO NOTHING
             """, [user_id, target_date.isoformat(), data_type, set_index])
@@ -120,12 +120,12 @@ def get_submission_status(target_date: date, user_id: Optional[str] = None) -> D
         with postgres_connection() as pg:
             if user_id:
                 df = pg.fetch_df("""
-                    SELECT problem_id, is_correct FROM submissions 
+                    SELECT problem_id, is_correct FROM public.submissions 
                     WHERE session_date = %s AND user_id = %s
                 """, [target_date.isoformat(), user_id])
             else:
                 df = pg.fetch_df("""
-                    SELECT problem_id, is_correct FROM submissions 
+                    SELECT problem_id, is_correct FROM public.submissions 
                     WHERE session_date = %s AND user_id IS NULL
                 """, [target_date.isoformat()])
             
@@ -171,7 +171,7 @@ def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
                 
                 # 행 수 (Supabase/PostgreSQL 속도 최적화를 위해 간단한 COUNT 사용)
                 try:
-                    count_df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM {tbl_name}")
+                    count_df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM public.{tbl_name}")
                     row_count = int(count_df.iloc[0]["cnt"])
                 except:
                     row_count = 0
