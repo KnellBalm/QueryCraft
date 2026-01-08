@@ -16,10 +16,15 @@ jobs:
           host: ${{ secrets.DEV_SERVER_HOST }}
           username: ${{ secrets.DEV_SERVER_USER }}
           key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          port: 22
+          timeout: 120s
+          command_timeout: 15m
           script: |
             cd ~/QueryCraft
+            git fetch origin dev
+            git checkout dev
             git pull origin dev
             docker compose down
-            docker compose build backend
+            docker compose build backend frontend
             docker compose up -d
             echo "✅ Dev server deployed successfully"
