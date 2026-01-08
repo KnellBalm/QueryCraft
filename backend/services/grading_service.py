@@ -10,6 +10,7 @@ import pandas as pd
 from backend.services.database import postgres_connection
 from backend.schemas.submission import SubmitResponse
 from backend.services.db_logger import db_log, LogCategory, LogLevel
+from backend.services.problem_service import get_problem_by_id
 
 GRADING_SCHEMA = "grading"
 
@@ -167,8 +168,8 @@ def grade_submission(
     session_date = date.today().isoformat()
     
     try:
-        # 1. 문제 로드
-        problem = load_problem(problem_id, data_type)
+        # 1. 문제 로드 (DB 우선, 파일 폴백 - problem_service 활용)
+        problem = get_problem_by_id(problem_id, data_type, user_id=user_id)
         if not problem:
             return SubmitResponse(
                 is_correct=False,
@@ -177,8 +178,8 @@ def grade_submission(
                 diff=None
             )
         
-        sort_keys = problem.get("sort_keys", [])
-        expected_result = problem.get("expected_result")
+        sort_keys = problem.sort_keys or []
+        expected_result = problem.expected_result
         
         # 2. 정답 데이터 가져오기
         with postgres_connection() as pg:
@@ -190,7 +191,7 @@ def grade_submission(
                 expected_df = pd.DataFrame(expected_result)
             else:
                 # [개선] JSON에 없으면 정답 SQL을 실시간으로 실행
-                answer_sql = problem.get("answer_sql")
+                answer_sql = problem.answer_sql
                 if answer_sql:
                     try:
                         expected_df = pg.fetch_df(answer_sql.strip().rstrip(";"))
@@ -203,7 +204,7 @@ def grade_submission(
                         )
                 else:
                     # 기존 방식: grading 테이블에서 정답 로드 (하위 호환성)
-                    expected_meta = problem.get("expected_meta", {})
+                    expected_meta = problem.expected_meta or {}
                     grading_table = expected_meta.get("grading_table")
                     if not grading_table:
                         grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
@@ -234,7 +235,7 @@ def grade_submission(
         
         # 5. 정답 시 XP 지급 (문제의 xp_value 또는 기본값 5)
         if is_correct and user_id:
-            xp_value = problem.get("xp_value", 5)
+            xp_value = problem.xp_value or 5
             award_xp(user_id, xp_value)
             feedback += f" (+{xp_value} XP)"
         
