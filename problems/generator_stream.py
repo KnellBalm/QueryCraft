@@ -84,7 +84,7 @@ def build_stream_prompt(data_summary: str, n: int = 6) -> str:
 2. 난이도 분배: easy 2개, medium 2개, hard 2개
 3. 주제: 퍼널 분석, 일별 매출 추이, 채널별 성과, 디바이스별 전환율, DAU/MAU 등
 4. **반드시 다른 팀/직무가 요청하는 형태**로 작성
-5. **submission_requirements**에 정확한 제출 조건 명시 (컬럼명, 정렬 순서)
+5. **submission_requirements**를 아래 5가지 항목 모두 포함하여 구체적으로 작성
 
 [JSON 스키마]
 {{
@@ -94,15 +94,45 @@ def build_stream_prompt(data_summary: str, n: int = 6) -> str:
   "requester": "요청팀",
   "question": "업무 요청 형태로 작성. 필요 컬럼, 정렬 기준 명시",
   "context": "배경 설명",
-  "submission_requirements": "제출 조건 구체적으로 명시",
+  "submission_requirements": "제출 조건을 다음 형식으로 구체적으로 명시 (모든 항목 필수):
+    1. 결과 컬럼: 'date, revenue, user_count' 순서로 출력
+    2. 날짜 형식: 'YYYY-MM-DD' 형식 (예: DATE_TRUNC('day', event_time)::date)
+    3. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate, 2))
+    4. 정렬: date 컬럼 기준 오름차순 정렬
+    5. NULL 처리: NULL 값은 0으로 표시",
   "answer_sql": "PostgreSQL 정답 SQL",
   "expected_columns": ["col1", "col2"],
   "sort_keys": ["정렬 기준 컬럼"],
   "hint": "힌트"
 }}
 
+[CRITICAL - submission_requirements 작성 가이드]
+**반드시 모든 문제에 다음 5가지 항목을 구체적으로 명시하라:**
+
+1. **결과 컬럼**: 출력할 컬럼명과 순서를 정확히 나열
+   - ❌ 나쁜 예: "날짜와 매출을 보여주세요"
+   - ✅ 좋은 예: "date, revenue, user_count 순서로 출력"
+
+2. **날짜 형식**: 날짜/시간 컬럼의 정확한 형식 지정
+   - ❌ 나쁜 예: "날짜별로 집계"
+   - ✅ 좋은 예: "날짜는 YYYY-MM-DD 형식으로 출력 (예: 2026-01-08)"
+
+3. **숫자 형식**: 소수점 자릿수 명시
+   - ❌ 나쁜 예: "전환율을 계산하세요"
+   - ✅ 좋은 예: "비율은 소수점 2자리까지 반올림 (예: 0.15)"
+
+4. **정렬**: 정렬 기준과 방향 명시
+   - ❌ 나쁜 예: "정렬해주세요"
+   - ✅ 좋은 예: "date 컬럼 기준 오름차순 정렬"
+
+5. **NULL/결측값 처리**: NULL 값 처리 방법 명시
+   - ❌ 나쁜 예: "값이 없으면 처리"
+   - ✅ 좋은 예: "NULL 값은 0으로 표시, 데이터가 없는 날짜는 결과에서 제외"
+
 [중요]
 - answer_sql은 **위 테이블/컬럼만 사용**
+- answer_sql의 결과가 submission_requirements와 100% 일치하도록 작성
+- submission_requirements는 위 5가지 항목을 반드시 모두 포함
 - JSON 배열 형식으로만 출력
 """.strip()
 
