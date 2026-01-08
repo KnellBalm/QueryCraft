@@ -709,3 +709,82 @@ async def get_api_usage(
             }
     except Exception as e:
         return {"error": str(e), "summary": {}, "daily": [], "logs": []}
+
+
+# ============================================
+# Cloud Scheduler 트리거 엔드포인트
+# ============================================
+
+@router.post("/trigger/daily-generation")
+async def trigger_daily_generation(request: Request):
+    """Cloud Scheduler용 일일 데이터/문제 생성 트리거
+    
+    헤더에 X-Scheduler-Key가 SCHEDULER_API_KEY 환경변수와 일치해야 함
+    """
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+    
+    # API 키 검증
+    expected_key = os.environ.get("SCHEDULER_API_KEY", "")
+    provided_key = request.headers.get("X-Scheduler-Key", "")
+    
+    if not expected_key:
+        logger.warning("SCHEDULER_API_KEY not configured")
+        raise HTTPException(403, "Scheduler API key not configured")
+    
+    if provided_key != expected_key:
+        logger.warning("Invalid scheduler API key")
+        raise HTTPException(403, "Invalid API key")
+    
+    logger.info("[TRIGGER] Daily generation triggered by Cloud Scheduler")
+    db_log(LogCategory.SCHEDULER, "Cloud Scheduler 트리거 수신", LogLevel.INFO, "trigger")
+    
+    today = date.today()
+    results = {"date": str(today), "pa_data": False, "stream_data": False, "pa_problems": False, "stream_problems": False}
+    
+    try:
+        from backend.engine.postgres_engine import PostgresEngine
+        from backend.config.db import PostgresEnv
+        pg = PostgresEngine(PostgresEnv().dsn())
+        
+        # 1. 데이터 생성
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("pa", "stream"))
+            results["pa_data"] = True
+            results["stream_data"] = True
+            logger.info("[TRIGGER] Data generation done")
+        except Exception as e:
+            logger.warning(f"[TRIGGER] Data gen error: {e}")
+        
+        # 2. PA 문제 생성
+        if not os.path.exists(f"problems/daily/{today}.json"):
+            try:
+                from problems.generator import generate as gen_pa
+                gen_pa(today, pg)
+                results["pa_problems"] = True
+                logger.info("[TRIGGER] PA problems generated")
+            except Exception as e:
+                logger.warning(f"[TRIGGER] PA problem gen error: {e}")
+        else:
+            results["pa_problems"] = True  # 이미 존재
+        
+        # 3. Stream 문제 생성
+        if not os.path.exists(f"problems/daily/stream_{today}.json"):
+            try:
+                from problems.generator_stream import generate_stream_problems
+                generate_stream_problems(today, pg)
+                results["stream_problems"] = True
+                logger.info("[TRIGGER] Stream problems generated")
+            except Exception as e:
+                logger.warning(f"[TRIGGER] Stream problem gen error: {e}")
+        else:
+            results["stream_problems"] = True  # 이미 존재
+        
+        db_log(LogCategory.SCHEDULER, f"일일 생성 완료: {results}", LogLevel.INFO, "trigger")
+        
+    except Exception as e:
+        logger.error(f"[TRIGGER] Fatal error: {e}")
+        results["error"] = str(e)
+    
+    return results

@@ -38,7 +38,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [hint, setHint] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'problem' | 'schema'>('problem');
     const [leftWidth, setLeftWidth] = useState(45);
-    const [editorHeight, setEditorHeight] = useState(600); // 기본 높이 600px
+    const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
     const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -215,8 +215,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
         const handleMouseMove = (e: MouseEvent) => {
             const rightPanelRect = rightPanel.getBoundingClientRect();
-            const newHeight = e.clientY - rightPanelRect.top;
-            setEditorHeight(Math.min(Math.max(newHeight, 150), rightPanelRect.height - 100));
+            const newHeightPercent = ((e.clientY - rightPanelRect.top) / rightPanelRect.height) * 100;
+            setEditorHeightPercent(Math.min(Math.max(newHeightPercent, 20), 80));
         };
 
         const handleMouseUp = () => {
@@ -329,7 +329,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
             {/* 우측 패널 */}
             <div className="right-panel" ref={rightPanelRef} style={{ width: `${100 - leftWidth}%` }}>
-                <div className="editor-section" style={{ height: `${editorHeight}px` }}>
+                <div className="editor-section" style={{ height: `${editorHeightPercent}%` }}>
                     <div className="editor-header">
                         <span>💻 SQL</span>
                         <span className="shortcut">Ctrl+Enter로 실행</span>
@@ -344,7 +344,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 }
                             }}
                             onExecute={handleExecute}
-                            height={`${editorHeight - 110}px`} // header(35) + actions(45) + border/padding
+                            height="calc(100% - 80px)" // header + actions
                             tables={tables}
                         />
                     </div>

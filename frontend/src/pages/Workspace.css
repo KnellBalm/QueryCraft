@@ -1,4 +1,4 @@
-/* frontend/src/pages/Workspace.css */
+/* frontend/src/pages/Workspace.css - Gaming Style with Theme Support */
 .workspace {
     display: flex;
     width: 100%;
@@ -19,15 +19,17 @@
 
 .resizer:hover {
     background: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* 좌측 패널 */
 .left-panel {
     display: flex;
     flex-direction: column;
-    background: var(--bg-primary);
+    background: var(--panel-bg);
     min-height: 0;
     overflow: hidden;
+    border-right: 1px solid var(--border-color);
 }
 
 .panel-tabs {
@@ -41,20 +43,24 @@
     padding: 0.75rem;
     border: none;
     background: var(--bg-secondary);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     cursor: pointer;
     font-size: 0.9rem;
     transition: all 0.2s;
+    letter-spacing: 0.05em;
 }
 
 .panel-tabs button:hover {
-    background: var(--bg-tertiary);
+    background: var(--accent-light);
+    color: var(--text-primary);
 }
 
 .panel-tabs button.active {
-    background: var(--bg-primary);
+    background: var(--panel-bg);
+    color: var(--accent-color);
     font-weight: 600;
     border-bottom: 2px solid var(--accent-color);
+    box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 /* 문제 패널 */
@@ -73,16 +79,17 @@
     padding: 0.75rem;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
+    background: var(--bg-tertiary);
 }
 
 .problem-item {
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.3rem 0.6rem;
+    padding: 0.4rem 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    background: var(--bg-primary);
+    background: var(--panel-bg);
     color: var(--text-primary);
     cursor: pointer;
     font-size: 0.85rem;
@@ -91,12 +98,14 @@
 
 .problem-item:hover {
     border-color: var(--accent-color);
-    background: var(--bg-secondary);
+    background: var(--accent-light);
+    box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .problem-item.active {
-    border-color: var(--accent-color);
+    border-color: var(--neon-purple);
     background: var(--accent-light);
+    box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .problem-item .status {
@@ -104,11 +113,12 @@
 }
 
 .problem-item .num {
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .problem-item .difficulty {
     font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 /* 문제 상세 */
@@ -117,6 +127,7 @@
     padding: 1.25rem;
     overflow-y: auto;
     min-height: 0;
+    background: var(--panel-bg);
 }
 
 .problem-title {
@@ -129,24 +140,26 @@
 .problem-number {
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--accent-color);
 }
 
 .difficulty-badge {
     font-size: 0.8rem;
     padding: 0.25rem 0.6rem;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: var(--accent-light);
+    color: var(--accent-color);
     border-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 .requester-info {
     padding: 0.6rem 0.8rem;
-    background: #e7f1ff;
+    background: var(--accent-light);
     border-radius: 6px;
     margin-bottom: 1rem;
     font-size: 0.9rem;
-    color: #0066cc;
+    color: var(--accent-color);
+    border-left: 3px solid var(--neon-blue);
 }
 
 .section {
@@ -158,11 +171,13 @@
     font-weight: 600;
     color: var(--text-muted);
     margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
 .question-box {
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     border-radius: 8px;
     border-left: 4px solid var(--accent-color);
     font-size: 0.95rem;
@@ -172,11 +187,12 @@
 
 .context-box {
     padding: 0.75rem;
-    background: var(--bg-primary)9e6;
+    background: rgba(245, 158, 11, 0.1);
     border-radius: 6px;
-    border-left: 3px solid #ffc107;
+    border-left: 3px solid var(--warning-color);
     font-size: 0.9rem;
     line-height: 1.6;
+    color: var(--warning-color);
 }
 
 .columns-box {
@@ -187,10 +203,11 @@
 
 .columns-box code {
     padding: 0.3rem 0.6rem;
-    background: #e7f1ff;
+    background: var(--accent-light);
     border-radius: 4px;
     font-size: 0.85rem;
-    color: #0066cc;
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
 }
 
 .hint-section {
@@ -207,16 +224,16 @@
 .hint-section p {
     margin: 0.5rem 0;
     padding: 0.75rem;
-    background: var(--bg-tertiary);
+    background: rgba(245, 158, 11, 0.1);
     border-radius: 6px;
     font-size: 0.9rem;
-    color: var(--text-primary);
+    color: var(--warning-color);
 }
 
 .no-problems {
     padding: 2rem;
     text-align: center;
-    color: #999;
+    color: var(--text-muted);
 }
 
 /* 우측 패널 */
@@ -225,15 +242,18 @@
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
+    background: var(--bg-secondary);
+    height: 100%;
 }
 
 .editor-section {
-    background: var(--bg-primary);
+    background: var(--panel-bg);
     border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    flex-shrink: 0;
+    min-height: 0;
 }
 
 .editor-header {
@@ -242,8 +262,10 @@
     align-items: center;
     padding: 0.5rem 1rem;
     background: var(--bg-tertiary);
-    color: var(--text-primary);
+    color: var(--accent-color);
     font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .shortcut {
@@ -252,33 +274,22 @@
 }
 
 .sql-editor {
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
 }
 
-/* Monaco 스타일은 기본값 사용 (오버라이드 없음) */
-
-/* =========================
-   Monaco Suggest Widget (Service-grade)
-   - 레이아웃 고정 (겹침 방지)
-   - 아이콘 제거
-   - 다크 테마 적용
-   ========================= */
-
-/* 팝업 컨테이너 */
+/* Monaco Suggest Widget */
 .monaco-editor .suggest-widget {
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    background: #1f1f1f;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    box-shadow: var(--card-shadow);
     overflow: hidden;
 }
 
-/* 리스트 영역 */
 .monaco-editor .suggest-widget .suggest-widget-body {
-    background: #1f1f1f;
+    background: var(--panel-bg);
 }
 
-/* 한 줄(row) 레이아웃: flex로 강제 (아이콘/텍스트 겹침 방지) */
 .monaco-editor .suggest-widget .monaco-list-row {
     display: flex !important;
     align-items: center;
@@ -287,53 +298,46 @@
     padding: 0 10px;
 }
 
-/* 아이콘 숨김 (레이아웃 안정성) */
 .monaco-editor .suggest-widget .suggest-icon,
 .monaco-editor .suggest-widget .icon {
     display: none !important;
 }
 
-/* 텍스트 영역 */
 .monaco-editor .suggest-widget .suggest-label {
     padding-left: 0 !important;
 }
 
-/* 항목 텍스트 */
 .monaco-editor .suggest-widget .monaco-highlighted-label {
-    color: rgba(255, 255, 255, 0.92);
+    color: var(--text-primary);
 }
 
-/* 매칭 강조 */
 .monaco-editor .suggest-widget .monaco-highlighted-label .highlight {
-    color: #6cb6ff;
+    color: var(--accent-color);
 }
 
-/* 선택/호버 */
 .monaco-editor .suggest-widget .monaco-list-row:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--accent-light);
 }
 
 .monaco-editor .suggest-widget .monaco-list-row.focused {
-    background: rgba(108, 182, 255, 0.18);
+    background: var(--accent-light);
 }
 
-/* 오른쪽 detail(설명) */
 .monaco-editor .suggest-widget .details-label {
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-muted);
 }
 
-/* 스크롤바(팝업 내) */
 .monaco-editor .suggest-widget ::-webkit-scrollbar {
     width: 10px;
 }
 
 .monaco-editor .suggest-widget ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--border-color);
     border-radius: 10px;
 }
 
 .monaco-editor .suggest-widget ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: var(--accent-color);
 }
 
 .editor-actions {
@@ -341,7 +345,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1rem;
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     border-top: 1px solid var(--border-color);
 }
 
@@ -361,30 +365,38 @@
 }
 
 .btn-execute {
-    background: #28a745;
-    color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .btn-execute:hover {
-    background: #218838;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
 }
 
 .btn-execute:disabled {
-    background: #ccc;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    box-shadow: none;
     cursor: not-allowed;
 }
 
 .btn-submit {
-    background: var(--accent-color);
-    color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--neon-purple) 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 .btn-submit:hover {
-    background: #0056b3;
+    box-shadow: 0 6px 20px var(--accent-glow);
+    transform: translateY(-2px);
 }
 
 .btn-submit:disabled {
-    background: #ccc;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    box-shadow: none;
     cursor: not-allowed;
 }
 
@@ -399,6 +411,7 @@
 
 .v-resizer:hover {
     background: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* 결과 섹션 */
@@ -408,6 +421,7 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+    background: var(--panel-bg);
 }
 
 .result-header {
@@ -416,13 +430,14 @@
     align-items: center;
     padding: 0.6rem 1rem;
     background: var(--bg-tertiary);
-    color: var(--text-primary);
+    color: var(--accent-color);
     font-size: 0.85rem;
     flex-shrink: 0;
+    letter-spacing: 0.05em;
 }
 
 .exec-time {
-    color: #aaa;
+    color: var(--text-muted);
     font-size: 0.75rem;
 }
 
@@ -430,7 +445,7 @@
     flex: 1;
     overflow: auto;
     padding: 1rem;
-    background: var(--bg-primary);
+    background: var(--panel-bg);
     color: var(--text-primary);
     min-height: 0;
 }
@@ -439,17 +454,16 @@
     padding: 1rem;
     margin-bottom: 1rem;
     border-radius: 8px;
-    color: var(--text-primary);
 }
 
 .submit-result.correct {
-    background: rgba(40, 167, 69, 0.15);
+    background: rgba(16, 185, 129, 0.15);
     border: 1px solid var(--success-color);
     color: var(--success-color);
 }
 
 .submit-result.wrong {
-    background: rgba(220, 53, 69, 0.15);
+    background: rgba(239, 68, 68, 0.15);
     border: 1px solid var(--error-color);
     color: var(--error-color);
 }
@@ -469,7 +483,7 @@
 
 .error-result {
     padding: 1rem;
-    background: rgba(220, 53, 69, 0.1);
+    background: rgba(239, 68, 68, 0.1);
     border: 1px solid var(--error-color);
     border-radius: 6px;
     color: var(--error-color);
@@ -481,7 +495,6 @@
     justify-content: center;
     height: 100%;
     color: var(--text-muted);
-    color: #999;
     font-size: 0.9rem;
 }
 
@@ -517,6 +530,7 @@
     flex-direction: column;
     overflow: hidden;
     padding: 1rem;
+    background: var(--panel-bg);
 }
 
 .history-header {
@@ -529,12 +543,13 @@
 .history-header h3 {
     margin: 0;
     font-size: 1rem;
+    color: var(--accent-color);
 }
 
 .data-info {
     font-size: 0.8rem;
-    color: #666;
-    background: #f0f0f0;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
 }
@@ -542,7 +557,7 @@
 .no-history {
     padding: 2rem;
     text-align: center;
-    color: #999;
+    color: var(--text-muted);
 }
 
 .history-list {
@@ -555,16 +570,15 @@
     margin-bottom: 0.5rem;
     border-radius: 6px;
     border-left: 4px solid;
+    background: var(--bg-tertiary);
 }
 
 .history-item.correct {
-    background: #f0fff0;
-    border-color: #28a745;
+    border-color: var(--success-color);
 }
 
 .history-item.wrong {
-    background: var(--bg-primary)5f5;
-    border-color: #dc3545;
+    border-color: var(--error-color);
 }
 
 .history-meta {
@@ -581,6 +595,7 @@
 .history-problem {
     font-weight: 600;
     font-size: 0.85rem;
+    color: var(--text-primary);
 }
 
 .history-time {
@@ -598,17 +613,18 @@
     overflow: hidden;
     white-space: pre-wrap;
     word-break: break-all;
+    color: var(--accent-color);
 }
 
 .history-feedback {
     margin-top: 0.5rem;
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-muted);
 }
 
 /* 슬랙 스타일 메시지 */
 .slack-message {
-    background: var(--bg-primary);
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
@@ -625,7 +641,7 @@
 .slack-avatar {
     width: 36px;
     height: 36px;
-    background: var(--border-color);
+    background: var(--accent-light);
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -635,7 +651,7 @@
 
 .slack-sender {
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--accent-color);
 }
 
 .slack-time {
@@ -652,7 +668,7 @@
 .slack-context {
     margin-top: 0.75rem;
     padding: 0.5rem 0.75rem;
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     border-radius: 4px;
     font-size: 0.85rem;
     color: var(--text-secondary);
@@ -666,17 +682,21 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
-    background: #ffc107;
-    color: #333;
+    background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%);
+    color: #fff;
     margin-right: 0.5rem;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
 .btn-hint:hover {
-    background: #e0a800;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+    transform: translateY(-2px);
 }
 
 .btn-hint:disabled {
-    background: #ccc;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    box-shadow: none;
     cursor: not-allowed;
 }
 
@@ -693,7 +713,7 @@
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #f0f0f0;
+    border: 4px solid var(--border-color);
     border-top-color: var(--accent-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -707,14 +727,14 @@
 
 .loading-text {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-muted);
 }
 
 /* 힌트 결과 */
 .hint-result {
     padding: 1rem;
-    background: linear-gradient(135deg, var(--bg-primary)9e6, var(--bg-primary)3cd);
-    border: 1px solid #ffc107;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--warning-color);
     border-radius: 8px;
     margin-bottom: 1rem;
 }
@@ -722,62 +742,21 @@
 .hint-title {
     font-weight: 700;
     margin-bottom: 0.5rem;
+    color: var(--warning-color);
 }
 
 .hint-content {
     font-size: 0.9rem;
     line-height: 1.6;
     white-space: pre-wrap;
+    color: var(--text-primary);
 }
 
-/* Monaco Editor wrapper: 위젯(autocomplete/hover) 안정화 */
+/* Monaco Editor wrapper */
 .editor-shell {
     position: relative;
     flex: 1;
     overflow: hidden;
     min-height: 0;
     max-height: calc(100% - 80px);
-    /* header + actions 버튼 공간 확보 */
-}
-
-/* ========================
-   Suggest Widget - 라이트 테마
-   ========================= */
-[data-theme="light"] .monaco-editor .suggest-widget {
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    background: #ffffff;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .suggest-widget-body {
-    background: #ffffff;
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .monaco-highlighted-label {
-    color: #1f1f1f;
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .monaco-highlighted-label .highlight {
-    color: #0066cc;
-    font-weight: 600;
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .monaco-list-row:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .monaco-list-row.focused {
-    background: rgba(0, 102, 204, 0.12);
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget .details-label {
-    color: rgba(0, 0, 0, 0.55);
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .monaco-editor .suggest-widget ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.25);
 }

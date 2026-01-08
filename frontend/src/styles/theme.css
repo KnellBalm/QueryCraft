@@ -1,46 +1,66 @@
 /* frontend/src/styles/theme.css */
-/* 라이트/다크 모드 CSS 변수 */
+/* Gaming-style 라이트/다크 모드 CSS 변수 */
 
 :root {
-    /* Light mode (default) */
+    /* Light mode (default) - Gaming Bright */
     --bg-primary: #ffffff;
-    --bg-secondary: #f5f5f5;
-    --bg-tertiary: #e9ecef;
-    --text-primary: #333333;
-    --text-secondary: #555555;
-    --text-muted: #777777;
-    --border-color: #e0e0e0;
-    --accent-color: #2563eb;
-    --accent-hover: #1d4ed8;
-    --accent-light: #e7f1ff;
-    --success-color: #28a745;
-    --error-color: #dc3545;
-    --warning-color: #ffc107;
+    --bg-secondary: #f8f9fc;
+    --bg-tertiary: #eef1f6;
+    --bg-dark: #1a1a2e;
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a6a;
+    --text-muted: #7a7a9a;
+    --border-color: #e0e4ef;
+    --accent-color: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-light: rgba(99, 102, 241, 0.1);
+    --accent-glow: rgba(99, 102, 241, 0.2);
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
     --header-bg: linear-gradient(135deg, #1a1a2e, #16213e);
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --result-table-header: #2563eb;
+    --card-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+    --neon-purple: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #10b981;
+    --result-table-header: #6366f1;
     --editor-bg: #1e1e1e;
+    --panel-bg: #ffffff;
+    --hero-bg: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 50%, #f5f0ff 100%);
+    --hero-text: #1a1a2e;
+    --mode-card-bg: #ffffff;
+    --mode-card-border: rgba(99, 102, 241, 0.2);
 }
 
 [data-theme="dark"] {
-    /* Dark mode */
-    --bg-primary: #1e1e2e;
-    --bg-secondary: #252536;
-    --bg-tertiary: #2d2d44;
+    /* Dark mode - Gaming Dark */
+    --bg-primary: #0d0d1a;
+    --bg-secondary: #0a0a12;
+    --bg-tertiary: #1a1a2e;
+    --bg-dark: #0a0a12;
     --text-primary: #ffffff;
-    --text-secondary: #cccccc;
-    --text-muted: #999999;
-    --border-color: #3a3a4a;
-    --accent-color: #3b82f6;
-    --accent-hover: #60a5fa;
-    --accent-light: rgba(59, 130, 246, 0.2);
-    --success-color: #22c55e;
+    --text-secondary: #b4b4cc;
+    --text-muted: #7a7a9a;
+    --border-color: rgba(99, 102, 241, 0.2);
+    --accent-color: #6366f1;
+    --accent-hover: #818cf8;
+    --accent-light: rgba(99, 102, 241, 0.15);
+    --accent-glow: rgba(99, 102, 241, 0.4);
+    --success-color: #10b981;
     --error-color: #ef4444;
     --warning-color: #f59e0b;
     --header-bg: linear-gradient(135deg, #0f0f1a, #1a1a2e);
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --result-table-header: #3b82f6;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --neon-purple: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #10b981;
+    --result-table-header: #6366f1;
     --editor-bg: #0d0d14;
+    --panel-bg: #0d0d1a;
+    --hero-bg: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+    --hero-text: #ffffff;
+    --mode-card-bg: rgba(13, 13, 26, 0.8);
+    --mode-card-border: rgba(99, 102, 241, 0.3);
 }
 
 /* 전역 스타일에 변수 적용 */
