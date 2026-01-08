@@ -241,7 +241,7 @@ def init_database():
             
             # 관리자 설정
             pg.execute("""
-                UPDATE users SET is_admin = TRUE 
+                UPDATE public.users SET is_admin = TRUE 
                 WHERE email IN ('naca11@mobigen.com', 'naca11@naver.com')
             """)
             

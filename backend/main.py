@@ -14,6 +14,8 @@ from backend.api.admin import router as admin_router
 from backend.api.auth import router as auth_router
 from backend.api.practice import router as practice_router
 
+# 초기화 상태 기록
+init_status = {"initialized": False, "error": None}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,12 +24,19 @@ async def lifespan(app: FastAPI):
     
     # DB 초기화 (백그라운드에서 실행 - 서버 시작 블로킹 방지)
     def init_background():
+        global init_status
         try:
             from backend.services.db_init import init_database
-            init_database()
-            print("[INFO] Database initialized successfully")
+            success = init_database()
+            if success:
+                init_status["initialized"] = True
+                print("[INFO] Database initialized successfully")
+            else:
+                init_status["error"] = "Initialization function returned False"
         except Exception as e:
-            print(f"[WARNING] Database initialization failed: {e}")
+            error_msg = f"Database initialization failed: {str(e)}"
+            init_status["error"] = error_msg
+            print(f"[WARNING] {error_msg}")
     
     threading.Thread(target=init_background, daemon=True).start()
     
@@ -123,10 +132,11 @@ async def root():
         "status": "ok",
         "service": "QueryCraft API",
         "version": "1.0.0",
+        "init": init_status,
         "db": {
             "status": db_status,
             "table_count": len(tables),
-            "tables": tables[:10]  # 상위 10개만 노출
+            "tables": tables[:10]
         }
     }
 
@@ -138,6 +148,14 @@ async def health():
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
             pg.execute("SELECT 1")
-        return {"status": "healthy", "db": "connected"}
+        return {
+            "status": "healthy", 
+            "db": "connected",
+            "init": init_status
+        }
     except Exception as e:
-        return {"status": "unhealthy", "db": str(e)}
+        return {
+            "status": "unhealthy", 
+            "db": str(e),
+            "init": init_status
+        }
