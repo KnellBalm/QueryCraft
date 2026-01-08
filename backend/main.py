@@ -107,15 +107,37 @@ app.include_router(practice_router)
 
 @app.get("/")
 async def root():
-    """헬스 체크"""
+    """기본 루트 - 서비스 상태 및 DB 정보 요약"""
+    db_status = "unknown"
+    tables = []
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            db_status = "connected"
+            df = pg.fetch_df("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+            tables = df["table_name"].tolist()
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
     return {
         "status": "ok",
         "service": "QueryCraft API",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "db": {
+            "status": db_status,
+            "table_count": len(tables),
+            "tables": tables[:10]  # 상위 10개만 노출
+        }
     }
 
 
 @app.get("/health")
 async def health():
-    """헬스 체크"""
-    return {"status": "healthy"}
+    """상세 헬스 체크"""
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            pg.execute("SELECT 1")
+        return {"status": "healthy", "db": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "db": str(e)}

@@ -16,7 +16,7 @@ def init_database():
             
             # 1. users 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS users (
+                CREATE TABLE IF NOT EXISTS public.users (
                     id TEXT PRIMARY KEY,
                     email TEXT UNIQUE NOT NULL,
                     name TEXT,
@@ -33,7 +33,7 @@ def init_database():
             
             # 2. user_problem_sets 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS user_problem_sets (
+                CREATE TABLE IF NOT EXISTS public.user_problem_sets (
                     user_id TEXT NOT NULL,
                     session_date DATE NOT NULL,
                     data_type VARCHAR(20) NOT NULL,
@@ -46,7 +46,7 @@ def init_database():
             
             # 3. daily_sessions 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS daily_sessions (
+                CREATE TABLE IF NOT EXISTS public.daily_sessions (
                     session_date DATE PRIMARY KEY,
                     problem_set_path TEXT NOT NULL,
                     generated_at TIMESTAMP NOT NULL,
@@ -59,7 +59,7 @@ def init_database():
             
             # 4. submissions 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS submissions (
+                CREATE TABLE IF NOT EXISTS public.submissions (
                     id SERIAL PRIMARY KEY,
                     user_id TEXT,
                     session_date DATE NOT NULL,
@@ -80,7 +80,7 @@ def init_database():
             
             # 5. api_usage_logs 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS api_usage_logs (
+                CREATE TABLE IF NOT EXISTS public.api_usage_logs (
                     id SERIAL PRIMARY KEY,
                     user_id TEXT,
                     endpoint TEXT NOT NULL,
@@ -95,7 +95,7 @@ def init_database():
             
             # 6. logs 테이블 (시스템 로그)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS logs (
+                CREATE TABLE IF NOT EXISTS public.logs (
                     id SERIAL PRIMARY KEY,
                     category VARCHAR(50) NOT NULL,
                     level VARCHAR(20) NOT NULL,
@@ -106,13 +106,13 @@ def init_database():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON logs(category)")
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON public.logs(category)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON public.logs(created_at DESC)")
             logger.info("✓ logs table ready")
             
             # 7. problems 테이블 (파일 → DB 이전)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS problems (
+                CREATE TABLE IF NOT EXISTS public.problems (
                     id SERIAL PRIMARY KEY,
                     problem_date DATE NOT NULL,
                     data_type VARCHAR(20) NOT NULL,
@@ -129,13 +129,13 @@ def init_database():
                     UNIQUE(problem_date, data_type, set_index, title)
                 )
             """)
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_date ON problems(problem_date DESC)")
-            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_type ON problems(data_type)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_date ON public.problems(problem_date DESC)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_type ON public.problems(data_type)")
             logger.info("✓ problems table ready")
             
             # 8. daily_tips 테이블
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS daily_tips (
+                CREATE TABLE IF NOT EXISTS public.daily_tips (
                     id SERIAL PRIMARY KEY,
                     tip_date DATE UNIQUE NOT NULL,
                     content TEXT NOT NULL,
@@ -148,7 +148,7 @@ def init_database():
             
             # 9. worker_logs 테이블 (Cloud Functions 로그)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS worker_logs (
+                CREATE TABLE IF NOT EXISTS public.worker_logs (
                     id SERIAL PRIMARY KEY,
                     job_type VARCHAR(50) NOT NULL,
                     status VARCHAR(20) NOT NULL,
@@ -164,7 +164,7 @@ def init_database():
 
             # 10. [분석용] stream_events & stream_daily_metrics
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS stream_events (
+                CREATE TABLE IF NOT EXISTS public.stream_events (
                     user_id INT,
                     session_id TEXT,
                     event_name TEXT,
@@ -174,7 +174,7 @@ def init_database():
                 );
             """)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS stream_daily_metrics (
+                CREATE TABLE IF NOT EXISTS public.stream_daily_metrics (
                     date DATE,
                     revenue DOUBLE PRECISION,
                     purchases INT
@@ -184,7 +184,7 @@ def init_database():
 
             # 11. [분석용] PA 테이블 (pa_users, pa_sessions, pa_events, pa_orders)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS pa_users (
+                CREATE TABLE IF NOT EXISTS public.pa_users (
                     user_id TEXT PRIMARY KEY,
                     signup_at TIMESTAMP NOT NULL,
                     country TEXT NOT NULL,
@@ -192,26 +192,26 @@ def init_database():
                 );
             """)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS pa_sessions (
+                CREATE TABLE IF NOT EXISTS public.pa_sessions (
                     session_id TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+                    user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
                     started_at TIMESTAMP NOT NULL,
                     device TEXT NOT NULL
                 );
             """)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS pa_events (
+                CREATE TABLE IF NOT EXISTS public.pa_events (
                     event_id TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
-                    session_id TEXT NOT NULL REFERENCES pa_sessions(session_id),
+                    user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
+                    session_id TEXT NOT NULL REFERENCES public.pa_sessions(session_id) ON DELETE CASCADE,
                     event_time TIMESTAMP NOT NULL,
                     event_name TEXT NOT NULL
                 );
             """)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS pa_orders (
+                CREATE TABLE IF NOT EXISTS public.pa_orders (
                     order_id TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL REFERENCES pa_users(user_id),
+                    user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
                     order_time TIMESTAMP NOT NULL,
                     amount INT NOT NULL
                 );
@@ -220,7 +220,7 @@ def init_database():
 
             # 12. dataset_versions & current_product_type
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS dataset_versions (
+                CREATE TABLE IF NOT EXISTS public.dataset_versions (
                     version_id SERIAL PRIMARY KEY,
                     created_at TIMESTAMP DEFAULT NOW(),
                     generator_type TEXT,
@@ -231,7 +231,7 @@ def init_database():
                 );
             """)
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS current_product_type (
+                CREATE TABLE IF NOT EXISTS public.current_product_type (
                     id INT PRIMARY KEY DEFAULT 1,
                     product_type TEXT NOT NULL,
                     updated_at TIMESTAMP DEFAULT NOW()
