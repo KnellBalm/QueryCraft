@@ -8,17 +8,24 @@
   min-height: 100vh;
 }
 
-/* 헤더 */
+/* 헤더 - Glassmorphism */
 .header {
   display: flex;
   align-items: center;
   gap: 2rem;
   padding: 0 1.5rem;
-  height: 56px;
-  min-height: 56px;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  height: 60px;
+  min-height: 60px;
+  margin: 1rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   color: #fff;
   flex-shrink: 0;
+  position: relative;
 }
 
 .logo {
