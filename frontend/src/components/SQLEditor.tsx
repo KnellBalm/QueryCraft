@@ -4,6 +4,9 @@ import { useCallback, useRef, useEffect } from 'react';
 import type { editor } from 'monaco-editor';
 import { useTheme } from '../contexts/ThemeContext';
 
+// 자동완성 프로바이더가 참조할 전역 스키마 저장소
+let globalTables: Array<{ table_name: string; columns: Array<{ column_name: string }> }> = [];
+
 interface SQLEditorProps {
     value: string;
     onChange: (value: string) => void;
@@ -19,13 +22,14 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
     const onExecuteRef = useRef(onExecute);
     const tablesRef = useRef(tables);
 
-    // ref 업데이트
+    // ref 및 전역 스토어 업데이트
     useEffect(() => {
         onExecuteRef.current = onExecute;
     }, [onExecute]);
 
     useEffect(() => {
         tablesRef.current = tables;
+        globalTables = tables; // 프로바이더가 참조할 수 있도록 업데이트
     }, [tables]);
 
     const handleMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -124,7 +128,7 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
 
                     // 1) FROM/JOIN 뒤에서는 "테이블" 위주
                     if (endsWithFromJoin) {
-                        tablesRef.current.forEach(t => {
+                        globalTables.forEach(t => {
                             push({
                                 label: t.table_name,
                                 kind: monaco.languages.CompletionItemKind.Struct, // Class 대신 Struct로 정규화(의미/안정성)
@@ -155,7 +159,7 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
                         const m = linePrefix.match(/([A-Z0-9_]+)\.$/i);
                         const tableToken = m?.[1];
 
-                        const table = tablesRef.current.find(t => t.table_name.toLowerCase() === (tableToken || '').toLowerCase());
+                        const table = globalTables.find(t => t.table_name.toLowerCase() === (tableToken || '').toLowerCase());
 
                         if (table) {
                             table.columns.forEach(c => {
@@ -172,7 +176,7 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
                         }
 
                         // 테이블을 못 찾으면 전체 컬럼을 낮은 우선순위로
-                        tablesRef.current.forEach(t => {
+                        globalTables.forEach(t => {
                             t.columns.forEach(c => {
                                 push({
                                     label: c.column_name,
@@ -202,8 +206,8 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
 
                         // 사용된 테이블의 컬럼만 표시 (테이블 없으면 전체 표시)
                         const tablesToShow = usedTables.size > 0
-                            ? tablesRef.current.filter(t => usedTables.has(t.table_name.toLowerCase()))
-                            : tablesRef.current;
+                            ? globalTables.filter(t => usedTables.has(t.table_name.toLowerCase()))
+                            : globalTables;
 
                         // 중복 컬럼 찾기
                         const columnCount = new Map<string, string[]>();
@@ -284,7 +288,7 @@ export function SQLEditor({ value, onChange, onExecute, height = '200px', tables
                         });
                     });
 
-                    tablesRef.current.forEach(t => {
+                    globalTables.forEach(t => {
                         push({
                             label: t.table_name,
                             kind: monaco.languages.CompletionItemKind.Struct,
