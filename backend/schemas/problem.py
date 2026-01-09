@@ -31,6 +31,12 @@ class Problem(BaseModel):
     sort_keys: Optional[List[str]] = None
     hint: Optional[str] = None
     
+    # 채점 관련 필드
+    answer_sql: Optional[str] = None
+    expected_result: Optional[List[dict]] = None
+    expected_meta: Optional[dict] = None
+    xp_value: Optional[int] = 5
+    
     # 상태 정보 (조회 시 추가)
     is_completed: Optional[bool] = None
     is_correct: Optional[bool] = None

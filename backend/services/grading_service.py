@@ -203,17 +203,14 @@ def grade_submission(
                             diff=str(e)
                         )
                 else:
-                    # 기존 방식: grading 테이블에서 정답 로드 (하위 호환성)
-                    expected_meta = problem.expected_meta or {}
-                    grading_table = expected_meta.get("grading_table")
-                    if not grading_table:
-                        grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
+                    # 기존 방식: grading 테이블에서 정답 로드
+                    grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
                     try:
                         expected_df = pg.fetch_df(f"SELECT * FROM {grading_table}")
                     except Exception as e:
                         return SubmitResponse(
                             is_correct=False,
-                            feedback=f"정답 데이터를 찾을 수 없습니다. (JSON/DB/SQL 모두 부재)",
+                            feedback="정답 데이터를 찾을 수 없습니다. (JSON/SQL/DB 모두 부재)",
                             execution_time_ms=0,
                             diff=str(e)
                         )
