@@ -148,7 +148,7 @@ def get_problem_by_id(
         with postgres_connection() as pg:
             df = pg.fetch_df("""
                 SELECT description FROM public.problems 
-                WHERE title = %s OR description->>'problem_id' = %s
+                WHERE title = %s OR (description::jsonb)->>'problem_id' = %s
                 LIMIT 1
             """, [problem_id, problem_id])
             
