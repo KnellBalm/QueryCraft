@@ -328,10 +328,10 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                     <div className="fetching-state-container">
                                         <div className="fetching-status-badge">
                                             <span className="pulse-dot"></span>
-                                            시스템 연결 확인 중...
+                                            오늘의 문제 찾는 중...
                                         </div>
                                         <div className="fetching-state">
-                                            <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p>
+                                            {/* <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p> */}
                                             <div className="loading-spinner" />
                                         </div>
                                     </div>
