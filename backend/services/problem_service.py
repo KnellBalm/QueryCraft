@@ -69,6 +69,18 @@ def get_problems(
             if len(df) > 0:
                 for _, row in df.iterrows():
                     problems_data.append(json.loads(row["description"]))
+            else:
+                # 할당된 세트가 없으면 다른 세트라도 있는지 시도
+                df_fallback = pg.fetch_df("""
+                    SELECT description FROM public.problems 
+                    WHERE problem_date = %s AND data_type = %s
+                    LIMIT 6
+                """, [target_date.isoformat(), data_type])
+                
+                if len(df_fallback) > 0:
+                    print(f"Assigned set {set_index} empty, falling back to any available set for {target_date}")
+                    for _, row in df_fallback.iterrows():
+                        problems_data.append(json.loads(row["description"]))
     except Exception as e:
         print(f"Failed to fetch problems from DB: {e}")
 

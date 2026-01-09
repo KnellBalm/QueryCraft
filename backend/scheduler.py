@@ -234,10 +234,14 @@ def start_scheduler():
     - 월~금: day_of_week='0-4' (APScheduler: 0=월)
     - 일요일: day_of_week='6'
     """
+    if scheduler.running:
+        logger.info("[SCHEDULER] Already running, skipping start")
+        return
+
+    # 기존 작업 제거 (중복 방지)
+    scheduler.remove_all_jobs()
     
     # 1. 평일 작업: 월~금 KST 1:00 (= UTC 16:00 전날)
-    # KST 월요일 1:00 = UTC 일요일 16:00, 따라서 UTC 기준으로는 일~목
-    # APScheduler: 0=월, 6=일이므로 sun-thu = 6,0,1,2,3
     scheduler.add_job(
         run_weekday_generation,
         CronTrigger(hour=16, minute=0, day_of_week='6,0,1,2,3'),  # UTC 일~목 = KST 월~금
@@ -264,18 +268,21 @@ def start_scheduler():
         replace_existing=True
     )
     
-    scheduler.start()
-    logger.info("[SCHEDULER] Started with new schedule:")
-    logger.info("  - 평일 문제/데이터: 월~금 KST 1:00 (UTC 전날 16:00)")
-    logger.info("  - 일요일 Stream: 일 KST 1:00 (UTC 토 16:00)")
-    logger.info("  - 데이터 정리: 매일 KST 4:00 (UTC 전날 19:00)")
-    
-    db_log(
-        category=LogCategory.SCHEDULER,
-        message="스케줄러 시작됨 - 평일 KST 1:00, 일요일 KST 1:00",
-        level=LogLevel.INFO,
-        source="scheduler"
-    )
+    try:
+        scheduler.start()
+        logger.info("[SCHEDULER] Started internal BackgroundScheduler")
+        logger.info(f"  - ENV: {os.getenv('ENV')}")
+        logger.info(f"  - Timezone: {datetime.now().astimezone().tzname()}")
+        logger.info(f"  - Current Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        db_log(
+            category=LogCategory.SCHEDULER,
+            message="내장 스케줄러 시작됨 (APScheduler)",
+            level=LogLevel.INFO,
+            source="scheduler"
+        )
+    except Exception as e:
+        logger.error(f"[SCHEDULER] Failed to start: {e}")
     
 
 
