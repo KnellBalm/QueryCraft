@@ -166,14 +166,15 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
   "difficulty": "easy | medium | hard",
   "topic": "retention | funnel | cohort | revenue | segmentation | activation | engagement",
   "requester": "요청팀 또는 직무 (예: PM팀, 마케팅팀)",
-  "question": "실제 업무 요청처럼 작성. 반드시 다음을 명시: 1)필요한 컬럼 2)정렬 기준 3)기간/조건",
+  "question": "실제 업무 요청처럼 작성. 반드시 다음을 명시: 1)분석 단위(일별/월별/주별 등) 2)필요한 컬럼 3)정렬 기준 4)기간/조건",
   "context": "배경 설명 (왜 이 분석이 필요한지)",
   "submission_requirements": "제출 조건을 다음 형식으로 구체적으로 명시 (모든 항목 필수):
     1. 결과 컬럼: 'user_id, conversion_rate, total_amount' 순서로 출력
-    2. 날짜 형식: 'YYYY-MM-DD' 형식 (예: DATE_TRUNC('day', timestamp)::date)
-    3. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate, 2))
-    4. 정렬: date 컬럼 기준 오름차순 정렬
-    5. NULL 처리: NULL 값은 0으로 표시",
+    2. 집계 단위: '일별(Daily)' 또는 '월별(Monthly)' 등 명시
+    3. 날짜 형식: 일별 분석은 'YYYY-MM-DD', 월별 분석은 'YYYY-MM' 형식 (예: TO_CHAR(date, 'YYYY-MM'))
+    4. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate, 2))
+    5. 정렬: date 컬럼 기준 오름차순 정렬
+    6. NULL 처리: NULL 값은 0으로 표시",
   "answer_sql": "PostgreSQL 정답 SQL (위 데이터 스키마의 테이블명/컬럼명 정확히 사용)",
   "expected_description": "기대 결과 테이블 설명",
   "expected_columns": ["col1", "col2", "..."],
@@ -209,7 +210,12 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
    - ❌ 나쁜 예: "정렬해주세요"
    - ✅ 좋은 예: "date 컬럼 기준 오름차순 정렬, conversion_rate 기준 내림차순 정렬"
 
-5. **NULL/결측값 처리**: NULL 값 처리 방법 명시
+5. **집계 단위 및 날짜 형식**: 분석 기준과 출력 포맷을 일치시켜 명시
+   - ❌ 나쁜 예: "날짜별로 집계"
+   - ✅ 좋은 예: "일별(Daily) 기준으로 집계하고, 날짜는 YYYY-MM-DD 형식으로 출력"
+   - ✅ 좋은 예: "월별(Monthly) 기준으로 집계하고, 날짜는 YYYY-MM 형식으로 출력"
+
+6. **NULL/결측값 처리**: NULL 값 처리 방법 명시
    - ❌ 나쁜 예: "값이 없으면 처리"
    - ✅ 좋은 예: "NULL 값은 0으로 표시, 데이터가 없는 날짜는 결과에서 제외"
 
