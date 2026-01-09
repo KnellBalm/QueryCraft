@@ -3,7 +3,11 @@ from __future__ import annotations
 import psycopg2
 import psycopg2.extras
 import pandas as pd
+import warnings
 from typing import Iterable, Any
+
+# pandas-psycopg2 호환성 경고 무시
+warnings.filterwarnings("ignore", category=UserWarning, message=".*pandas only supports SQLAlchemy connectable.*")
 
 class PostgresEngine:
     def __init__(self, dsn: str):

@@ -40,15 +40,20 @@ async def lifespan(app: FastAPI):
     
     threading.Thread(target=init_background, daemon=True).start()
     
-    # 스케줄러 시작 (프로덕션에서 자동 활성화)
+    # 스케줄러 시작 (ENV=production이거나 ENABLE_SCHEDULER=true일 때)
     scheduler_started = False
-    if os.getenv("ENV") == "production":
+    should_start_scheduler = (
+        os.getenv("ENV") == "production" or 
+        os.getenv("ENABLE_SCHEDULER", "false").lower() == "true"
+    )
+    
+    if should_start_scheduler:
         try:
-            from backend.scheduler import start_scheduler, stop_scheduler
+            from backend.scheduler import start_scheduler
             
             def start_scheduler_background():
                 import time
-                time.sleep(5)  # DB 초기화 대기
+                time.sleep(5)  # DB 초기화 및 테이블 생성이 완료될 때까지 대기
                 try:
                     start_scheduler()
                     print("[INFO] Scheduler started in background")
@@ -58,7 +63,7 @@ async def lifespan(app: FastAPI):
             threading.Thread(target=start_scheduler_background, daemon=True).start()
             scheduler_started = True
         except Exception as e:
-            print(f"[WARNING] Scheduler import failed: {e}")
+            print(f"[WARNING] Scheduler module import failed: {e}")
     
     yield
     

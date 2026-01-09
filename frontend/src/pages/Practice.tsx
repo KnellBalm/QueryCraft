@@ -286,8 +286,8 @@ export default function Practice() {
                             <div className="no-problems">
                                 {generating ? (
                                     <div className="fetching-state">
-                                        <div className="loading-spinner" />
                                         <p>Gemini AI가 새로운 문제를 생성하고 있습니다...</p>
+                                        <div className="loading-spinner" />
                                     </div>
                                 ) : (
                                     <div className="empty-state">

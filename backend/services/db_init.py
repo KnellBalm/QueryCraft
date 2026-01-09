@@ -91,6 +91,18 @@ def init_database():
                     user_id TEXT
                 )
             """)
+            
+            # API 사용량 로그 - 누락된 컬럼 추가 (스키마 변경 시 자동 반영용)
+            try:
+                cols = pg.fetch_df("SELECT column_name FROM information_schema.columns WHERE table_name = 'api_usage_logs'")
+                existing_cols = set(cols['column_name'].tolist())
+                if 'purpose' not in existing_cols:
+                    pg.execute("ALTER TABLE public.api_usage_logs ADD COLUMN purpose VARCHAR(100)")
+                if 'total_tokens' not in existing_cols:
+                    pg.execute("ALTER TABLE public.api_usage_logs ADD COLUMN total_tokens INTEGER DEFAULT 0")
+            except Exception as e:
+                logger.warning(f"Failed to update api_usage_logs columns: {e}")
+
             logger.info("✓ api_usage_logs table ready")
             
             # 6. logs 테이블 (시스템 로그)
@@ -130,6 +142,14 @@ def init_database():
                     UNIQUE(problem_date, data_type, set_index, title)
                 )
             """)
+            # problems 테이블 - updated_at 컬럼 수동 체크 (CREAT TABLE IF NOT EXISTS에서 누락될 수 있음)
+            try:
+                cols = pg.fetch_df("SELECT column_name FROM information_schema.columns WHERE table_name = 'problems'")
+                if 'updated_at' not in set(cols['column_name'].tolist()):
+                    pg.execute("ALTER TABLE public.problems ADD COLUMN updated_at TIMESTAMP DEFAULT NOW()")
+            except Exception as e:
+                logger.warning(f"Failed to add updated_at to problems table: {e}")
+
             pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_date ON public.problems(problem_date DESC)")
             pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_type ON public.problems(data_type)")
             logger.info("✓ problems table ready")
