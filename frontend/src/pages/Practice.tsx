@@ -14,7 +14,8 @@ import type { TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '
 import './Workspace.css';
 
 // 간단한 마크다운 변환
-function renderMarkdown(text: string) {
+function renderMarkdown(text: string | undefined | null) {
+    if (!text) return null;
     const html = text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/`(.+?)`/g, '<code>$1</code>')
@@ -50,6 +51,7 @@ export default function Practice() {
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rightPanelRef = useRef<HTMLDivElement>(null);
+    const lastAttemptedRef = useRef<string | null>(null);
 
     // 스키마 로드
     useEffect(() => {
@@ -335,8 +337,9 @@ export default function Practice() {
                             value={sql}
                             onChange={(val) => {
                                 setSql(val);
-                                if (problem && val.trim().length > 0) {
+                                if (problem && val.trim().length > 0 && lastAttemptedRef.current !== problem.id) {
                                     analytics.problemAttempted(problem.id, problem.difficulty);
+                                    lastAttemptedRef.current = problem.id;
                                 }
                             }}
                             onExecute={handleExecute}

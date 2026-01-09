@@ -9,7 +9,8 @@ import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse
 import './Workspace.css';
 
 // 간단한 마크다운 변환 (볼드, 코드, 줄바꿈)
-function renderMarkdown(text: string) {
+function renderMarkdown(text: string | undefined | null) {
+    if (!text) return null;
     const html = text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
         .replace(/`(.+?)`/g, '<code>$1</code>')            // `code`
@@ -44,6 +45,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rightPanelRef = useRef<HTMLDivElement>(null);
+    const lastAttemptedRef = useRef<string | null>(null);
 
     const selectedProblem = problems[selectedIndex] || null;
 
@@ -117,8 +119,9 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setHint(null);
 
         // 첫 실행/타이핑 시 시도로 기록
-        if (selectedProblem) {
+        if (selectedProblem && lastAttemptedRef.current !== selectedProblem.problem_id) {
             analytics.problemAttempted(selectedProblem.problem_id, selectedProblem.difficulty);
+            lastAttemptedRef.current = selectedProblem.problem_id;
         }
 
         try {
@@ -322,9 +325,15 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         {problems.length === 0 && (
                             <div className="no-problems">
                                 {isFetching ? (
-                                    <div className="fetching-state">
-                                        <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p>
-                                        <div className="loading-spinner" />
+                                    <div className="fetching-state-container">
+                                        <div className="fetching-status-badge">
+                                            <span className="pulse-dot"></span>
+                                            시스템 연결 확인 중...
+                                        </div>
+                                        <div className="fetching-state">
+                                            <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p>
+                                            <div className="loading-spinner" />
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="empty-state">
@@ -369,8 +378,9 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             value={sql}
                             onChange={(val) => {
                                 setSql(val);
-                                if (selectedProblem && val.trim().length > 0) {
+                                if (selectedProblem && val.trim().length > 0 && lastAttemptedRef.current !== selectedProblem.problem_id) {
                                     analytics.problemAttempted(selectedProblem.problem_id, selectedProblem.difficulty);
+                                    lastAttemptedRef.current = selectedProblem.problem_id;
                                 }
                             }}
                             onExecute={handleExecute}
