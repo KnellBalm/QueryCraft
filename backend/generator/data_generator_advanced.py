@@ -61,7 +61,7 @@ def init_postgres_schema(cur) -> None:
         user_id INT,
         session_id TEXT,
         event_name TEXT,
-        event_time TIMESTAMP,
+        event_time DATE,
         device TEXT,
         channel TEXT
     );
@@ -89,7 +89,7 @@ def init_postgres_schema(cur) -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS public.pa_users (
       user_id TEXT PRIMARY KEY,
-      signup_at TIMESTAMP NOT NULL,
+      signup_at DATE NOT NULL,
       country TEXT NOT NULL,
       channel TEXT NOT NULL
     );
@@ -98,7 +98,7 @@ def init_postgres_schema(cur) -> None:
     CREATE TABLE IF NOT EXISTS public.pa_sessions (
       session_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
-      started_at TIMESTAMP NOT NULL,
+      started_at DATE NOT NULL,
       device TEXT NOT NULL
     );
     """)
@@ -107,7 +107,7 @@ def init_postgres_schema(cur) -> None:
       event_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
       session_id TEXT NOT NULL REFERENCES public.pa_sessions(session_id) ON DELETE CASCADE,
-      event_time TIMESTAMP NOT NULL,
+      event_time DATE NOT NULL,
       event_name TEXT NOT NULL
     );
     """)
@@ -115,7 +115,7 @@ def init_postgres_schema(cur) -> None:
     CREATE TABLE IF NOT EXISTS public.pa_orders (
       order_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
-      order_time TIMESTAMP NOT NULL,
+      order_time DATE NOT NULL,
       amount INT NOT NULL
     );
     """)
@@ -128,7 +128,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
         user_id INTEGER,
         session_id VARCHAR,
         event_name VARCHAR,
-        event_time TIMESTAMP,
+        event_time DATE,
         device VARCHAR,
         channel VARCHAR
     );
@@ -155,7 +155,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     con.execute("""
     CREATE TABLE IF NOT EXISTS pa_users (
       user_id VARCHAR,
-      signup_at TIMESTAMP,
+      signup_at DATE,
       country VARCHAR,
       channel VARCHAR
     );
@@ -164,7 +164,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     CREATE TABLE IF NOT EXISTS pa_sessions (
       session_id VARCHAR,
       user_id VARCHAR,
-      started_at TIMESTAMP,
+      started_at DATE,
       device VARCHAR
     );
     """)
@@ -173,7 +173,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
       event_id VARCHAR,
       user_id VARCHAR,
       session_id VARCHAR,
-      event_time TIMESTAMP,
+      event_time DATE,
       event_name VARCHAR
     );
     """)
@@ -181,7 +181,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     CREATE TABLE IF NOT EXISTS pa_orders (
       order_id VARCHAR,
       user_id VARCHAR,
-      order_time TIMESTAMP,
+      order_time DATE,
       amount INTEGER
     );
     """)
@@ -376,7 +376,7 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
     for (user_id, signup_at, _, _) in tqdm(users, desc=f"PA ({product_type}): generating sessions/events"):
         for _ in range(random.randint(*cfg.PA_SESSIONS_PER_USER)):
             sid = str(uuid.uuid4())
-            started_at = signup_at + timedelta(days=random.randint(0, 30), minutes=random.randint(0, 1440))
+            started_at = (signup_at + timedelta(days=random.randint(0, 30))).date()
             sessions.append((sid, user_id, started_at, random.choice(cfg.PA_DEVICES)))
 
             # ProductProfile을 사용하여 세션 이벤트 생성
