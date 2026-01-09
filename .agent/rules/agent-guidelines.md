@@ -5,11 +5,18 @@ description: SQL Labs 프로젝트 작업 시 항상 참고하는 규칙
 
 # QueryCraft 프로젝트 작업 규칙
 
+## 0. 구현계획
+구현 계획이나 설명은 항상 한글로 할 것
+
 ## 1. 코드 변경 후 배포
 
+**개발 서버 dev 브랜치**
 - **백엔드**: `docker compose restart backend`
 - **프론트엔드**: `docker compose build frontend && docker compose up -d frontend`
 - 환경변수 변경 시 반드시 컨테이너 재시작 필요
+
+** 상용 서버 main 브랜치**
+- 상용 브랜치는 push하면 자동 배포 Github Actions 있음
 
 ## 2. 코드 스타일
 

@@ -323,7 +323,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             <div className="no-problems">
                                 {isFetching ? (
                                     <div className="fetching-state">
-                                        <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...</p>
+                                        <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p>
                                         <div className="loading-spinner" />
                                     </div>
                                 ) : (
