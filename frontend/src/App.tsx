@@ -7,7 +7,8 @@ import { MyPage } from './pages/MyPage';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
-import { useEffect, useState } from 'react';
+import WeekendClosed from './components/WeekendClosed';
+import { useEffect, useState, useMemo } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
 import { useTheme } from './contexts/ThemeContext';
@@ -41,13 +42,25 @@ function App() {
     if (params.get('login') === 'success' && user) {
       // SSO 로그인 성공 이벤트 트래킹
       // provider 정보는 user.id에서 추출 (google_xxx, kakao_xxx)
-      const provider = user.id?.startsWith('google_') ? 'google' : 
-                       user.id?.startsWith('kakao_') ? 'kakao' : 'email';
+      const provider = user.id?.startsWith('google_') ? 'google' :
+        user.id?.startsWith('kakao_') ? 'kakao' : 'email';
       analytics.loginSuccess(user.id, provider as 'google' | 'kakao' | 'email');
       // URL 정리 (파라미터 제거)
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [user]);
+  // 주말 체크 (토요일: 6, 일요일: 0)
+  const isWeekend = useMemo(() => {
+    // 테스트 시 아래 값을 true로 설정하여 확인 가능
+    const forceWeekend = false;
+    if (forceWeekend) return true;
+
+    const day = new Date().getDay();
+    return day === 0 || day === 6;
+  }, []);
+
+  // 관리자 권한 확인 (주말 차단 우회용)
+  const canAccessOnWeekend = user?.is_admin;
 
   return (
     <BrowserRouter>
@@ -96,15 +109,19 @@ function App() {
         </header>
 
         <main className="main">
-          <Routes>
-            <Route path="/" element={<MainPage />} />
-            <Route path="/pa" element={<Workspace dataType="pa" />} />
-            <Route path="/stream" element={<Workspace dataType="stream" />} />
-            <Route path="/stats" element={<StatsPage />} />
-            <Route path="/practice" element={<Practice />} />
-            <Route path="/mypage" element={<MyPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
+          {isWeekend && !canAccessOnWeekend ? (
+            <WeekendClosed />
+          ) : (
+            <Routes>
+              <Route path="/" element={<MainPage />} />
+              <Route path="/pa" element={<Workspace dataType="pa" />} />
+              <Route path="/stream" element={<Workspace dataType="stream" />} />
+              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/practice" element={<Practice />} />
+              <Route path="/mypage" element={<MyPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          )}
         </main>
         <FloatingContact />
         <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
