@@ -125,28 +125,49 @@ async def get_system_status(admin=Depends(require_admin)):
     
     # 오늘의 문제 현황 확인
     today = date.today()
-    problem_path = f"problems/daily/{today.isoformat()}.json"
+    patterns = [
+        f"problems/daily/{today.isoformat()}.json",
+        f"problems/daily/{today.isoformat()}_set0.json",
+        f"problems/daily/{today.isoformat()}_set1.json",
+        f"problems/daily/stream_{today.isoformat()}.json"
+    ]
+    
     today_problems = None
+    all_problems = []
+    found_any = False
     
     try:
-        if os.path.exists(problem_path):
-            with open(problem_path, encoding="utf-8") as f:
-                problems = json.load(f)
+        for p_path in patterns:
+            # 절대 경로와 상대 경로 모두 체크 (컨테이너 내 환경 고려)
+            abs_path = os.path.join("/app", p_path) if not p_path.startswith("/") else p_path
+            target_path = abs_path if os.path.exists(abs_path) else p_path
             
+            if os.path.exists(target_path):
+                found_any = True
+                with open(target_path, encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        all_problems.extend(data)
+                    else:
+                        all_problems.append(data)
+        
+        if found_any:
             difficulties = {}
-            for p in problems:
+            for p in all_problems:
                 diff = p.get("difficulty", "unknown")
                 difficulties[diff] = difficulties.get(diff, 0) + 1
             
             today_problems = TodayProblemsStatus(
                 exists=True,
-                count=len(problems),
+                count=len(all_problems),
                 difficulties=difficulties,
-                path=problem_path
+                path=patterns[0] # 대표 경로
             )
         else:
             today_problems = TodayProblemsStatus(exists=False)
-    except:
+    except Exception as e:
+        from backend.common.logging import get_logger
+        get_logger(__name__).error(f"Error checking today problems: {e}")
         today_problems = TodayProblemsStatus(exists=False)
     
     return SystemStatus(
