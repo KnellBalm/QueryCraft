@@ -51,10 +51,10 @@ async def list_problems(
         except ValueError:
             raise HTTPException(400, "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)")
     else:
-        dt = date.today()
+        dt = get_today_kst()
     
     user_id = get_user_id_from_request(request)
-    problems = get_problems(data_type, dt, user_id)
+    problems = get_problems(dt, data_type, user_id)
     completed = sum(1 for p in problems if p.is_completed)
     
     return ProblemListResponse(
@@ -80,7 +80,7 @@ async def get_problem_detail(
         except ValueError:
             raise HTTPException(400, "날짜 형식이 올바르지 않습니다.")
     else:
-        dt = date.today()
+        dt = get_today_kst()
     
     user_id = get_user_id_from_request(request)
     problem = get_problem_by_id(problem_id, data_type, dt, user_id)
