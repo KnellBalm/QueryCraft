@@ -90,7 +90,7 @@ def init_postgres_schema(cur) -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS public.pa_users (
       user_id TEXT PRIMARY KEY,
-      signup_at TIMESTAMP NOT NULL,
+      signup_at DATE NOT NULL,
       country TEXT NOT NULL,
       channel TEXT NOT NULL
     );
@@ -116,7 +116,7 @@ def init_postgres_schema(cur) -> None:
     CREATE TABLE IF NOT EXISTS public.pa_orders (
       order_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
-      order_time TIMESTAMP NOT NULL,
+      order_time DATE NOT NULL,
       amount INT NOT NULL
     );
     """)
@@ -412,25 +412,36 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
     if pg_cur:
         from io import StringIO
         
-        def copy_insert(table, columns, data, types):
+        def copy_insert(table, columns, data, date_only_fmt=False):
+            """COPY를 사용하여 고속 인서트
+            date_only_fmt=True: 날짜를 YYYY-MM-DD 형식으로 출력 (DATE 컬럼용)
+            date_only_fmt=False: 날짜를 YYYY-MM-DD HH:MM:SS 형식으로 출력 (TIMESTAMP 컬럼용)
+            """
             if not data:
                 return
             buf = StringIO()
             for row in data:
-                # 사용자가 요청한 YYYY-MM-DD HH:MM:SS 형식으로 변환 (타임존 제외)
-                line = '\t'.join(
-                    str(v.strftime("%Y-%m-%d %H:%M:%S") if hasattr(v, 'strftime') else v) 
-                    for v in row
-                )
-                buf.write(line + '\n')
+                parts = []
+                for v in row:
+                    if hasattr(v, 'strftime'):
+                        if date_only_fmt:
+                            parts.append(v.strftime("%Y-%m-%d"))
+                        else:
+                            parts.append(v.strftime("%Y-%m-%d %H:%M:%S"))
+                    else:
+                        parts.append(str(v))
+                buf.write('\t'.join(parts) + '\n')
             buf.seek(0)
             pg_cur.copy_from(buf, table, columns=columns)
         
         logger.info("PA: using COPY for fast insert")
-        copy_insert('pa_users', ('user_id', 'signup_at', 'country', 'channel'), users, None)
-        copy_insert('pa_sessions', ('session_id', 'user_id', 'started_at', 'device'), sessions, None)
-        copy_insert('pa_events', ('event_id', 'user_id', 'session_id', 'event_time', 'event_name'), events, None)
-        copy_insert('pa_orders', ('order_id', 'user_id', 'order_time', 'amount'), orders, None)
+        # signup_at은 DATE 컬럼 → date_only_fmt=True
+        copy_insert('pa_users', ('user_id', 'signup_at', 'country', 'channel'), users, date_only_fmt=True)
+        # started_at, event_time은 TIMESTAMP 컬럼 → date_only_fmt=False
+        copy_insert('pa_sessions', ('session_id', 'user_id', 'started_at', 'device'), sessions, date_only_fmt=False)
+        copy_insert('pa_events', ('event_id', 'user_id', 'session_id', 'event_time', 'event_name'), events, date_only_fmt=False)
+        # order_time은 DATE 컬럼 → date_only_fmt=True
+        copy_insert('pa_orders', ('order_id', 'user_id', 'order_time', 'amount'), orders, date_only_fmt=True)
 
     if duck_con:
         duck_con.executemany("INSERT INTO pa_users VALUES (?, ?, ?, ?)", users)

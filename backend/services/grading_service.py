@@ -42,7 +42,11 @@ def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
 
 
 def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys: list = None) -> tuple[bool, str]:
-    """사용자 결과와 정답 결과 비교 (정렬 키 사용)"""
+    """사용자 결과와 정답 결과 비교 (간소화된 로직)
+    - 컬럼 수/이름 확인
+    - 행 수 확인
+    - 날짜 비교 시 날짜 부분만 비교 (시간 무시)
+    """
     # 컬럼 수 확인
     if len(user_df.columns) != len(expected_df.columns):
         return False, f"컬럼 수가 다릅니다. (제출: {len(user_df.columns)}, 정답: {len(expected_df.columns)})"
@@ -65,96 +69,93 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
         return False, msg
     
     # 컬럼명 정규화 (소문자)
+    user_df = user_df.copy()
+    expected_df = expected_df.copy()
     user_df.columns = [c.lower() for c in user_df.columns]
     expected_df.columns = [c.lower() for c in expected_df.columns]
     
-    # 데이터 타입 정규화 (특히 JSON에서 로드된 expected_df의 날짜/시간 처리)
-    for col in user_df.columns:
-        if col not in expected_df.columns:
-            continue
+    # 정렬
+    sort_cols = [k.lower() for k in (sort_keys or [])] if sort_keys else list(user_df.columns)
+    sort_cols = [c for c in sort_cols if c in user_df.columns]
+    
+    if sort_cols:
+        user_df = user_df.sort_values(by=sort_cols).reset_index(drop=True)
+        expected_df = expected_df.sort_values(by=sort_cols).reset_index(drop=True)
+    else:
+        user_df = user_df.reset_index(drop=True)
+        expected_df = expected_df.reset_index(drop=True)
+    
+    # 동일 컬럼 순서로 정렬
+    common_cols = sorted(user_df.columns)
+    user_df = user_df[common_cols]
+    expected_df = expected_df[common_cols]
+    
+    # 값 비교 (날짜 관대 처리 포함)
+    for i in range(len(user_df)):
+        for col in common_cols:
+            u_val = user_df.iloc[i][col]
+            e_val = expected_df.iloc[i][col]
             
-        # 1. 날짜/시간 정규화 - 강제 변환 시도
-        # user_df는 Postgres Timestamp, expected_df는 ISO 문자열일 수 있음
-        try:
-            # 첫 번째 non-null 값 샘플로 날짜 형식인지 판단
-            u_sample = user_df[col].dropna().iloc[0] if len(user_df[col].dropna()) > 0 else None
-            e_sample = expected_df[col].dropna().iloc[0] if len(expected_df[col].dropna()) > 0 else None
+            # None/NaN 비교
+            u_is_null = pd.isna(u_val)
+            e_is_null = pd.isna(e_val)
+            if u_is_null and e_is_null:
+                continue
+            if u_is_null != e_is_null:
+                return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
             
-            u_looks_like_datetime = (
-                pd.api.types.is_datetime64_any_dtype(user_df[col]) or 
-                (isinstance(u_sample, str) and ('T' in u_sample or '-' in u_sample) and ':' in u_sample)
-            )
-            e_looks_like_datetime = (
-                pd.api.types.is_datetime64_any_dtype(expected_df[col]) or
-                (isinstance(e_sample, str) and ('T' in e_sample or '-' in e_sample) and ':' in e_sample)
-            )
+            # 날짜/시간 비교 (DATE 부분만 비교하여 관대하게 처리)
+            if _is_date_like(u_val) or _is_date_like(e_val):
+                try:
+                    u_date = _extract_date(u_val)
+                    e_date = _extract_date(e_val)
+                    if u_date == e_date:
+                        continue
+                    return False, f"{i+1}번째 행 '{col}' 날짜 불일치: 제출={u_date}, 정답={e_date}"
+                except:
+                    pass
             
-            if u_looks_like_datetime or e_looks_like_datetime:
-                # 양쪽 모두 datetime으로 변환
-                user_df[col] = pd.to_datetime(user_df[col], errors='coerce')
-                expected_df[col] = pd.to_datetime(expected_df[col], errors='coerce')
-        except Exception:
-            pass
-        
-        # 2. 숫자 정규화 (float vs int 등)
-        try:
-            is_u_num = pd.api.types.is_numeric_dtype(user_df[col])
-            is_e_num = pd.api.types.is_numeric_dtype(expected_df[col])
+            # 숫자 비교 (소수점 차이 허용)
+            if isinstance(u_val, (int, float)) and isinstance(e_val, (int, float)):
+                if abs(float(u_val) - float(e_val)) < 0.0001:
+                    continue
+                return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
             
-            if is_u_num and not is_e_num:
-                expected_df[col] = pd.to_numeric(expected_df[col], errors='coerce')
-            elif is_e_num and not is_u_num:
-                user_df[col] = pd.to_numeric(user_df[col], errors='coerce')
-        except Exception:
-            pass
+            # 문자열 비교 (strip 후)
+            if str(u_val).strip() == str(e_val).strip():
+                continue
+            
+            return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
+    
+    return True, "정답입니다! 🎉"
 
-    # 정렬 후 비교
-    try:
-        # sort_keys가 있으면 사용, 없으면 모든 컬럼으로 정렬
-        if sort_keys:
-            sort_cols = [k.lower() for k in sort_keys if k.lower() in user_df.columns]
-        else:
-            sort_cols = list(user_df.columns)
-        
-        # 정렬 전 NaN 처리 (정렬 안정성 위해)
-        # numeric은 0이나 특정값으로 채우지 않고 그대로 두되, string 변환 시에는 차이가 날 수 있음
-        
-        if sort_cols:
-            user_sorted = user_df.sort_values(by=sort_cols).reset_index(drop=True)
-            expected_sorted = expected_df.sort_values(by=sort_cols).reset_index(drop=True)
-        else:
-            user_sorted = user_df.reset_index(drop=True)
-            expected_sorted = expected_df.reset_index(drop=True)
-        
-        # 같은 컬럼 순서로 정렬
-        common_cols = sorted(user_sorted.columns)
-        user_sorted = user_sorted[common_cols]
-        expected_sorted = expected_sorted[common_cols]
-        
-        # 값 비교
-        if user_sorted.equals(expected_sorted):
-            return True, "정답입니다! 🎉"
-        else:
-            # 디버깅을 위해 첫 번째 차이점 찾기
-            for i in range(min(len(user_sorted), len(expected_sorted))):
-                for col in common_cols:
-                    u_val = user_sorted.iloc[i][col]
-                    e_val = expected_sorted.iloc[i][col]
-                    if u_val != e_val:
-                        # 미세한 형식 차이(T 구분자 등) 무시를 위해 문자열 변환 및 정규화 후 재비교
-                        if (isinstance(u_val, (pd.Timestamp, datetime)) or isinstance(e_val, (pd.Timestamp, datetime, str))):
-                            try:
-                                u_dt = pd.to_datetime(u_val).replace(tzinfo=None)
-                                e_dt = pd.to_datetime(e_val).replace(tzinfo=None)
-                                if u_dt == e_dt:
-                                    continue
-                            except:
-                                pass
-                        
-                        return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
-            return False, "결과 값이 다릅니다."
-    except Exception as e:
-        return False, f"비교 오류: {str(e)}"
+
+def _is_date_like(val) -> bool:
+    """값이 날짜/시간처럼 보이는지 확인"""
+    if pd.isna(val):
+        return False
+    if isinstance(val, (datetime, pd.Timestamp)):
+        return True
+    if isinstance(val, date):
+        return True
+    if isinstance(val, str):
+        # YYYY-MM-DD 또는 YYYY-MM-DD HH:MM:SS 형식
+        return len(val) >= 10 and val[4:5] == '-' and val[7:8] == '-'
+    return False
+
+
+def _extract_date(val) -> date:
+    """값에서 날짜 부분만 추출"""
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, pd.Timestamp):
+        return val.date()
+    if isinstance(val, date):
+        return val
+    if isinstance(val, str):
+        # YYYY-MM-DD 부분만 추출
+        return date.fromisoformat(val[:10])
+    raise ValueError(f"Cannot extract date from {val}")
 
 
 def grade_submission(
