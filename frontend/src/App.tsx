@@ -423,7 +423,7 @@ function AdminPage() {
       <h1>⚙️ 관리자 대시보드</h1>
 
       <section className="admin-section">
-        <h2>� 시스템 연결 상태</h2>
+        <h2> 시스템 연결 상태</h2>
         {status ? (
           <div className="status-grid">
             <div className="status-item">
@@ -446,7 +446,7 @@ function AdminPage() {
 
 
       {/* 오늘의 문제 현황은 유지 */}      <section className="admin-section">
-        <h2>� 오늘의 문제 현황 ({today})</h2>
+        <h2> 오늘의 문제 현황 ({today})</h2>
         {status?.today_problems ? (
           <div className="problems-status">
             <div className="status-item">
@@ -474,7 +474,7 @@ function AdminPage() {
       {/* 스케줄러 히스토리는 스케줄러 관리 섹션에 통합됨 */}
 
       <section className="admin-section">
-        <h2>�🔧 수동 작업</h2>
+        <h2>🔧 수동 작업</h2>
         <div className="action-buttons">
           <button onClick={generateProblems} disabled={loading}>
             🤖 PA 문제 생성
@@ -671,7 +671,7 @@ function AdminPage() {
       </section>
 
       {/* 스케줄러 관리 섹션 */}
-      <section className="admin-section">
+      {/* <section className="admin-section">
         <h2>⏰ 스케줄러 관리</h2>
         <div className="status-grid" style={{ marginBottom: '16px' }}>
           <div className="status-item">
@@ -680,7 +680,7 @@ function AdminPage() {
               {schedulerStatus?.running ? '🟢 실행 중' : '🔴 중지됨'}
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* 스케줄 작업 목록 */}
         {schedulerStatus?.jobs && schedulerStatus.jobs.length > 0 && (
