@@ -15,7 +15,7 @@ description: SQL Labs 프로젝트 작업 시 항상 참고하는 규칙
 - **프론트엔드**: `docker compose build frontend && docker compose up -d frontend`
 - 환경변수 변경 시 반드시 컨테이너 재시작 필요
 
-** 상용 서버 main 브랜치**
+**상용 서버 main 브랜치**
 - 상용 브랜치는 push하면 자동 배포 Github Actions 있음
 
 ## 2. 코드 스타일

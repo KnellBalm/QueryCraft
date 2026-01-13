@@ -14,6 +14,11 @@ KST 01:00에 실행되는 스케줄러가 UTC 날짜를 기준으로 문제를 �
 - **데이터 형식 변경**: 모든 `DATE` 타입 컬럼을 `TIMESTAMP`로 변경하고, 데이터 생성 시 `YYYY-MM-DD HH:MM:SS` 형식의 문자열 또는 타임존 없는 `datetime` 객체를 사용합니다.
 - **포스트그레스 공지**: DB 연결 실패나 엔진 확인 부분에 PostgreSQL 전용임을 알리는 로깅 또는 예외 메시지를 추가합니다.
 
+#### [MODIFY] [problem_service.py](file:///home/naca11/QueryCraft/backend/services/problem_service.py)
+
+- **JSONB 파싱 버그 수정**: PostgreSQL `jsonb` 데이터가 이미 `dict`로 로드되는 경우 `json.loads` 시 발생하는 `TypeError`를 해결했습니다.
+- **세트 인덱스 폴백**: 특정 세트 인덱스(0, 1 외)를 가진 사용자에게도 오늘 생성된 문제가 있으면 제공되도록 폴백을 강화했습니다.
+
 ### [Frontend] 사용자 안내 추가
 
 #### [MODIFY] [Workspace.tsx](file:///home/naca11/QueryCraft/frontend/src/pages/Workspace.tsx) 및 [App.tsx](file:///home/naca11/QueryCraft/frontend/src/App.tsx)

@@ -68,7 +68,11 @@ def get_problems(
             
             if len(df) > 0:
                 for _, row in df.iterrows():
-                    problems_data.append(json.loads(row["description"]))
+                    desc = row["description"]
+                    if isinstance(desc, str):
+                        problems_data.append(json.loads(desc))
+                    else:
+                        problems_data.append(desc)
             else:
                 # 할당된 세트가 없으면 다른 세트라도 있는지 시도
                 df_fallback = pg.fetch_df("""
@@ -80,7 +84,11 @@ def get_problems(
                 if len(df_fallback) > 0:
                     print(f"Assigned set {set_index} empty, falling back to any available set for {target_date}")
                     for _, row in df_fallback.iterrows():
-                        problems_data.append(json.loads(row["description"]))
+                        desc = row["description"]
+                        if isinstance(desc, str):
+                            problems_data.append(json.loads(desc))
+                        else:
+                            problems_data.append(desc)
     except Exception as e:
         print(f"Failed to fetch problems from DB: {e}")
 
@@ -153,7 +161,8 @@ def get_problem_by_id(
             """, [problem_id, problem_id])
             
             if len(df) > 0:
-                p_data = json.loads(df.iloc[0]["description"])
+                desc = df.iloc[0]["description"]
+                p_data = json.loads(desc) if isinstance(desc, str) else desc
                 problem = Problem(**p_data)
                 
                 # 완료 상태 추가
