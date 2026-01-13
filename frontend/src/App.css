@@ -102,21 +102,36 @@
 /* XP Bar in Header */
 .xp-bar-container {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   padding: 0.25rem 0.6rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   cursor: pointer;
+  min-width: 100px;
+}
+
+.xp-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .xp-label {
   white-space: nowrap;
-  font-size: 0.8rem;
+}
+
+.xp-count {
+  font-size: 0.65rem;
+  opacity: 0.7;
 }
 
 .xp-bar {
-  width: 60px;
+  width: 100%;
   height: 6px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;

@@ -64,26 +64,25 @@ export function MainPage() {
                 <div className="modes-grid">
                     <Link to="/pa" className="mode-card mode-pa">
                         <div className="mode-glow" />
-                        <span className="mode-icon">🧠</span>
-                        <h3>PA 모드</h3>
+                        <span className="mode-icon">📈</span>
+                        <h3>PA 분석</h3>
                         <p>Product Analytics</p>
                         <span className="mode-tag">DAILY</span>
                     </Link>
                     <div
                         className="mode-card mode-stream mode-disabled"
-                        onClick={() => alert('🚧 스트림 모드는 준비 중입니다!')}
-                        title="스트림 모드 (준비 중)"
+                        title="스트림 분석은 준비 중입니다! (Coming Soon)"
                     >
                         <div className="mode-glow" />
-                        <span className="mode-icon">📊</span>
-                        <h3>스트림 모드</h3>
+                        <span className="mode-icon">📡</span>
+                        <h3>스트림 분석</h3>
                         <p>Real-time Data</p>
                         <span className="mode-tag">준비 중</span>
                     </div>
                     <Link to="/practice" className="mode-card mode-practice">
                         <div className="mode-glow" />
-                        <span className="mode-icon">🎯</span>
-                        <h3>무한 모드</h3>
+                        <span className="mode-icon">♾️</span>
+                        <h3>무한 연습</h3>
                         <p>AI Generated</p>
                         <span className="mode-tag">∞</span>
                     </Link>

@@ -68,28 +68,30 @@ function App() {
       <Onboarding />
       <div className="app">
         <header className="header">
-          <Link to="/" className="logo">🔧 QueryCraft</Link>
+          <Link to="/" className="logo">� QueryCraft</Link>
           <nav className="nav">
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-              🧠 PA 연습
+              📈 PA 분석
             </NavLink>
             <span
               className="nav-disabled"
-              onClick={() => alert('🚧 스트림 연습은 준비 중입니다!')}
-              title="스트림 연습 (준비 중)"
+              title="스트림 분석은 준비 중입니다! (Coming Soon)"
             >
-              📊 스트림 연습
+              � 스트림 분석
             </span>
             <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-              🎯 무한 연습
+              ♾️ 무한 연습
             </NavLink>
           </nav>
           <div className="user-stats">
             {user && stats && (
               <>
                 <span className="streak">🔥 {stats.streak}일</span>
-                <div className="xp-bar-container" title={`${stats.score || 0} XP (다음 레벨까지 ${stats.level_progress || 0}%)`}>
-                  <span className="xp-label">{stats.level}</span>
+                <div className="xp-bar-container" title={`${stats.score || 0} / ${stats.next_level_threshold || 100} XP`}>
+                  <div className="xp-info">
+                    <span className="xp-label">{stats.level}</span>
+                    <span className="xp-count">{stats.score || 0}/{stats.next_level_threshold || 0}</span>
+                  </div>
                   <div className="xp-bar">
                     <div className="xp-fill" style={{ width: `${stats.level_progress || 0}%` }} />
                   </div>
@@ -98,9 +100,9 @@ function App() {
               </>
             )}
             <button
-              onClick={() => alert('🚧 라이트 모드는 준비 중입니다!')}
               className="theme-toggle"
-              title="라이트 모드 (준비 중)"
+              title="라이트 모드는 준비 중입니다! (Coming Soon)"
+              disabled
             >
               🌙
             </button>
