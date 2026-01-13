@@ -210,6 +210,7 @@
 | Pandas | - | 데이터 처리 |
 | psycopg2 | - | PostgreSQL 드라이버 |
 | DuckDB | - | 분석용 데이터베이스 |
+| pytz | - | 타임존 관리 (KST 통합) |
 
 ### 4.3 AI 및 분석
 
@@ -297,6 +298,7 @@ pg.close()
 2. 명확한 요구사항: 필요 컬럼, 정렬 기준, 기간 명시
 3. 즉각적 피드백: 실행 결과 즉시 확인
 4. AI 리뷰: 시니어 분석가 관점 개선점 제안
+5. PostgreSQL 전용: 현재 모든 쿼리 및 함수는 PostgreSQL 문법에 최적화되어 있습니다.
 
 ### 6.2 기능 목록
 
@@ -598,7 +600,7 @@ D1 재방문자 수(d1_retained), D1 리텐션율(d1_retention) 컬럼이 필요
 ```sql
 pa_users (
     user_id TEXT PRIMARY KEY,
-    signup_at TIMESTAMP,
+    signup_at TIMESTAMP,    -- YYYY-MM-DD HH:MM:SS
     country TEXT,
     channel TEXT
 )
@@ -606,7 +608,7 @@ pa_users (
 pa_sessions (
     session_id TEXT PRIMARY KEY,
     user_id TEXT REFERENCES pa_users,
-    started_at TIMESTAMP,
+    started_at TIMESTAMP,   -- YYYY-MM-DD HH:MM:SS
     device TEXT
 )
 
@@ -614,14 +616,14 @@ pa_events (
     event_id TEXT PRIMARY KEY,
     user_id TEXT REFERENCES pa_users,
     session_id TEXT REFERENCES pa_sessions,
-    event_time TIMESTAMP,
+    event_time TIMESTAMP,   -- YYYY-MM-DD HH:MM:SS
     event_name TEXT
 )
 
 pa_orders (
     order_id TEXT PRIMARY KEY,
     user_id TEXT REFERENCES pa_users,
-    order_time TIMESTAMP,
+    order_time TIMESTAMP,   -- YYYY-MM-DD HH:MM:SS
     amount INT
 )
 ```
@@ -643,6 +645,8 @@ stream_daily_metrics (
     revenue FLOAT,
     purchases INT
 )
+
+> **Note**: 모든 타임스탬프는 한국 시간(KST) 및 `YYYY-MM-DD HH:MM:SS` 형식을 권장합니다.
 ```
 
 ### 8.5 이벤트 목록 (커머스 예시)

@@ -14,6 +14,10 @@ KST 01:00에 실행되는 스케줄러가 UTC 날짜를 기준으로 문제를 �
 - **데이터 형식 변경**: 모든 `DATE` 타입 컬럼을 `TIMESTAMP`로 변경하고, 데이터 생성 시 `YYYY-MM-DD HH:MM:SS` 형식의 문자열 또는 타임존 없는 `datetime` 객체를 사용합니다.
 - **포스트그레스 공지**: DB 연결 실패나 엔진 확인 부분에 PostgreSQL 전용임을 알리는 로깅 또는 예외 메시지를 추가합니다.
 
+#### [MODIFY] [admin.py](file:///home/naca11/QueryCraft/backend/api/admin.py)
+
+- **Cloud Scheduler 트리거 수정**: `/admin/trigger/daily-generation` 엔드포인트에서 `date.today()` 대신 KST 기준 날짜를 사용하도록 수정하여 GCP 환경(UTC)에서의 날짜 오프셋을 방지합니다.
+
 #### [MODIFY] [problem_service.py](file:///home/naca11/QueryCraft/backend/services/problem_service.py)
 
 - **JSONB 파싱 버그 수정**: PostgreSQL `jsonb` 데이터가 이미 `dict`로 로드되는 경우 `json.loads` 시 발생하는 `TypeError`를 해결했습니다.

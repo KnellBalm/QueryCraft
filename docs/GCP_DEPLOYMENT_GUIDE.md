@@ -216,6 +216,7 @@ postgresql://postgres.xxxxx:YOUR_PASSWORD@aws-0-ap-northeast-2.pooler.supabase.c
 | `GCP_SA_KEY` | 다운로드한 JSON 키 파일의 **전체 내용** |
 | `POSTGRES_DSN` | Part 1에서 메모한 Supabase 연결 문자열 |
 | `GEMINI_API_KEY` | Google AI Studio에서 발급받은 키 |
+| `SCHEDULER_API_KEY` | Cloud Scheduler 연동을 위한 임의의 보안 키 (백엔드와 일치 필수) |
 | `VITE_MIXPANEL_TOKEN` | Mixpanel 토큰 (없으면 `dummy` 입력) |
 
 > 💡 **GCP 프로젝트 ID 확인 방법**:  
@@ -282,6 +283,15 @@ git push origin main
 | Supabase (무료 티어) | $0 |
 | Artifact Registry | $0 |
 | **총계** | **$0/월** |
+
+---
+
+## 🕒 타임존 및 스케줄링 참고사항
+
+GCP 서버는 기본적으로 UTC를 사용하지만, QueryCraft 백엔드는 `backend/common/date_utils.py`를 통해 모든 비즈니스 로직을 **KST(한국 시간)** 기준으로 처리합니다.
+
+- **Cloud Scheduler 설정 시**: 한국 시간 새벽 1시에 트리거하려면 UTC 기준으로는 **오후 4시(16:00)**로 설정해야 합니다.
+- **날짜 오프셋 방지**: 백엔드가 `date_utils.get_today_kst()`를 사용하므로, GCP의 UTC 환경에서도 정확한 한국 날짜의 문제를 생성하고 로드합니다.
 
 ---
 
