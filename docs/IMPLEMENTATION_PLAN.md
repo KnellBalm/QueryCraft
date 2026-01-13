@@ -1,45 +1,40 @@
-# 문제 생성 스케줄링 및 날짜 오프셋 오류 수정 계획
 
-KST 01:00에 실행되는 스케줄러가 UTC 날짜를 기준으로 문제를 생성함에 따라, 한국 사용자가 보는 시점에는 항상 전날 문제가 생성되는 문제를 해결합니다. 또한 Rule 7(오전 9시)과의 불일치를 해결하고 스케줄러 신뢰성을 높입니다.
+# QueryCraft 기능 개선 및 최적화 계획 (2026-01-13)
 
-### [Backend] 스케줄러 및 데이터 생성 로직 개선
+## 개요
+배포 안정성 확보, UI/UX 고도화, 그리고 채점 및 데이터 생성 로직의 최적화를 목표로 함.
 
-#### [MODIFY] [scheduler.py](file:///home/naca11/QueryCraft/backend/scheduler.py)
+## 주요 변경 사항
 
-- **타임존 명시**: `CronTrigger`에 `timezone='Asia/Seoul'`을 추가하고 실행 시간을 KST 기준으로 설정합니다.
-- **날짜 계산 수정**: `date.today()` 대신 KST 기준 날짜를 사용하도록 `pytz` 등을 활용합니다.
+### 1. 배포 및 안정성 (Stability)
+- **임포트 오류 수정**: `problems.py`에서 `TableSchema`, `get_table_schema` 누락 해결.
+- **스키마 보완**: `backend/schemas/stats.py`를 신규 생성하여 `UserStats`, `LevelInfo` 모델 정의.
+- **Docker 빌드 검증**: 로컬 환경에서 Docker 빌드 및 앱 로드 여부 자동 테스트 프로세스 적용.
 
-#### [MODIFY] [data_generator_advanced.py](file:///home/naca11/QueryCraft/backend/generator/data_generator_advanced.py)
+### 2. UI/UX 개선
+- **경험치 바(XP Bar) 고도화**: 헤더에 현재 경험치/다음 레벨 임계치(예: 45/100)를 텍스트로 표시하고, 게이지 바의 너비를 확장하여 가독성 개선.
+- **툴팁 기반 안내**: "라이트 모드", "스트림 분석" 등 미구현 기능 클릭 시 팝업(alert) 대신 툴팁 안내로 변경하고 클릭 이벤트 비활성화.
+- **브랜딩 리프레시**: 로고 및 GNB 메뉴 아이콘을 현대적인 이모지로 교체.
+  - 로고: 🔧 -> 🚀
+  - PA 연습 -> 📈 PA 분석
+  - 스트림 연습 -> 📡 스트림 분석
+  - 무한 연습 -> ♾️ 무한 연습
 
-- **데이터 형식 변경**: 모든 `DATE` 타입 컬럼을 `TIMESTAMP`로 변경하고, 데이터 생성 시 `YYYY-MM-DD HH:MM:SS` 형식의 문자열 또는 타임존 없는 `datetime` 객체를 사용합니다.
-- **포스트그레스 공지**: DB 연결 실패나 엔진 확인 부분에 PostgreSQL 전용임을 알리는 로깅 또는 예외 메시지를 추가합니다.
+### 3. 채점 및 데이터 최적화 (Optimization)
+- **날짜 비교 관대화**: 채점 시 `yyyy-mm-dd`와 `yyyy-mm-dd hh:mm:ss` 형식을 모두 `date` 레벨에서 비교하도록 수정하여 불필요한 오답 방지.
+- **스키마 최적화**: `pa_users.signup_at` 및 `pa_orders.order_time` 컬럼 타입을 `TIMESTAMP`에서 `DATE`로 변경하여 데이터 일관성 확보.
+- **문제 생성 프롬프트 수정**: Gemini에게 제공되는 데이터 요약 정보에서 변경된 DATE 타입을 명시하도록 업데이트.
 
-#### [MODIFY] [admin.py](file:///home/naca11/QueryCraft/backend/api/admin.py)
+### 4. 관리자 및 스케줄러 기능
+- **PA 전용 스케줄러**: KST 01:00 실행 시 PA 데이터/문제만 생성하도록 조정 (준비 중인 스트림 제외).
+- **데이터셋 버전 관리**: `dataset_versions` 테이블을 확장하여 생성 일자, 문제 수, 사용자 수, 실행 소요 시간, 상태 등을 상세 기록.
+- **관리자 이력 뷰**: 관리자 페이지에서 최근 30개의 데이터셋/문제 생성 이력을 확인할 수 있는 테이블 추가.
 
-- **Cloud Scheduler 트리거 수정**: `/admin/trigger/daily-generation` 엔드포인트에서 `date.today()` 대신 KST 기준 날짜를 사용하도록 수정하여 GCP 환경(UTC)에서의 날짜 오프셋을 방지합니다.
+## 검증 결과
+- **백엔드**: Docker 빌드 및 `main.py` 로드 확인 완료.
+- **프론트엔드**: XP 바 레이아웃 및 툴팁 동작 확인.
+- **데이터**: 수동 트리거 스크립트를 통해 신규 DATE 형식 기반 데이터 및 문제 생성 성공.
 
-#### [MODIFY] [problem_service.py](file:///home/naca11/QueryCraft/backend/services/problem_service.py)
-
-- **JSONB 파싱 버그 수정**: PostgreSQL `jsonb` 데이터가 이미 `dict`로 로드되는 경우 `json.loads` 시 발생하는 `TypeError`를 해결했습니다.
-- **세트 인덱스 폴백**: 특정 세트 인덱스(0, 1 외)를 가진 사용자에게도 오늘 생성된 문제가 있으면 제공되도록 폴백을 강화했습니다.
-
-### [Frontend] 사용자 안내 추가
-
-#### [MODIFY] [Workspace.tsx](file:///home/naca11/QueryCraft/frontend/src/pages/Workspace.tsx) 및 [App.tsx](file:///home/naca11/QueryCraft/frontend/src/App.tsx)
-
-- UI 상단 혹은 헬프 텍스트에 "현재 QueryCraft는 PostgreSQL 문법만을 지원합니다"라는 안내 문구를 추가합니다.
-
----
-
-## Verification Plan
-
-### Automated Tests
-- `scripts/manual_trigger.py` 실행 후 생성된 데이터의 형식이 `YYYY-MM-DD HH:MM:SS`인지 SQL 쿼리로 확인합니다.
-- (예: `SELECT signup_at FROM pa_users LIMIT 1;`)
-
-### Manual Verification
-1. **Frontend UI 확인**: 워크스페이스 및 메인 화면에 PostgreSQL 지원 안내가 노출되는지 확인합니다.
-2. **스케줄러 상태 확인**: `GET /admin/scheduler-status`에서 타임존이 `Asia/Seoul`로 표시되는지 확인합니다.
-
-> [!IMPORTANT]
-> 상용 서버 적용 시에는 `docker compose restart backend`를 통해 변경된 로직을 즉시 반영해야 합니다.
+## 향후 과제
+- 채점 시 `expected_result` 완전 캐싱 또는 DB 수준 비교 도입 검토.
+- 스트림 분석 모드 정식 구현.

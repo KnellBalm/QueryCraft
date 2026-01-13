@@ -23,10 +23,10 @@ def get_data_summary() -> str:
         
         # 테이블별 정보
         tables_info = [
-            ("pa_users", "user_id (TEXT PK), signup_at (TIMESTAMP), country (TEXT), channel (TEXT)"),
+            ("pa_users", "user_id (TEXT PK), signup_at (DATE), country (TEXT), channel (TEXT)"),
             ("pa_sessions", "session_id (TEXT PK), user_id (TEXT FK), started_at (TIMESTAMP), device (TEXT)"),
             ("pa_events", "event_id (TEXT PK), user_id (TEXT FK), session_id (TEXT FK), event_time (TIMESTAMP), event_name (TEXT)"),
-            ("pa_orders", "order_id (TEXT PK), user_id (TEXT FK), order_time (TIMESTAMP), amount (INT)")
+            ("pa_orders", "order_id (TEXT PK), user_id (TEXT FK), order_time (DATE), amount (INT)")
         ]
         
         for table_name, columns in tables_info:
