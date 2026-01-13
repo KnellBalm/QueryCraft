@@ -4,7 +4,9 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from backend.services.database import postgres_connection
-from backend.schemas.submission import UserStats, SubmissionHistory
+from backend.common.date_utils import get_today_kst
+from backend.schemas.stats import UserStats, LevelInfo
+from backend.schemas.submission import SubmissionHistory
 
 
 def get_user_stats(user_id: Optional[str] = None) -> UserStats:
@@ -76,7 +78,10 @@ def get_streak(user_id: Optional[str] = None) -> dict:
         return {"current": 0, "max": 0}
     
     streak = 0
-    check = date.today()
+    today = get_today_kst()
+    
+    # 최근 30일 데이터
+    check = today
     for _ in range(30):
         if check.isoformat() in dates:
             streak += 1

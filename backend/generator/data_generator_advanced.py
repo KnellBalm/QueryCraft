@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from backend.generator import config as cfg
 from backend.generator.utils import generate_session_id, generate_ts
+from backend.common.date_utils import get_today_kst
 from backend.config.db import PostgresEnv, get_duckdb_path
 from backend.common.logging import get_logger
 
@@ -155,16 +156,16 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     con.execute("""
     CREATE TABLE IF NOT EXISTS pa_users (
       user_id VARCHAR,
-      signup_at DATE,
+      signup_at TIMESTAMP,
       country VARCHAR,
       channel VARCHAR
     );
     """)
     con.execute("""
     CREATE TABLE IF NOT EXISTS pa_sessions (
-      session_id VARCHAR,
+      session_id VARCHAR PRIMARY KEY,
       user_id VARCHAR,
-      started_at DATE,
+      started_at TIMESTAMP,
       device VARCHAR
     );
     """)
@@ -173,7 +174,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
       event_id VARCHAR,
       user_id VARCHAR,
       session_id VARCHAR,
-      event_time DATE,
+      event_time TIMESTAMP,
       event_name VARCHAR
     );
     """)
@@ -181,7 +182,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     CREATE TABLE IF NOT EXISTS pa_orders (
       order_id VARCHAR,
       user_id VARCHAR,
-      order_time DATE,
+      order_time TIMESTAMP,
       amount INTEGER
     );
     """)
@@ -209,6 +210,7 @@ def generate_stream_users() -> Dict[int, Dict[str, object]]:
         new_users = random.randint(*cfg.STREAM_NEW_USERS_DAILY)
 
         for _ in range(new_users):
+            today = get_today_kst()
             users[cur_user_id] = {
                 "signup_date": day,
                 "device": random.choice(cfg.STREAM_DEVICES),

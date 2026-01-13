@@ -3,11 +3,13 @@
 import json
 import random
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional, Dict, Any
+import os
 
 from backend.schemas.problem import Problem, TableSchema, TableColumn
 from backend.services.database import postgres_connection, duckdb_connection
+from backend.common.date_utils import get_today_kst
 
 PROBLEM_DIR = Path("problems/daily")
 NUM_PROBLEM_SETS = 2
@@ -43,14 +45,10 @@ def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str
         return 0
 
 
-def get_problems(
-    data_type: str = "pa",
-    target_date: Optional[date] = None,
-    user_id: Optional[str] = None
-) -> List[Problem]:
+def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user_id: Optional[str] = None) -> List[Problem]:
     """문제 목록 조회 (DB 우선, 파일 폴백)"""
     if target_date is None:
-        target_date = date.today()
+        target_date = get_today_kst()
     
     # 사용자 세트 인덱스 조회
     set_index = get_user_set_index(user_id, target_date, data_type)

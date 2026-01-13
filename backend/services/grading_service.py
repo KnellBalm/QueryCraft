@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Optional
 import pandas as pd
 
-from backend.services.database import postgres_connection
+from backend.services.database import postgres_connection, duckdb_connection
 from backend.schemas.submission import SubmitResponse
 from backend.services.db_logger import db_log, LogCategory, LogLevel
+from backend.common.date_utils import get_today_kst
 from backend.services.problem_service import get_problem_by_id
 
 GRADING_SCHEMA = "grading"
@@ -217,8 +218,9 @@ def grade_submission(
         
         # 3. 결과 비교
         is_correct, feedback = compare_results(user_df, expected_df, sort_keys)
-        
-        # 4. 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
+        today = get_today_kst()
+    
+    # 1. PostgreSQL에 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
         if user_id:
             save_submission_pg(
                 session_date=session_date,

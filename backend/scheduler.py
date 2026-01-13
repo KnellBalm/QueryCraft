@@ -12,6 +12,8 @@ import pytz
 
 from backend.common.logging import get_logger
 from backend.services.db_logger import db_log, LogCategory, LogLevel
+from backend.common.date_utils import get_today_kst
+from backend.services.database import postgres_connection
 
 logger = get_logger(__name__)
 
@@ -76,7 +78,6 @@ def cleanup_old_data():
                 continue
         
         # 3. 오래된 grading 테이블 삭제 (grading 스키마가 존재할 경우에만)
-        from backend.services.database import postgres_connection
         with postgres_connection() as pg:
             schema_check = pg.fetch_df("SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'grading'")
             if len(schema_check) > 0:
@@ -116,9 +117,8 @@ def cleanup_old_data():
 
 
 def run_weekday_generation():
-    """월~금 새벽 1:00 실행: PA 데이터 → PA 문제, Stream 문제 생성"""
-    kst = pytz.timezone('Asia/Seoul')
-    today = datetime.now(kst).date()
+    """평일 문제/데이터 생성 로직 (GCP 환경 고려 KST 기준)"""
+    today = get_today_kst()
     weekday = today.weekday()
     
     if weekday >= 5:
@@ -166,8 +166,7 @@ def run_weekday_generation():
 
 def run_sunday_generation():
     """일요일 새벽 1:00 실행: Stream 데이터 생성"""
-    kst = pytz.timezone('Asia/Seoul')
-    today = datetime.now(kst).date()
+    today = get_today_kst()
     weekday = today.weekday()
     
     # 일요일(6) 체크

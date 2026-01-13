@@ -1,6 +1,7 @@
 # backend/api/admin.py
 """관리자 API"""
 from datetime import date
+from backend.common.date_utils import get_today_kst
 import json
 import os
 from typing import Optional
@@ -124,7 +125,7 @@ async def get_system_status(admin=Depends(require_admin)):
         pass
     
     # 오늘의 문제 현황 확인
-    today = date.today()
+    today = get_today_kst()
     patterns = [
         f"problems/daily/{today.isoformat()}.json",
         f"problems/daily/{today.isoformat()}_set0.json",
@@ -183,7 +184,7 @@ async def get_system_status(admin=Depends(require_admin)):
 @router.post("/generate-problems", response_model=GenerateProblemsResponse)
 async def generate_problems(request: GenerateProblemsRequest, admin=Depends(require_admin)):
     """문제 생성 (PA 또는 Stream)"""
-    today = date.today()
+    today = get_today_kst()
     
     if request.data_type == "pa":
         try:
@@ -288,7 +289,7 @@ async def initial_setup(admin=Depends(require_admin)):
         try:
             from problems.generator import generate as gen_problems
             with postgres_connection() as pg:
-                path = gen_problems(date.today(), pg)
+                path = gen_problems(get_today_kst(), pg)
             results.append(f"✓ PA 문제 생성 완료: {path}")
         except Exception as e:
             errors.append(f"✗ PA 문제 생성 실패: {str(e)}")
@@ -297,7 +298,7 @@ async def initial_setup(admin=Depends(require_admin)):
         try:
             from problems.generator_stream import generate_stream_problems
             with postgres_connection() as pg:
-                path = generate_stream_problems(date.today(), pg)
+                path = generate_stream_problems(get_today_kst(), pg)
             results.append(f"✓ Stream 문제 생성 완료: {path}")
         except Exception as e:
             errors.append(f"✗ Stream 문제 생성 실패: {str(e)}")
@@ -331,7 +332,7 @@ async def trigger_generation_now(admin=Depends(require_admin)):
     errors = []
     
     from datetime import date
-    today = date.today()
+    today = get_today_kst()
     
     try:
         # 1. 데이터 생성 (PA + Stream)
@@ -760,7 +761,8 @@ async def trigger_daily_generation(request: Request):
     logger.info("[TRIGGER] Daily generation triggered by Cloud Scheduler")
     db_log(LogCategory.SCHEDULER, "Cloud Scheduler 트리거 수신", LogLevel.INFO, "trigger")
     
-    today = date.today()
+    # KST 기준 오늘 날짜 계산 (GCP 환경 대비)
+    today = get_today_kst()
     results = {"date": str(today), "pa_data": False, "stream_data": False, "pa_problems": False, "stream_problems": False}
     
     try:
@@ -824,4 +826,5 @@ async def trigger_daily_tip(request: Request):
         raise HTTPException(403, "Invalid API key")
     
     from backend.services.tip_service import generate_tip_of_the_day
-    return generate_tip_of_the_day(date.today())
+    today = get_today_kst()
+    return generate_tip_of_the_day(today)

@@ -5,11 +5,12 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from backend.schemas.problem import (
-    Problem, ProblemListResponse, ProblemDetailResponse, TableSchema
+    ProblemListResponse, ProblemDetailResponse
 )
 from backend.services.problem_service import (
-    get_problems, get_problem_by_id, get_table_schema
+    get_problems, get_problem_by_id
 )
+from backend.common.date_utils import get_today_kst
 from backend.api.auth import get_session
 
 

@@ -102,9 +102,10 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
     """연습 문제 제출 및 채점 (레벨업에 반영)"""
     try:
         from backend.grader.sql_grader import SQLGrader
+        from backend.grader.engine import check_answer
         from backend.services.grading_service import save_submission_pg, award_xp
+        from backend.common.date_utils import get_today_kst
         from backend.api.auth import get_session
-        from datetime import date
         
         # 사용자 ID 추출
         user_id = None
@@ -144,9 +145,12 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
             xp_value = DIFFICULTY_XP.get(request.difficulty, 5)
         
         # DB에 저장 (레벨업에 반영)
+        # The following two lines seem to be misplaced from another context.
+        # logger.info(f"Starting stream incremental for {today}")
+        # job_id = f"stream_incremental_{get_today_kst().isoformat()}"
         try:
             save_submission_pg(
-                session_date=date.today().isoformat(),
+                session_date=get_today_kst().isoformat(), # Use get_today_kst here
                 problem_id=request.problem_id,
                 data_type=f"practice_{request.data_type}",
                 sql_text=request.sql,
