@@ -12,7 +12,7 @@ import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
-import { useTheme } from './contexts/ThemeContext';
+// 다크 모드 비활성화: import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import type { UserStats } from './types';
 import './App.css';
@@ -20,7 +20,7 @@ import './App.css';
 function App() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  // 다크 모드 비활성화: const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
 
   useEffect(() => {
@@ -88,8 +88,12 @@ function App() {
                 <span className="correct">✅ {stats.correct}</span>
               </>
             )}
-            <button onClick={toggleTheme} className="theme-toggle" title={theme === 'light' ? '다크 모드' : '라이트 모드'}>
-              {theme === 'light' ? '🌙' : '☀️'}
+            <button
+              onClick={() => alert('🚧 다크 모드는 준비 중입니다!')}
+              className="theme-toggle"
+              title="다크 모드 (준비 중)"
+            >
+              🌙
             </button>
             <button onClick={resetOnboarding} className="help-toggle" title="도움말 보기">
               ❓
