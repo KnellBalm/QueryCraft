@@ -156,8 +156,6 @@
 /* 관리자 페이지 */
 .admin-page {
   padding: 2rem;
-  overflow-y: auto;
-  height: 100%;
   color: var(--text-primary);
 }
 
@@ -265,8 +263,6 @@
 /* 성적 페이지 */
 .stats-page {
   padding: 2rem;
-  overflow-y: auto;
-  height: 100%;
   background: var(--bg-secondary);
   color: var(--text-primary);
 }

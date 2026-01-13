@@ -7,6 +7,7 @@ import { MyPage } from './pages/MyPage';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
+import { Skeleton } from './components/Skeleton';
 import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo } from 'react';
 import { statsApi, adminApi } from './api/client';
@@ -93,7 +94,9 @@ function App() {
             <button onClick={resetOnboarding} className="help-toggle" title="도움말 보기">
               ❓
             </button>
-            {isLoading ? null : user ? (
+            {isLoading ? (
+              <Skeleton variant="button" width="70px" height="28px" />
+            ) : user ? (
               <div className="user-menu">
                 <span className="user-name">👤 {user.nickname || user.name}</span>
                 {user.is_admin && (
