@@ -555,49 +555,38 @@ search: {
 
 ### 서비스 분석
 - **유형**: 학습 플랫폼
-- **핵심 가치**: SQL 실습을 통한 프로덕트 분석 역량 향상
-- **핵심 여정**: 방문 → 문제 선택 → SQL 작성 → 실행 → 제출 → 피드백
+- **핵심 가치**: SQL 실습을 통한 프로덕트 분석 역량 향향 (KST 기반 실무 시뮬레이션)
+- **핵심 여정**: Page Viewed → Problem Viewed → Problem Attempted → Problem Submitted → Problem Solved ⭐
 
-### 이벤트 목록 (30개)
-```
-# LIFECYCLE
-user_visit_first
-user_return
-
+### 이벤트 목록 (핵심 25개)
+```text
 # NAVIGATION
-page_view
-tab_change
-problem_select
-schema_view
+Page Viewed
+Tab Changed
+Schema Viewed
 
-# ENGAGEMENT
-sql_input_start
-sql_input_change
-sql_execute
-sql_execute_success
-sql_execute_error
-result_view
-result_scroll
-hint_request
-hint_view
+# PROBLEM FLOW (Funnel)
+Problem Viewed
+Problem Attempted
+Problem Submitted
+Problem Solved ⭐
+Problem Failed
+Hint Requested
 
-# CONVERSION
-problem_submit
-problem_correct
-problem_incorrect
-problem_complete_first
-all_problems_complete
+# SQL INTERACTION
+SQL Executed
+SQL Error Occurred
 
-# SYSTEM
-api_error
-loading_slow
-session_timeout
+# USER LIFECYCLE
+Sign Up Completed
+Login Success
+Logout Completed
 
-# 관리자
-admin_generate_pa
-admin_generate_stream
-admin_refresh_data
-admin_reset
+# SYSTEM & ADMIN
+Onboarding Started
+Onboarding Completed
+Admin Trigger Daily Generation
+Admin Refresh Data
 ```
 
 이 가이드라인을 따르면 어떤 서비스든 포괄적인 이벤트 트래킹을 설계할 수 있습니다.
