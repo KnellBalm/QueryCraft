@@ -5,7 +5,8 @@ import sys
 from datetime import datetime
 
 LOG_DIR = os.getenv("LOG_DIR", "logs")
-os.makedirs(LOG_DIR, exist_ok=True)
+if os.getenv("ENV") != "production":
+    os.makedirs(LOG_DIR, exist_ok=True)
 
 class JSONFormatter(logging.Formatter):
     """GCP Cloud Run 호환 JSON 포맷터"""

@@ -18,6 +18,7 @@ COPY . .
 # PYTHONPATH 설정 (problems 모듈 인식)
 ENV PYTHONPATH=/app
 
-EXPOSE 8000
+# Cloud Run 표준 포트 8080
+EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
