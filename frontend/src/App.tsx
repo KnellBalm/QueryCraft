@@ -671,7 +671,8 @@ function AdminPage() {
       </section>
 
       {/* 스케줄러 관리 섹션 */}
-      {/* <section className="admin-section">
+      <section className="admin-section">
+        {/*
         <h2>⏰ 스케줄러 관리</h2>
         <div className="status-grid" style={{ marginBottom: '16px' }}>
           <div className="status-item">
@@ -680,7 +681,8 @@ function AdminPage() {
               {schedulerStatus?.running ? '🟢 실행 중' : '🔴 중지됨'}
             </span>
           </div>
-        </div> */}
+        </div>
+        */}
 
         {/* 스케줄 작업 목록 */}
         {schedulerStatus?.jobs && schedulerStatus.jobs.length > 0 && (
