@@ -378,23 +378,41 @@ async def trigger_generation_now(admin=Depends(require_admin)):
 
 @router.get("/dataset-versions")
 async def get_dataset_versions():
-    """데이터셋 버전 이력 조회"""
+    """데이터셋/문제 생성 이력 조회"""
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df("""
                 SELECT 
                     version_id,
                     created_at,
-                    generator_type,
-                    start_date,
-                    end_date,
+                    generation_date,
+                    generation_type,
+                    data_type,
+                    problem_count,
                     n_users,
-                    n_events
+                    n_events,
+                    status,
+                    error_message,
+                    duration_ms
                 FROM public.dataset_versions
                 ORDER BY created_at DESC
-                LIMIT 20
+                LIMIT 30
             """)
-            versions = df.to_dict(orient="records")
+            versions = []
+            for _, row in df.iterrows():
+                versions.append({
+                    "version_id": row.get("version_id"),
+                    "created_at": row.get("created_at").isoformat() if row.get("created_at") else None,
+                    "generation_date": row.get("generation_date").isoformat() if row.get("generation_date") else None,
+                    "generation_type": row.get("generation_type"),
+                    "data_type": row.get("data_type"),
+                    "problem_count": row.get("problem_count"),
+                    "n_users": row.get("n_users"),
+                    "n_events": row.get("n_events"),
+                    "status": row.get("status"),
+                    "error_message": row.get("error_message"),
+                    "duration_ms": row.get("duration_ms")
+                })
             return {"success": True, "versions": versions}
     except Exception as e:
         return {"success": False, "message": str(e), "versions": []}

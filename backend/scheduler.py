@@ -117,7 +117,12 @@ def cleanup_old_data():
 
 
 def run_weekday_generation():
-    """평일 문제/데이터 생성 로직 (GCP 환경 고려 KST 기준)"""
+    """PA 전용 문제/데이터 생성 (KST 01:00, 월~금)
+    - Stream 모드는 비활성화 (준비 중)
+    - 생성 결과를 dataset_versions 테이블에 기록
+    """
+    import time as time_module
+    start_time = time_module.time()
     today = get_today_kst()
     weekday = today.weekday()
     
@@ -125,42 +130,88 @@ def run_weekday_generation():
         logger.info(f"[SCHEDULER] Skipping weekday job on weekend: {today}")
         return
     
-    logger.info(f"[SCHEDULER] Starting weekday generation for {today}")
-    db_log(LogCategory.SCHEDULER, f"평일 생성 시작: {today}", LogLevel.INFO, "scheduler")
+    logger.info(f"[SCHEDULER] Starting PA generation for {today}")
+    db_log(LogCategory.SCHEDULER, f"PA 생성 시작: {today}", LogLevel.INFO, "scheduler")
+    
+    problem_count = 0
+    n_users = 0
+    n_events = 0
+    status = "success"
+    error_message = None
     
     try:
         from backend.engine.postgres_engine import PostgresEngine
         from backend.config.db import PostgresEnv
         pg = PostgresEngine(PostgresEnv().dsn())
         
-        # 1-2. 데이터 먼저 생성!
-        logger.info("[SCHEDULER] Generating PA/Stream data...")
+        # 1. PA 데이터 생성
+        logger.info("[SCHEDULER] Generating PA data...")
         try:
             from backend.generator.data_generator_advanced import generate_data
-            # PA는 전체 생성, Stream은 증분 생성
-            generate_data(modes=("pa",), incremental=False)  # PA 전체
-            generate_data(modes=("stream",), incremental=True)  # Stream 증분 + 7일 정리
-            logger.info("[SCHEDULER] Data generation done")
+            generate_data(modes=("pa",), incremental=False)
+            
+            # 생성된 데이터 통계 조회
+            try:
+                user_count = pg.fetch_df("SELECT COUNT(*) as cnt FROM public.pa_users")
+                event_count = pg.fetch_df("SELECT COUNT(*) as cnt FROM public.pa_events")
+                n_users = int(user_count.iloc[0]['cnt']) if len(user_count) > 0 else 0
+                n_events = int(event_count.iloc[0]['cnt']) if len(event_count) > 0 else 0
+            except:
+                pass
+            
+            logger.info(f"[SCHEDULER] PA data generated: {n_users} users, {n_events} events")
         except Exception as e:
-            logger.warning(f"[SCHEDULER] Data gen warning: {e}")
+            logger.warning(f"[SCHEDULER] PA data gen warning: {e}")
+            error_message = str(e)
         
-        # 3-4. 문제 생성
+        # 2. PA 문제 생성
         if not os.path.exists(f"problems/daily/{today}.json"):
             from problems.generator import generate as gen_pa
-            gen_pa(today, pg)
-            db_log(LogCategory.PROBLEM_GENERATION, f"PA 완료: {today}", LogLevel.INFO, "scheduler")
+            problems = gen_pa(today, pg)
+            problem_count = len(problems) if isinstance(problems, list) else 3  # 기본값
+            db_log(LogCategory.PROBLEM_GENERATION, f"PA 문제 생성 완료: {today} ({problem_count}개)", LogLevel.INFO, "scheduler")
+        else:
+            # 기존 파일에서 문제 수 확인
+            import json
+            try:
+                with open(f"problems/daily/{today}.json", "r") as f:
+                    problems = json.load(f)
+                    problem_count = len(problems)
+            except:
+                problem_count = 0
         
-        if not os.path.exists(f"problems/daily/stream_{today}.json"):
-            from problems.generator_stream import generate_stream_problems
-            generate_stream_problems(today, pg)
-            db_log(LogCategory.PROBLEM_GENERATION, f"Stream 완료: {today}", LogLevel.INFO, "scheduler")
+        # 3. dataset_versions 테이블에 기록
+        try:
+            duration_ms = int((time_module.time() - start_time) * 1000)
+            pg.execute("""
+                INSERT INTO public.dataset_versions 
+                (generation_date, generation_type, data_type, problem_count, n_users, n_events, status, error_message, duration_ms)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (today, 'scheduled', 'pa', problem_count, n_users, n_events, status, error_message, duration_ms))
+            logger.info(f"[SCHEDULER] Recorded to dataset_versions: {today}")
+        except Exception as e:
+            logger.warning(f"[SCHEDULER] Failed to record dataset_versions: {e}")
         
         pg.close()
         last_run_times["weekday_job"] = datetime.now()
-        logger.info(f"[SCHEDULER] Weekday generation completed")
+        logger.info(f"[SCHEDULER] PA generation completed for {today}")
     except Exception as e:
-        logger.error(f"[SCHEDULER] 평일 생성 실패: {e}")
+        status = "failed"
+        error_message = str(e)
+        logger.error(f"[SCHEDULER] PA 생성 실패: {e}")
         db_log(LogCategory.SCHEDULER, f"실패: {e}", LogLevel.ERROR, "scheduler")
+        
+        # 실패도 기록
+        try:
+            with postgres_connection() as pg:
+                duration_ms = int((time_module.time() - start_time) * 1000)
+                pg.execute("""
+                    INSERT INTO public.dataset_versions 
+                    (generation_date, generation_type, data_type, problem_count, n_users, n_events, status, error_message, duration_ms)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (today, 'scheduled', 'pa', 0, 0, 0, status, error_message, duration_ms))
+        except:
+            pass
 
 
 

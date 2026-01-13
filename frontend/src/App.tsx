@@ -868,27 +868,58 @@ function AdminPage() {
       </section>
 
       <section className="admin-section">
-        <h2>📅 데이터셋 버전 이력</h2>
+        <h2>📅 문제/데이터 생성 이력</h2>
         {datasetVersions.length > 0 ? (
-          <table className="admin-table">
-            <thead>
-              <tr><th>버전</th><th>생성일시</th><th>타입</th><th>기간</th><th>사용자 수</th><th>이벤트 수</th></tr>
-            </thead>
-            <tbody>
-              {datasetVersions.map((v: any) => (
-                <tr key={v.version_id}>
-                  <td>{v.version_id}</td>
-                  <td>{v.created_at ? new Date(v.created_at).toLocaleString() : '-'}</td>
-                  <td>{v.generator_type || '-'}</td>
-                  <td>{v.start_date && v.end_date ? `${v.start_date} ~ ${v.end_date}` : '-'}</td>
-                  <td>{v.n_users?.toLocaleString() || '-'}</td>
-                  <td>{v.n_events?.toLocaleString() || '-'}</td>
+          <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+            <table className="admin-table" style={{ fontSize: '0.85rem' }}>
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>타입</th>
+                  <th>문제 수</th>
+                  <th>사용자</th>
+                  <th>이벤트</th>
+                  <th>상태</th>
+                  <th>소요 시간</th>
+                  <th>생성 시각</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {datasetVersions.map((v: any) => (
+                  <tr key={v.version_id}>
+                    <td>{v.generation_date || '-'}</td>
+                    <td>
+                      <span style={{
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        background: v.generation_type === 'scheduled' ? '#3b82f6' : '#10b981',
+                        color: 'white'
+                      }}>
+                        {v.generation_type || '-'}
+                      </span>
+                    </td>
+                    <td>{v.problem_count || 0}</td>
+                    <td>{v.n_users?.toLocaleString() || 0}</td>
+                    <td>{v.n_events?.toLocaleString() || 0}</td>
+                    <td>
+                      <span style={{
+                        color: v.status === 'success' ? 'var(--success-color)' : 'var(--error-color)'
+                      }}>
+                        {v.status === 'success' ? '✅' : '❌'} {v.status}
+                      </span>
+                    </td>
+                    <td>{v.duration_ms ? `${(v.duration_ms / 1000).toFixed(1)}s` : '-'}</td>
+                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {v.created_at ? new Date(v.created_at).toLocaleString() : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p>데이터셋 버전 이력이 없습니다.</p>
+          <p>생성 이력이 없습니다.</p>
         )}
       </section>
     </div>

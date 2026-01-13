@@ -251,18 +251,42 @@ def init_database():
             """)
             logger.info("✓ PA tables ready")
 
-            # 12. dataset_versions & current_product_type
+            # 12. dataset_versions - 문제/데이터 생성 이력 관리
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.dataset_versions (
                     version_id SERIAL PRIMARY KEY,
                     created_at TIMESTAMP DEFAULT NOW(),
-                    generator_type TEXT,
-                    start_date DATE,
-                    end_date DATE,
-                    n_users BIGINT,
-                    n_events BIGINT
+                    generation_date DATE NOT NULL,
+                    generation_type TEXT NOT NULL,
+                    data_type TEXT DEFAULT 'pa',
+                    problem_count INTEGER DEFAULT 0,
+                    n_users INTEGER DEFAULT 0,
+                    n_events INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'success',
+                    error_message TEXT,
+                    duration_ms INTEGER
                 );
             """)
+            # 기존 테이블에 새 컬럼 추가 (호환성)
+            try:
+                cols = pg.fetch_df("SELECT column_name FROM information_schema.columns WHERE table_name = 'dataset_versions'")
+                existing_cols = set(cols['column_name'].tolist())
+                if 'generation_date' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN generation_date DATE")
+                if 'generation_type' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN generation_type TEXT")
+                if 'data_type' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN data_type TEXT DEFAULT 'pa'")
+                if 'problem_count' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN problem_count INTEGER DEFAULT 0")
+                if 'status' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN status TEXT DEFAULT 'success'")
+                if 'error_message' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN error_message TEXT")
+                if 'duration_ms' not in existing_cols:
+                    pg.execute("ALTER TABLE public.dataset_versions ADD COLUMN duration_ms INTEGER")
+            except Exception as e:
+                logger.warning(f"Failed to update dataset_versions columns: {e}")
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.current_product_type (
                     id INT PRIMARY KEY DEFAULT 1,
