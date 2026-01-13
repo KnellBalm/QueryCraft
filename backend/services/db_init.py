@@ -288,9 +288,12 @@ def init_database():
             except Exception as e:
                 logger.warning(f"Failed to update dataset_versions columns: {e}")
             pg.execute("""
-                CREATE TABLE IF NOT EXISTS public.current_product_type (
-                    id INT PRIMARY KEY DEFAULT 1,
-                    product_type TEXT NOT NULL,
+                CREATE TABLE IF NOT EXISTS public.scheduler_status (
+                    job_id TEXT PRIMARY KEY,
+                    job_name TEXT NOT NULL,
+                    last_run_at TIMESTAMP,
+                    next_run_at TIMESTAMP,
+                    status TEXT,
                     updated_at TIMESTAMP DEFAULT NOW()
                 );
             """)

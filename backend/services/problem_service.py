@@ -149,7 +149,7 @@ def get_problem_by_id(
     # 1. DB에서 직접 id로 조회 시도
     try:
         if target_date is None:
-            target_date = date.today()
+            target_date = get_today_kst()
 
         with postgres_connection() as pg:
             df = pg.fetch_df("""
@@ -175,7 +175,7 @@ def get_problem_by_id(
         print(f"Failed to fetch problem by id from DB: {e}")
 
     # 2. 없으면 전체 리스트에서 검색 (폴백)
-    problems = get_problems(data_type, target_date, user_id)
+    problems = get_problems(target_date, data_type, user_id)
     for p in problems:
         if p.problem_id == problem_id:
             return p

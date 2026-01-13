@@ -116,231 +116,177 @@ def cleanup_old_data():
         logger.error(f"[CLEANUP] Error: {str(e)}")
 
 
+def update_job_status(job_id: str, job_name: str, status: str = "success", next_run: datetime = None):
+    """DB에 스케줄러 작업 상태 기록"""
+    try:
+        with postgres_connection() as pg:
+            pg.execute("""
+                INSERT INTO public.scheduler_status (job_id, job_name, last_run_at, next_run_at, status, updated_at)
+                VALUES (%s, %s, NOW(), %s, %s, NOW())
+                ON CONFLICT (job_id) DO UPDATE SET
+                    job_name = EXCLUDED.job_name,
+                    last_run_at = EXCLUDED.last_run_at,
+                    next_run_at = EXCLUDED.next_run_at,
+                    status = EXCLUDED.status,
+                    updated_at = EXCLUDED.updated_at
+            """, [job_id, job_name, next_run, status])
+    except Exception as e:
+        logger.error(f"[SCHEDULER] Failed to update job status in DB: {e}")
+
+def get_db_last_run_times():
+    """DB에서 마지막 실행 시간들을 로드"""
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("SELECT job_id, last_run_at FROM public.scheduler_status")
+            return {row["job_id"]: row["last_run_at"] for _, row in df.iterrows()}
+    except Exception:
+        return {}
+
+def cleanup_old_data():
+    """오래된 문제 파일과 정답 테이블 정리"""
+    cutoff_date = get_today_kst() - timedelta(days=RETENTION_DAYS)
+    logger.info(f"[SCHEDULER] Cleaning up data older than {cutoff_date}")
+    
+    deleted_files = 0
+    deleted_tables = 0
+    
+    try:
+        # 1. 오래된 daily 문제 파일 삭제
+        problem_files = glob.glob("problems/daily/*.json")
+        for filepath in problem_files:
+            try:
+                filename = os.path.basename(filepath)
+                if filename.startswith("stream_"):
+                    date_str = filename[7:17]
+                else:
+                    date_str = filename[:10]
+                
+                file_date = date.fromisoformat(date_str)
+                if file_date < cutoff_date:
+                    os.remove(filepath)
+                    deleted_files += 1
+            except:
+                continue
+        
+        # 2. 오래된 grading 테이블 삭제
+        with postgres_connection() as pg:
+            tables_df = pg.fetch_df("""
+                SELECT table_name FROM information_schema.tables 
+                WHERE table_schema = 'grading' AND table_name LIKE 'expected_%'
+            """)
+            
+            for _, row in tables_df.iterrows():
+                table_name = row["table_name"]
+                try:
+                    if len(table_name) > 19:
+                        date_str = table_name[9:19]
+                        table_date = date.fromisoformat(date_str)
+                        if table_date < cutoff_date:
+                            pg.execute(f"DROP TABLE IF EXISTS grading.{table_name}")
+                            deleted_tables += 1
+                except:
+                    continue
+        
+        update_job_status("cleanup_job", "오래된 데이터 정리")
+        logger.info(f"[CLEANUP] Deleted {deleted_files} files, {deleted_tables} tables")
+        
+    except Exception as e:
+        logger.error(f"[CLEANUP] Error: {str(e)}")
+
 def run_weekday_generation():
-    """PA 전용 문제/데이터 생성 (KST 01:00, 월~금)
-    - Stream 모드는 비활성화 (준비 중)
-    - 생성 결과를 dataset_versions 테이블에 기록
-    """
+    """PA 전용 문제/데이터 생성 (KST 01:00, 월~금)"""
     import time as time_module
     start_time = time_module.time()
     today = get_today_kst()
-    weekday = today.weekday()
     
-    if weekday >= 5:
-        logger.info(f"[SCHEDULER] Skipping weekday job on weekend: {today}")
+    # 주말 스킵로직은 CronTrigger에서 처리되지만, 안전을 위해 유지
+    if today.weekday() >= 5:
         return
     
     logger.info(f"[SCHEDULER] Starting PA generation for {today}")
     db_log(LogCategory.SCHEDULER, f"PA 생성 시작: {today}", LogLevel.INFO, "scheduler")
     
     problem_count = 0
-    n_users = 0
-    n_events = 0
     status = "success"
     error_message = None
     
     try:
-        from backend.engine.postgres_engine import PostgresEngine
-        from backend.config.db import PostgresEnv
-        pg = PostgresEngine(PostgresEnv().dsn())
+        from backend.generator.data_generator_advanced import generate_data
+        generate_data(modes=("pa",), incremental=False)
         
-        # 1. PA 데이터 생성
-        logger.info("[SCHEDULER] Generating PA data...")
-        try:
-            from backend.generator.data_generator_advanced import generate_data
-            generate_data(modes=("pa",), incremental=False)
-            
-            # 생성된 데이터 통계 조회
-            try:
-                user_count = pg.fetch_df("SELECT COUNT(*) as cnt FROM public.pa_users")
-                event_count = pg.fetch_df("SELECT COUNT(*) as cnt FROM public.pa_events")
-                n_users = int(user_count.iloc[0]['cnt']) if len(user_count) > 0 else 0
-                n_events = int(event_count.iloc[0]['cnt']) if len(event_count) > 0 else 0
-            except:
-                pass
-            
-            logger.info(f"[SCHEDULER] PA data generated: {n_users} users, {n_events} events")
-        except Exception as e:
-            logger.warning(f"[SCHEDULER] PA data gen warning: {e}")
-            error_message = str(e)
-        
-        # 2. PA 문제 생성
-        if not os.path.exists(f"problems/daily/{today}.json"):
-            from problems.generator import generate as gen_pa
-            problems = gen_pa(today, pg)
-            problem_count = len(problems) if isinstance(problems, list) else 3  # 기본값
-            db_log(LogCategory.PROBLEM_GENERATION, f"PA 문제 생성 완료: {today} ({problem_count}개)", LogLevel.INFO, "scheduler")
-        else:
-            # 기존 파일에서 문제 수 확인
-            import json
-            try:
+        from problems.generator import generate as gen_pa
+        with postgres_connection() as pg:
+            if not os.path.exists(f"problems/daily/{today}.json"):
+                problems = gen_pa(today, pg)
+                problem_count = len(problems) if isinstance(problems, list) else 0
+            else:
+                import json
                 with open(f"problems/daily/{today}.json", "r") as f:
-                    problems = json.load(f)
-                    problem_count = len(problems)
-            except:
-                problem_count = 0
-        
-        # 3. dataset_versions 테이블에 기록
-        try:
+                    problem_count = len(json.load(f))
+            
+            # dataset_versions 기록
             duration_ms = int((time_module.time() - start_time) * 1000)
             pg.execute("""
                 INSERT INTO public.dataset_versions 
-                (generation_date, generation_type, data_type, problem_count, n_users, n_events, status, error_message, duration_ms)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (today, 'scheduled', 'pa', problem_count, n_users, n_events, status, error_message, duration_ms))
-            logger.info(f"[SCHEDULER] Recorded to dataset_versions: {today}")
-        except Exception as e:
-            logger.warning(f"[SCHEDULER] Failed to record dataset_versions: {e}")
-        
-        pg.close()
-        last_run_times["weekday_job"] = datetime.now()
+                (generation_date, generation_type, data_type, problem_count, status, error_message, duration_ms)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (today, 'scheduled', 'pa', problem_count, status, error_message, duration_ms))
+            
+        update_job_status("weekday_generation", "평일 문제/데이터 생성", "success")
         logger.info(f"[SCHEDULER] PA generation completed for {today}")
     except Exception as e:
-        status = "failed"
-        error_message = str(e)
-        logger.error(f"[SCHEDULER] PA 생성 실패: {e}")
-        db_log(LogCategory.SCHEDULER, f"실패: {e}", LogLevel.ERROR, "scheduler")
-        
-        # 실패도 기록
-        try:
-            with postgres_connection() as pg:
-                duration_ms = int((time_module.time() - start_time) * 1000)
-                pg.execute("""
-                    INSERT INTO public.dataset_versions 
-                    (generation_date, generation_type, data_type, problem_count, n_users, n_events, status, error_message, duration_ms)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (today, 'scheduled', 'pa', 0, 0, 0, status, error_message, duration_ms))
-        except:
-            pass
-
-
-
-def run_sunday_generation():
-    """일요일 새벽 1:00 실행: Stream 데이터 생성"""
-    today = get_today_kst()
-    weekday = today.weekday()
-    
-    # 일요일(6) 체크
-    if weekday != 6:
-        logger.info(f"[SCHEDULER] Skipping sunday job on non-sunday: {today}")
-        return
-    
-    logger.info(f"[SCHEDULER] Starting Sunday Stream data generation for {today}")
-    
-    db_log(
-        category=LogCategory.SCHEDULER,
-        message=f"일요일 Stream 데이터 생성 시작: {today}",
-        level=LogLevel.INFO,
-        source="scheduler"
-    )
-    
-    try:
-        # Stream 데이터 생성 (TODO: 실제 Stream 데이터 생성 로직)
-        logger.info("[SCHEDULER] Stream data generation would run here (if implemented)")
-        
-        last_run_times["sunday_job"] = datetime.now()
-        
-        db_log(
-            category=LogCategory.SCHEDULER,
-            message=f"일요일 Stream 데이터 생성 완료: {today}",
-            level=LogLevel.INFO,
-            source="scheduler"
-        )
-        logger.info(f"[SCHEDULER] Sunday generation completed for {today}")
-        
-    except Exception as e:
-        error_msg = f"일요일 생성 실패: {str(e)}"
-        logger.error(f"[SCHEDULER] {error_msg}")
-        db_log(
-            category=LogCategory.SCHEDULER,
-            message=error_msg,
-            level=LogLevel.ERROR,
-            source="scheduler"
-        )
-
+        logger.error(f"[SCHEDULER] PA generation failed: {e}")
+        update_job_status("weekday_generation", "평일 문제/데이터 생성", f"error: {str(e)}")
 
 def get_scheduler_status():
-    """스케줄러 상태 반환"""
+    """스케줄러 상태 반환 (DB 연동)"""
+    db_history = get_db_last_run_times()
     jobs = []
     for job in scheduler.get_jobs():
         next_run = job.next_run_time
+        job_id = job.id.replace("_generation", "_job") if "cleanup" not in job.id else job.id
         jobs.append({
             "id": job.id,
             "name": job.name or job.id,
             "next_run": next_run.isoformat() if next_run else None,
-            "last_run": last_run_times.get(job.id.replace("_generation", "_job"), {})
+            "last_run": db_history.get(job_id).isoformat() if db_history.get(job_id) else None
         })
     
     return {
         "running": scheduler.running,
-        "jobs": jobs,
-        "last_run_times": {
-            k: v.isoformat() if v else None 
-            for k, v in last_run_times.items()
-        }
+        "jobs": jobs
     }
 
-
 def start_scheduler():
-    """스케줄러 시작
-    - KST 1:00 = UTC 16:00 (전날)
-    - 월~금: day_of_week='0-4' (APScheduler: 0=월)
-    - 일요일: day_of_week='6'
-    """
+    """스케줄러 시작 (KST 기준)"""
     if scheduler.running:
-        logger.info("[SCHEDULER] Already running, skipping start")
         return
 
-    # 기존 작업 제거 (중복 방지)
     scheduler.remove_all_jobs()
+    tz = pytz.timezone('Asia/Seoul')
     
-    # 1. 평일 작업: 월~금 KST 1:00
     scheduler.add_job(
         run_weekday_generation,
-        CronTrigger(hour=1, minute=0, day_of_week='0-4', timezone='Asia/Seoul'),
+        CronTrigger(hour=1, minute=0, day_of_week='0-4', timezone=tz),
         id="weekday_generation",
-        name="평일 문제/데이터 생성 (월~금 KST 1:00)",
+        name="평일 문제/데이터 생성 (월~금 01:00)",
         replace_existing=True
     )
     
-    # 2. 일요일 작업: 일 KST 1:00
-    scheduler.add_job(
-        run_sunday_generation,
-        CronTrigger(hour=1, minute=0, day_of_week='6', timezone='Asia/Seoul'),
-        id="sunday_generation",
-        name="일요일 Stream 데이터 생성 (일 KST 1:00)",
-        replace_existing=True
-    )
-    
-    # 3. 정리 작업: 매일 KST 4:00
     scheduler.add_job(
         cleanup_old_data,
-        CronTrigger(hour=4, minute=0, timezone='Asia/Seoul'),
+        CronTrigger(hour=4, minute=0, timezone=tz),
         id="cleanup_job",
-        name="오래된 데이터 정리 (매일 KST 4:00)",
+        name="오래된 데이터 정리 (매일 04:00)",
         replace_existing=True
     )
     
     try:
         scheduler.start()
-        logger.info("[SCHEDULER] Started internal BackgroundScheduler")
-        logger.info(f"  - ENV: {os.getenv('ENV')}")
-        logger.info(f"  - Timezone: {datetime.now().astimezone().tzname()}")
-        logger.info(f"  - Current Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        db_log(
-            category=LogCategory.SCHEDULER,
-            message="내장 스케줄러 시작됨 (APScheduler)",
-            level=LogLevel.INFO,
-            source="scheduler"
-        )
+        logger.info("[SCHEDULER] BackgroundScheduler started (KST)")
     except Exception as e:
-        logger.error(f"[SCHEDULER] Failed to start: {e}")
-    
-
+        logger.error(f"[SCHEDULER] Start failed: {e}")
 
 def stop_scheduler():
-    """스케줄러 중지"""
     if scheduler.running:
         scheduler.shutdown()
-        logger.info("[SCHEDULER] Stopped")

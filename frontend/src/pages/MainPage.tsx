@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { statsApi } from '../api/client';
+import { useToast } from '../components/Toast';
 import './MainPage.css';
 
 interface LeaderboardEntry {
@@ -15,6 +16,7 @@ interface LeaderboardEntry {
 
 export function MainPage() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -71,7 +73,7 @@ export function MainPage() {
                     </Link>
                     <div
                         className="mode-card mode-stream mode-disabled"
-                        title="스트림 분석은 준비 중입니다! (Coming Soon)"
+                        onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
                     >
                         <div className="mode-glow" />
                         <span className="mode-icon">📡</span>

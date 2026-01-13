@@ -10,9 +10,17 @@ from typing import Iterable, Any
 warnings.filterwarnings("ignore", category=UserWarning, message=".*pandas only supports SQLAlchemy connectable.*")
 
 class PostgresEngine:
-    def __init__(self, dsn: str):
-        self.conn = psycopg2.connect(dsn)
-        self.conn.autocommit = True
+    def __init__(self, dsn: str | None = None, connection=None):
+        if connection:
+            self.conn = connection
+            self.is_pooled = True
+        elif dsn:
+            self.conn = psycopg2.connect(dsn)
+            self.conn.autocommit = True
+            self.is_pooled = False
+        else:
+            raise ValueError("Either dsn or connection must be provided")
+            
         # 세션 기본 스키마를 public으로 설정 (사용자 쿼리 편의성 및 안정성)
         with self.conn.cursor() as cur:
             cur.execute("SET search_path TO public")
@@ -40,4 +48,5 @@ class PostgresEngine:
         return len(df) > 0
 
     def close(self):
-        self.conn.close()
+        if not hasattr(self, 'is_pooled') or not self.is_pooled:
+            self.conn.close()

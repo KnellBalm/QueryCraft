@@ -8,6 +8,7 @@ import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
+import { ToastProvider, useToast } from './components/Toast';
 import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo } from 'react';
 import { statsApi, adminApi } from './api/client';
@@ -17,11 +18,12 @@ import { useAuth } from './contexts/AuthContext';
 import type { UserStats } from './types';
 import './App.css';
 
-function App() {
+function AppContent() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   // 다크 모드 비활성화: const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     // Analytics 초기화
@@ -68,16 +70,16 @@ function App() {
       <Onboarding />
       <div className="app">
         <header className="header">
-          <Link to="/" className="logo">� QueryCraft</Link>
+          <Link to="/" className="logo">📔QueryCraft</Link>
           <nav className="nav">
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
               📈 PA 분석
             </NavLink>
             <span
               className="nav-disabled"
-              title="스트림 분석은 준비 중입니다! (Coming Soon)"
+              onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
             >
-              � 스트림 분석
+              📴스트림 분석
             </span>
             <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
               ♾️ 무한 연습
@@ -101,8 +103,8 @@ function App() {
             )}
             <button
               className="theme-toggle"
-              title="라이트 모드는 준비 중입니다! (Coming Soon)"
-              disabled
+              onClick={() => showToast('라이트 모드는 준비 중입니다! ☀️', 'info')}
+              aria-label="Toggle theme"
             >
               🌙
             </button>
@@ -926,7 +928,14 @@ function AdminPage() {
       </section>
     </div>
   );
-}
+};
 
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+};
 
 export default App;
