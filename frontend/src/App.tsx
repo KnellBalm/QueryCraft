@@ -73,9 +73,13 @@ function App() {
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
               🧠 PA 연습
             </NavLink>
-            <NavLink to="/stream" className={({ isActive }) => isActive ? 'active' : ''}>
+            <span
+              className="nav-disabled"
+              onClick={() => alert('🚧 스트림 연습은 준비 중입니다!')}
+              title="스트림 연습 (준비 중)"
+            >
               📊 스트림 연습
-            </NavLink>
+            </span>
             <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
               🎯 무한 연습
             </NavLink>
@@ -84,14 +88,19 @@ function App() {
             {user && stats && (
               <>
                 <span className="streak">🔥 {stats.streak}일</span>
-                <span className="level">{stats.level}</span>
+                <div className="xp-bar-container" title={`${stats.score || 0} XP (다음 레벨까지 ${stats.level_progress || 0}%)`}>
+                  <span className="xp-label">{stats.level}</span>
+                  <div className="xp-bar">
+                    <div className="xp-fill" style={{ width: `${stats.level_progress || 0}%` }} />
+                  </div>
+                </div>
                 <span className="correct">✅ {stats.correct}</span>
               </>
             )}
             <button
-              onClick={() => alert('🚧 다크 모드는 준비 중입니다!')}
+              onClick={() => alert('🚧 라이트 모드는 준비 중입니다!')}
               className="theme-toggle"
-              title="다크 모드 (준비 중)"
+              title="라이트 모드 (준비 중)"
             >
               🌙
             </button>

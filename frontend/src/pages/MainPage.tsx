@@ -69,13 +69,17 @@ export function MainPage() {
                         <p>Product Analytics</p>
                         <span className="mode-tag">DAILY</span>
                     </Link>
-                    <Link to="/stream" className="mode-card mode-stream">
+                    <div
+                        className="mode-card mode-stream mode-disabled"
+                        onClick={() => alert('🚧 스트림 모드는 준비 중입니다!')}
+                        title="스트림 모드 (준비 중)"
+                    >
                         <div className="mode-glow" />
                         <span className="mode-icon">📊</span>
                         <h3>스트림 모드</h3>
                         <p>Real-time Data</p>
-                        <span className="mode-tag">LIVE</span>
-                    </Link>
+                        <span className="mode-tag">준비 중</span>
+                    </div>
                     <Link to="/practice" className="mode-card mode-practice">
                         <div className="mode-glow" />
                         <span className="mode-icon">🎯</span>

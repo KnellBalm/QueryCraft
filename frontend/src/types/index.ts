@@ -58,4 +58,6 @@ export interface UserStats {
     correct: number;
     accuracy: number;
     next_level_threshold: number;
+    score?: number;
+    level_progress?: number;
 }

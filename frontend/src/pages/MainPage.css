@@ -285,6 +285,21 @@
     border-color: var(--warning-color);
 }
 
+.mode-disabled {
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.mode-disabled:hover {
+    transform: translateY(-4px);
+    opacity: 0.8;
+}
+
+.mode-disabled .mode-tag {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-muted);
+}
+
 /* =============================================
    Dashboard Section
 ============================================= */

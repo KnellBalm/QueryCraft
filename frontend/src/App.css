@@ -67,9 +67,26 @@
   font-weight: 600;
 }
 
+.nav-disabled {
+  padding: 0.5rem 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  opacity: 0.6;
+  position: relative;
+}
+
+.nav-disabled:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .user-stats {
   margin-left: auto;
   display: flex;
+  align-items: center;
   gap: 0.75rem;
   font-size: 0.85rem;
 }
@@ -80,6 +97,37 @@
   padding: 0.25rem 0.6rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
+}
+
+/* XP Bar in Header */
+.xp-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.xp-label {
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.xp-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 .stats-link {
