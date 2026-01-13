@@ -43,7 +43,7 @@ export function MainPage() {
                 <div className="hero-content">
                     <div className="hero-badge">🎮 SQL TRAINING ARENA</div>
                     <h1>QUERY<span className="neon">CRAFT</span></h1>
-                    <p className="hero-sub">레벨업하고 랭킹에 도전하세요</p>
+                    <p className="hero-sub">레벨업하고 랭킹에 도전하세요<br /><small style={{ opacity: 0.8 }}>(* 현재 PostgreSQL 문법만 지원합니다)</small></p>
                     {user ? (
                         <Link to="/pa" className="play-button">
                             <span className="play-icon">▶</span>
@@ -117,7 +117,7 @@ export function MainPage() {
 
                 <div className="panel tips-panel">
                     <h2 className="panel-title">
-                        <span>💡</span> QUICK TIPS
+                        <span>💡</span> QUICK TIPS <small style={{ fontWeight: 'normal', fontSize: '0.8rem', marginLeft: '5px' }}>(PostgreSQL)</small>
                     </h2>
                     <div className="tip-box">
                         <h4>Window Functions</h4>

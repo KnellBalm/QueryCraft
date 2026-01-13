@@ -8,6 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 from datetime import date, timedelta, datetime
 import os
 import glob
+import pytz
 
 from backend.common.logging import get_logger
 from backend.services.db_logger import db_log, LogCategory, LogLevel
@@ -116,7 +117,8 @@ def cleanup_old_data():
 
 def run_weekday_generation():
     """월~금 새벽 1:00 실행: PA 데이터 → PA 문제, Stream 문제 생성"""
-    today = date.today()
+    kst = pytz.timezone('Asia/Seoul')
+    today = datetime.now(kst).date()
     weekday = today.weekday()
     
     if weekday >= 5:
@@ -164,7 +166,8 @@ def run_weekday_generation():
 
 def run_sunday_generation():
     """일요일 새벽 1:00 실행: Stream 데이터 생성"""
-    today = date.today()
+    kst = pytz.timezone('Asia/Seoul')
+    today = datetime.now(kst).date()
     weekday = today.weekday()
     
     # 일요일(6) 체크
@@ -241,28 +244,28 @@ def start_scheduler():
     # 기존 작업 제거 (중복 방지)
     scheduler.remove_all_jobs()
     
-    # 1. 평일 작업: 월~금 KST 1:00 (= UTC 16:00 전날)
+    # 1. 평일 작업: 월~금 KST 1:00
     scheduler.add_job(
         run_weekday_generation,
-        CronTrigger(hour=16, minute=0, day_of_week='6,0,1,2,3'),  # UTC 일~목 = KST 월~금
+        CronTrigger(hour=1, minute=0, day_of_week='0-4', timezone='Asia/Seoul'),
         id="weekday_generation",
         name="평일 문제/데이터 생성 (월~금 KST 1:00)",
         replace_existing=True
     )
     
-    # 2. 일요일 작업: KST 1:00 (= UTC 토요일 16:00)
+    # 2. 일요일 작업: 일 KST 1:00
     scheduler.add_job(
         run_sunday_generation,
-        CronTrigger(hour=16, minute=0, day_of_week='5'),  # UTC 토요일 = KST 일요일
+        CronTrigger(hour=1, minute=0, day_of_week='6', timezone='Asia/Seoul'),
         id="sunday_generation",
         name="일요일 Stream 데이터 생성 (일 KST 1:00)",
         replace_existing=True
     )
     
-    # 3. 정리 작업: 매일 KST 4:00 (= UTC 19:00 전날)
+    # 3. 정리 작업: 매일 KST 4:00
     scheduler.add_job(
         cleanup_old_data,
-        CronTrigger(hour=19, minute=0),
+        CronTrigger(hour=4, minute=0, timezone='Asia/Seoul'),
         id="cleanup_job",
         name="오래된 데이터 정리 (매일 KST 4:00)",
         replace_existing=True

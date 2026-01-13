@@ -97,7 +97,7 @@ def build_stream_prompt(data_summary: str, n: int = 6) -> str:
   "submission_requirements": "제출 조건을 다음 형식으로 구체적으로 명시 (모든 항목 필수):
     1. 결과 컬럼: 'date, revenue, user_count' 순서로 출력
     2. 날짜 형식: 'YYYY-MM-DD' 형식 (예: DATE_TRUNC('day', event_time)::date)
-    3. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate, 2))
+    3. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate::numeric, 2))
     4. 정렬: date 컬럼 기준 오름차순 정렬
     5. NULL 처리: NULL 값은 0으로 표시",
   "answer_sql": "PostgreSQL 정답 SQL",

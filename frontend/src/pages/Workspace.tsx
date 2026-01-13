@@ -370,7 +370,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             <div className="right-panel" ref={rightPanelRef} style={{ width: `${100 - leftWidth}%` }}>
                 <div className="editor-section" style={{ height: `${editorHeightPercent}%` }}>
                     <div className="editor-header">
-                        <span>SQL 에디터</span>
+                        <span>SQL 에디터 <small style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(PostgreSQL 전용)</small></span>
                         <span className="shortcut">Ctrl+Enter로 실행</span>
                     </div>
                     <div className="editor-shell">

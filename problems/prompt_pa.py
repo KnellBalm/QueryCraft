@@ -172,7 +172,7 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
     1. 결과 컬럼: 'user_id, conversion_rate, total_amount' 순서로 출력
     2. 집계 단위: '일별(Daily)' 또는 '월별(Monthly)' 등 명시
     3. 날짜 형식: 일별 분석은 'YYYY-MM-DD', 월별 분석은 'YYYY-MM' 형식 (예: TO_CHAR(date, 'YYYY-MM'))
-    4. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate, 2))
+    4. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate::numeric, 2))
     5. 정렬: date 컬럼 기준 오름차순 정렬
     6. NULL 처리: NULL 값은 0으로 표시",
   "answer_sql": "PostgreSQL 정답 SQL (위 데이터 스키마의 테이블명/컬럼명 정확히 사용)",

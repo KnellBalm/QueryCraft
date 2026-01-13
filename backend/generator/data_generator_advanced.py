@@ -61,7 +61,7 @@ def init_postgres_schema(cur) -> None:
         user_id INT,
         session_id TEXT,
         event_name TEXT,
-        event_time DATE,
+        event_time TIMESTAMP,
         device TEXT,
         channel TEXT
     );
@@ -89,7 +89,7 @@ def init_postgres_schema(cur) -> None:
     cur.execute("""
     CREATE TABLE IF NOT EXISTS public.pa_users (
       user_id TEXT PRIMARY KEY,
-      signup_at DATE NOT NULL,
+      signup_at TIMESTAMP NOT NULL,
       country TEXT NOT NULL,
       channel TEXT NOT NULL
     );
@@ -98,7 +98,7 @@ def init_postgres_schema(cur) -> None:
     CREATE TABLE IF NOT EXISTS public.pa_sessions (
       session_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
-      started_at DATE NOT NULL,
+      started_at TIMESTAMP NOT NULL,
       device TEXT NOT NULL
     );
     """)
@@ -107,7 +107,7 @@ def init_postgres_schema(cur) -> None:
       event_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
       session_id TEXT NOT NULL REFERENCES public.pa_sessions(session_id) ON DELETE CASCADE,
-      event_time DATE NOT NULL,
+      event_time TIMESTAMP NOT NULL,
       event_name TEXT NOT NULL
     );
     """)
@@ -115,7 +115,7 @@ def init_postgres_schema(cur) -> None:
     CREATE TABLE IF NOT EXISTS public.pa_orders (
       order_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES public.pa_users(user_id) ON DELETE CASCADE,
-      order_time DATE NOT NULL,
+      order_time TIMESTAMP NOT NULL,
       amount INT NOT NULL
     );
     """)
@@ -376,7 +376,13 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
     for (user_id, signup_at, _, _) in tqdm(users, desc=f"PA ({product_type}): generating sessions/events"):
         for _ in range(random.randint(*cfg.PA_SESSIONS_PER_USER)):
             sid = str(uuid.uuid4())
-            started_at = (signup_at + timedelta(days=random.randint(0, 30))).date()
+            # started_at을 datetime으로 생성 (시간 포함)
+            started_at = (signup_at + timedelta(days=random.randint(0, 30)))
+            started_at = started_at.replace(
+                hour=random.randint(0, 23), 
+                minute=random.randint(0, 59), 
+                second=random.randint(0, 59)
+            )
             sessions.append((sid, user_id, started_at, random.choice(cfg.PA_DEVICES)))
 
             # ProductProfile을 사용하여 세션 이벤트 생성
@@ -409,8 +415,9 @@ def run_pa(save_to=("postgres","duckdb"), product_type: str = None):
                 return
             buf = StringIO()
             for row in data:
+                # 사용자가 요청한 YYYY-MM-DD HH:MM:SS 형식으로 변환 (타임존 제외)
                 line = '\t'.join(
-                    str(v.isoformat() if hasattr(v, 'isoformat') else v) 
+                    str(v.strftime("%Y-%m-%d %H:%M:%S") if hasattr(v, 'strftime') else v) 
                     for v in row
                 )
                 buf.write(line + '\n')
