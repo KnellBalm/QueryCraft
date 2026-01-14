@@ -87,9 +87,8 @@ jobs:
             --max-instances 2 \
             --memory 256Mi
 
-      # 6. Cloud Functions 배포 (Problem Worker) - 실패해도 계속 진행
+      # 6. Cloud Functions 배포 (Problem Worker)
       - name: Deploy Problem Worker Function
-        continue-on-error: true
         run: |
           gcloud functions deploy problem-worker \
             --gen2 \
@@ -103,9 +102,8 @@ jobs:
             --timeout=540s \
             --set-env-vars="SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }},BACKEND_URL=${{ steps.get-backend-url.outputs.BACKEND_URL }}"
 
-      # 7. Cloud Functions 배포 (Tip Worker) - 실패해도 계속 진행
+      # 7. Cloud Functions 배포 (Tip Worker)
       - name: Deploy Tip Worker Function
-        continue-on-error: true
         run: |
           gcloud functions deploy tip-worker \
             --gen2 \
@@ -119,9 +117,8 @@ jobs:
             --timeout=60s \
             --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},POSTGRES_DSN=${{ secrets.POSTGRES_DSN }}"
 
-      # 8. Cloud Scheduler 설정 (KST 01:00 = UTC 16:00 전날) - 실패해도 계속 진행
+      # 8. Cloud Scheduler 설정 (KST 01:00 = UTC 16:00 전날)
       - name: Setup Cloud Scheduler
-        continue-on-error: true
         run: |
           # Problem generation (Mon-Fri KST 01:00)
           gcloud scheduler jobs delete problem-generation-daily --location=$REGION --quiet || true

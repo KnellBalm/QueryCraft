@@ -167,6 +167,10 @@ def grade_pa_submission(
     diff: str | None = None,
     error: str | None = None,
     note: str | None = None,
+    # 새로 추가된 컨텍스트 파라미터
+    problem_question: str | None = None,
+    table_schema: str | None = None,
+    answer_sql: str | None = None,
 ) -> str:
     """
     PA 제출 채점:
@@ -178,11 +182,20 @@ def grade_pa_submission(
     logger.info(f"grading pa submission problem_id={problem_id}")
 
     # ---------------------------------------------
-    # 프롬프트 구성
+    # 프롬프트 구성 (컨텍스트 강화)
     # ---------------------------------------------
     prompt = f"""
 너는 시니어 데이터 분석가다.
 아래는 실무 PA(제품 분석) SQL 과제의 제출 결과다.
+
+[문제]
+{problem_question or "문제 정보 없음"}
+
+[테이블 스키마]
+{table_schema or "스키마 정보 없음"}
+
+[정답 SQL 참고]
+{answer_sql or "없음"}
 
 [문제 ID]
 {problem_id}

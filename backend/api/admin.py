@@ -830,6 +830,41 @@ async def trigger_daily_generation(request: Request):
     except Exception as e:
         logger.error(f"[TRIGGER] Fatal error: {e}")
         results["error"] = str(e)
+        
+        # [AI Doctor] 치명적 에러 발생 시 자동 진단 및 복구 시도
+        try:
+            from backend.services.ai_doctor import AIDoctor, send_doctor_report
+            doctor = AIDoctor()
+            diagnosis_report = doctor.diagnose_and_heal(e, results)
+            send_doctor_report(diagnosis_report, str(today))
+            logger.info("[AI Doctor] Diagnosis and report sent.")
+            results["ai_diagnosis"] = diagnosis_report
+        except Exception as doctor_err:
+            logger.error(f"[AI Doctor] Failed to diagnose: {doctor_err}")
+    
+    # 5. 결과 이메일 알림 발송 (정상 또는 일부 실패 시)
+    if not results.get("ai_diagnosis"): # AI Doctor가 처리하지 않은 경우만 일반 이메일 발송
+        try:
+            from backend.services.notification_service import send_email
+            status_str = "성공" if results.get("pa_problems") and results.get("stream_problems") else "일부 실패"
+            if "error" in results:
+                status_str = "치명적 실패"
+                
+            subject = f"일일 데이터 생성 결과: {status_str} ({results['date']})"
+            body = f"일일 데이터 및 문제 생성 결과 보고입니다.\n\n"
+            body += f"- 날짜: {results['date']}\n"
+            body += f"- PA 데이터: {'✅' if results.get('pa_data') else '❌'}\n"
+            body += f"- Stream 데이터: {'✅' if results.get('stream_data') else '❌'}\n"
+            body += f"- PA 문제: {'✅' if results.get('pa_problems') else '❌'}\n"
+            body += f"- Stream 문제: {'✅' if results.get('stream_problems') else '❌'}\n"
+            body += f"- 오늘의 팁: {'✅' if results.get('daily_tip') else '❌'}\n"
+            
+            if "error" in results:
+                body += f"\n[에러 발생]\n{results['error']}\n"
+                
+            send_email(subject, body)
+        except Exception as email_err:
+            logger.error(f"Failed to send result email: {email_err}")
     
     return results
 

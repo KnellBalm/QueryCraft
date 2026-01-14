@@ -32,8 +32,8 @@ last_run_times = {
 
 def cleanup_old_data():
     """오래된 문제 파일과 정답 테이블 정리"""
-    cutoff_date = date.today() - timedelta(days=RETENTION_DAYS)
-    cutoff_month = (date.today() - timedelta(days=90)).strftime("%Y-%m")
+    cutoff_date = get_today_kst() - timedelta(days=RETENTION_DAYS)
+    cutoff_month = (get_today_kst() - timedelta(days=90)).strftime("%Y-%m")
     logger.info(f"[SCHEDULER] Cleaning up data older than {cutoff_date}")
     
     deleted_files = 0
@@ -142,56 +142,6 @@ def get_db_last_run_times():
     except Exception:
         return {}
 
-def cleanup_old_data():
-    """오래된 문제 파일과 정답 테이블 정리"""
-    cutoff_date = get_today_kst() - timedelta(days=RETENTION_DAYS)
-    logger.info(f"[SCHEDULER] Cleaning up data older than {cutoff_date}")
-    
-    deleted_files = 0
-    deleted_tables = 0
-    
-    try:
-        # 1. 오래된 daily 문제 파일 삭제
-        problem_files = glob.glob("problems/daily/*.json")
-        for filepath in problem_files:
-            try:
-                filename = os.path.basename(filepath)
-                if filename.startswith("stream_"):
-                    date_str = filename[7:17]
-                else:
-                    date_str = filename[:10]
-                
-                file_date = date.fromisoformat(date_str)
-                if file_date < cutoff_date:
-                    os.remove(filepath)
-                    deleted_files += 1
-            except:
-                continue
-        
-        # 2. 오래된 grading 테이블 삭제
-        with postgres_connection() as pg:
-            tables_df = pg.fetch_df("""
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'grading' AND table_name LIKE 'expected_%'
-            """)
-            
-            for _, row in tables_df.iterrows():
-                table_name = row["table_name"]
-                try:
-                    if len(table_name) > 19:
-                        date_str = table_name[9:19]
-                        table_date = date.fromisoformat(date_str)
-                        if table_date < cutoff_date:
-                            pg.execute(f"DROP TABLE IF EXISTS grading.{table_name}")
-                            deleted_tables += 1
-                except:
-                    continue
-        
-        update_job_status("cleanup_job", "오래된 데이터 정리")
-        logger.info(f"[CLEANUP] Deleted {deleted_files} files, {deleted_tables} tables")
-        
-    except Exception as e:
-        logger.error(f"[CLEANUP] Error: {str(e)}")
 
 def run_weekday_generation():
     """PA 전용 문제/데이터 생성 (KST 01:00, 월~금)"""

@@ -10,7 +10,7 @@ services:
       - .env.dev
     environment:
       - DUCKDB_PATH=/app/data/local.duckdb
-      - ENABLE_SCHEDULER=true
+      - ENABLE_SCHEDULER=false # 개발서버는 대규모 작업 방지 위해 비활성화
       - RUN_HOUR=0 # UTC 0:00 = KST 9:00
       - ENV=development
     ports:
@@ -31,6 +31,9 @@ services:
         - VITE_MIXPANEL_TOKEN=${VITE_MIXPANEL_TOKEN:-dummy}
     ports:
       - "15173:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     depends_on:
       - backend
     restart: unless-stopped

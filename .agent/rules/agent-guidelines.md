@@ -11,11 +11,13 @@ description: SQL Labs 프로젝트 작업 시 항상 참고하는 규칙
 ## 1. 코드 변경 후 배포
 
 **개발 서버 dev 브랜치**
+- 개발서버는 워크스테이션에 배포되어있음
 - **백엔드**: `docker compose restart backend`
 - **프론트엔드**: `docker compose build frontend && docker compose up -d frontend`
 - 환경변수 변경 시 반드시 컨테이너 재시작 필요
 
 **상용 서버 main 브랜치**
+- 상용 서버는 GCP에 배포되어있음
 - 상용 브랜치는 push하면 자동 배포 Github Actions 있음
 
 ## 2. 코드 스타일

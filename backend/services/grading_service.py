@@ -280,15 +280,31 @@ def grade_submission(
 
 
 def get_hint(problem_id: str, sql: str, data_type: str = "pa") -> str:
-    """AI 힌트 요청"""
+    """AI 힌트 요청 - 문제 전체 컨텍스트 전달"""
     try:
         from problems.gemini import grade_pa_submission
+        
+        # 문제 정보 로드하여 컨텍스트 강화
+        problem = get_problem_by_id(problem_id, data_type)
+        
+        # 스키마 정보 문자열화
+        schema_info = None
+        if problem and problem.schema:
+            schema_lines = []
+            for table in problem.schema:
+                cols = ", ".join([f"{c.name} ({c.type})" for c in table.columns])
+                schema_lines.append(f"{table.name}: {cols}")
+            schema_info = "\n".join(schema_lines)
+        
         return grade_pa_submission(
             problem_id=problem_id,
             sql_text=sql,
             is_correct=False,
             diff=None,
-            note="사용자가 도움을 요청했습니다. 틀린 부분을 친절하게 설명해주세요."
+            note="사용자가 도움을 요청했습니다. 틀린 부분을 친절하게 설명해주세요.",
+            problem_question=problem.question if problem else None,
+            table_schema=schema_info,
+            answer_sql=problem.answer_sql if problem else None,
         )
     except Exception as e:
         return f"힌트 생성 실패: {str(e)}"
@@ -303,28 +319,12 @@ def save_submission_pg(
     feedback: str,
     user_id: str = None
 ):
-    """제출 기록 저장 (PostgreSQL)"""
+    """제출 기록 저장 (PostgreSQL)
+    
+    Note: submissions 테이블은 db_init.py에서 초기화됨
+    """
     try:
         with postgres_connection() as pg:
-            # submissions 테이블 생성 (없으면)
-            pg.execute("""
-                CREATE TABLE IF NOT EXISTS public.submissions (
-                    id SERIAL PRIMARY KEY,
-                    session_date DATE NOT NULL,
-                    problem_id VARCHAR(100) NOT NULL,
-                    data_type VARCHAR(20) NOT NULL,
-                    sql_text TEXT,
-                    is_correct BOOLEAN,
-                    feedback TEXT,
-                    user_id VARCHAR(100),
-                    xp_earned INTEGER DEFAULT 0,
-                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            # user_id, xp_earned 컬럼 추가 (기존 테이블 호환)
-            pg.execute("ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS user_id VARCHAR(100)")
-            pg.execute("ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS xp_earned INTEGER DEFAULT 0")
-            
             pg.execute("""
                 INSERT INTO public.submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
