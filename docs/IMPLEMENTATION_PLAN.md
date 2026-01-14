@@ -1,125 +1,23 @@
-<<<<<<< HEAD
+# README.md Markdown Lint(MD031) 수정 계획
 
-# QueryCraft 기능 개선 및 최적화 계획 (2026-01-13)
+`README.md`에서 발견된 MD031(blanks-around-fences) 오류를 해결하기 위해 코드 블록 앞뒤에 빈 줄을 추가합니다.
 
-## 개요
-배포 안정성 확보, UI/UX 고도화, 그리고 채점 및 데이터 생성 로직의 최적화를 목표로 함.
+## Proposed Changes
 
-## 주요 변경 사항
+### [Documentation]
 
-### 1. 배포 및 안정성 (Stability)
-- **임포트 오류 수정**: `problems.py`에서 `TableSchema`, `get_table_schema` 누락 해결.
-- **스키마 보완**: `backend/schemas/stats.py`를 신규 생성하여 `UserStats`, `LevelInfo` 모델 정의.
-- **Docker 빌드 검증**: 로컬 환경에서 Docker 빌드 및 앱 로드 여부 자동 테스트 프로세스 적용.
+#### [MODIFY] [README.md](file:///mnt/z/GitHub/QueryCraft/README.md)
 
-### 2. UI/UX 개선
-- **경험치 바(XP Bar) 고도화**: 헤더에 현재 경험치/다음 레벨 임계치(예: 45/100)를 텍스트로 표시하고, 게이지 바의 너비를 확장하여 가독성 개선.
-- **툴팁 기반 안내**: "라이트 모드", "스트림 분석" 등 미구현 기능 클릭 시 팝업(alert) 대신 툴팁 안내로 변경하고 클릭 이벤트 비활성화.
-- **브랜딩 리프레시**: 로고 및 GNB 메뉴 아이콘을 현대적인 이모지로 교체.
-  - 로고: 🔧 -> 🚀
-  - PA 연습 -> 📈 PA 분석
-  - 스트림 연습 -> 📡 스트림 분석
-  - 무한 연습 -> ♾️ 무한 연습
+1.  **Mermaid 아키텍처 다이어그램 블록 (L51-L80)**
+    - L50과 L51 사이에 빈 줄 추가
+    - L80 혹은 L81 이전에 빈 줄 추가
+2.  **Bash 도커 실행 예시 블록 (L136-L138)**
+    - L138과 L139 사이에 빈 줄 추가
 
-### 3. 채점 및 데이터 최적화 (Optimization)
-- **날짜 비교 관대화**: 채점 시 `yyyy-mm-dd`와 `yyyy-mm-dd hh:mm:ss` 형식을 모두 `date` 레벨에서 비교하도록 수정하여 불필요한 오답 방지.
-- **스키마 최적화**: `pa_users.signup_at` 및 `pa_orders.order_time` 컬럼 타입을 `TIMESTAMP`에서 `DATE`로 변경하여 데이터 일관성 확보.
-- **문제 생성 프롬프트 수정**: Gemini에게 제공되는 데이터 요약 정보에서 변경된 DATE 타입을 명시하도록 업데이트.
+## Verification Plan
 
-### 4. 관리자 및 스케줄러 기능
-- **PA 전용 스케줄러**: KST 01:00 실행 시 PA 데이터/문제만 생성하도록 조정 (준비 중인 스트림 제외).
-- **데이터셋 버전 관리**: `dataset_versions` 테이블을 확장하여 생성 일자, 문제 수, 사용자 수, 실행 소요 시간, 상태 등을 상세 기록.
-- **관리자 이력 뷰**: 관리자 페이지에서 최근 30개의 데이터셋/문제 생성 이력을 확인할 수 있는 테이블 추가.
+### Automated Tests
+- 마크다운 렌더링 확인 (수동 확인 필요)
 
-## 검증 결과
-- **백엔드**: Docker 빌드 및 `main.py` 로드 확인 완료.
-- **프론트엔드**: XP 바 레이아웃 및 툴팁 동작 확인.
-- **데이터 (운영)**: `scripts/supabase_test.py`에 포함된 운영 환경 DSN을 활용하여, 상용 Supabase 데이터베이스에 직접 접속하여 신규 DATE 형식 기반 데이터 및 문제 생성(Manual Trigger)을 수행함.
-
-## 향후 과제
-- 채점 시 `expected_result` 완전 캐싱 또는 DB 수준 비교 도입 검토.
-- 스트림 분석 모드 정식 구현.
-=======
-# Production DB Fix - Implementation Plan
-
-## 문제 요약
-
-상용 환경에서 문제 생성 시 2가지 오류 발생:
-
-1. **`updated_at` 컬럼 누락**: `problems` 테이블에 `updated_at` 컬럼이 없어서 모든 문제 저장 실패
-2. **SQL 주석 처리 오류**: Gemini가 생성한 정답 SQL에 주석(`--`, `/* */`)이 포함된 경우 실행 오류
-
-## 해결 방법
-
-### 1. DB 스키마 마이그레이션
-
-**마이그레이션 스크립트**: `backend/migrations/add_problems_updated_at.py`
-
-**실행 방법** (상용 환경):
-```bash
-# Cloud Run 컨테이너 내부에서 실행
-python3 /app/backend/migrations/add_problems_updated_at.py
-```
-
-**대안** (Supabase SQL Editor):
-```sql
-ALTER TABLE public.problems 
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
-```
-
-### 2. SQL 주석 제거 로직 추가
-
-**수정된 파일**:
-- `problems/generator.py` - PA 문제 생성기
-- `problems/generator_stream.py` - Stream 문제 생성기
-
-**변경 내용**: 정규표현식으로 SQL 주석 제거 (`--`, `/* */`)
-
-## 배포 절차
-
-### Step 1: 상용 DB 마이그레이션 실행
-
-> [!WARNING]
-> 코드 배포 전에 반드시 DB 마이그레이션을 먼저 실행해야 합니다.
-
-**Supabase SQL Editor에서 실행 (권장)**:
-```sql
--- updated_at 컬럼 추가
-ALTER TABLE public.problems 
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
-
--- 확인
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'problems' AND column_name = 'updated_at';
-```
-
-### Step 2: 코드 병합 및 배포
-
-```bash
-# main 브랜치로 병합
-git checkout main
-git merge dev
-git push origin main
-
-# GCP Cloud Build가 자동으로 배포 진행
-```
-
-### Step 3: 검증
-
-1. 관리자 페이지 접속
-2. "문제 생성" 버튼 클릭
-3. 로그 확인: `saved 12 problems to DB` 성공 메시지 확인
-
-## 영향도
-
-- **Breaking Change**: 없음
-- **Downtime**: 없음
-- **Rollback**: `ALTER TABLE problems DROP COLUMN updated_at;`
-
----
-
-**작성일**: 2026-01-08  
-**작성자**: AI Assistant  
-**관련 이슈**: Production problem generation failures
->>>>>>> a4fa54df2c547471375d00a442adaddba72f8d82
+### Manual Verification
+- `README.md` 파일을 열어 코드 블록 전후에 공백이 적절히 배치되었는지 확인합니다.

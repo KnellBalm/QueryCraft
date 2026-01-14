@@ -26,12 +26,21 @@ export interface Problem {
     is_correct?: boolean;
 }
 
+export interface DatasetMetadata {
+    company_name: string;
+    company_description: string;
+    product_type: string;
+    north_star?: string;
+    key_metrics?: string[];
+}
+
 export interface ProblemListResponse {
     date: string;
     data_type: string;
     problems: Problem[];
     total: number;
     completed: number;
+    metadata?: DatasetMetadata;
 }
 
 export interface SQLExecuteResponse {

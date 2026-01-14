@@ -268,6 +268,8 @@ FINTECH_TRANSACTION_FLOW = [
 # =====================================================
 PRODUCT_KPI_GUIDE = {
     "commerce": {
+        "company_name": "TrendPick (트렌드픽)",
+        "company_description": "MZ세대를 타겟으로 하는 패션/라이프스타일 셀렉트숍입니다. 개인화 추천 엔진과 커뮤니티형 쇼핑 경험을 강점으로 빠르게 성장하고 있습니다.",
         "north_star": "GMV (Gross Merchandise Value)",
         "activation_event": "purchase",
         "activation_criteria": "첫 구매 완료",
@@ -288,6 +290,8 @@ PRODUCT_KPI_GUIDE = {
         ]
     },
     "content": {
+        "company_name": "InsightFlow (인사이트플로우)",
+        "company_description": "직무 교육 및 자기계발 아티클을 제공하는 프리미엄 콘텐츠 구독 서비스입니다. 단순 조회가 아닌 유저의 지질학적 학습 깊이를 측정하는 것을 목표로 합니다.",
         "north_star": "Total Reading Time",
         "activation_event": "scroll_100",
         "activation_criteria": "콘텐츠 완독 1회 이상",
@@ -308,6 +312,8 @@ PRODUCT_KPI_GUIDE = {
         ]
     },
     "saas": {
+        "company_name": "TaskSync (태스크싱크)",
+        "company_description": "협업과 프로젝트 관리를 위한 B2B SaaS 솔루션입니다. 팀 단위의 협업 효율을 극대화하고 기업의 업무 프로세스를 자동화하는 데 집중합니다.",
         "north_star": "Weekly Active Users (feature_use 기준)",
         "activation_event": "onboarding_complete",
         "activation_criteria": "온보딩 완료 + feature_use 3회 이상",
@@ -328,6 +334,8 @@ PRODUCT_KPI_GUIDE = {
         ]
     },
     "community": {
+        "company_name": "HobbyLink (하비링크)",
+        "company_description": "취향 기반의 오프라인 모임과 온라인 소통을 연결하는 커뮤니티 플랫폼입니다. 자발적인 콘텐츠 생산(User Generated Content)과 유저 간 네트워크 형성이 핵심 가치입니다.",
         "north_star": "Daily Active Creators",
         "activation_event": "post_create",
         "activation_criteria": "첫 포스트 작성",
@@ -347,6 +355,8 @@ PRODUCT_KPI_GUIDE = {
         ]
     },
     "fintech": {
+        "company_name": "SafePay (세이프페이)",
+        "company_description": "간편 송금과 맞춤형 금융 상품 추천을 제공하는 차세대 핀테크 서비스입니다. 거래의 안정성과 신뢰도를 최우선으로 하며, 유저의 금융 여정을 통합 관리합니다.",
         "north_star": "Monthly Transaction Volume",
         "activation_event": "transfer_success",
         "activation_criteria": "첫 송금 성공",

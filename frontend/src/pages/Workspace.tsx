@@ -42,6 +42,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [leftWidth, setLeftWidth] = useState(45);
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
     const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
+    const [metadata, setMetadata] = useState<any>(null); // DatasetMetadata
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -60,6 +61,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             const newProblems = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
             setProblems(newProblems);
             setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
+            setMetadata(problemsRes.data.metadata || null);
             setSelectedIndex(0);
             setSubmitResult(null);
             setResult(null);
@@ -274,6 +276,32 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 </button>
                             ))}
                         </div>
+
+                        {metadata && (
+                            <div className="dataset-context">
+                                <div className="context-header">
+                                    <span className="company-badge">BUSINESS CONTEXT</span>
+                                    <span className="product-type-tag">{metadata.product_type}</span>
+                                </div>
+                                <div className="company-name">{metadata.company_name}</div>
+                                <div className="company-desc">{metadata.company_description}</div>
+                                
+                                {metadata.north_star && (
+                                    <div className="kpi-row">
+                                        <div className="kpi-item">
+                                            <span className="kpi-label">North Star Metric</span>
+                                            <span className="kpi-value">✨ {metadata.north_star}</span>
+                                        </div>
+                                        {metadata.key_metrics && metadata.key_metrics.length > 0 && (
+                                            <div className="kpi-item">
+                                                <span className="kpi-label">Core KPIs</span>
+                                                <span className="kpi-value">📊 {metadata.key_metrics[0]} 등</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {selectedProblem && (
                             <div className="problem-detail">

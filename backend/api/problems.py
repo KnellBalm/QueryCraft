@@ -57,12 +57,31 @@ async def list_problems(
     problems = get_problems(dt, data_type, user_id)
     completed = sum(1 for p in problems if p.is_completed)
     
+    # 메타데이터 추가
+    metadata = None
+    if data_type == "pa":
+        from problems.prompt import get_current_product_type
+        from backend.generator.product_config import get_kpi_guide
+        
+        p_type = get_current_product_type()
+        guide = get_kpi_guide(p_type)
+        if guide:
+            from backend.schemas.problem import DatasetMetadata
+            metadata = DatasetMetadata(
+                company_name=guide.get("company_name", "Unknown Corp"),
+                company_description=guide.get("company_description", ""),
+                product_type=p_type,
+                north_star=guide.get("north_star"),
+                key_metrics=guide.get("key_metrics")
+            )
+    
     return ProblemListResponse(
         date=dt.isoformat(),
         data_type=data_type,
         problems=problems,
         total=len(problems),
-        completed=completed
+        completed=completed,
+        metadata=metadata
     )
 
 
@@ -88,7 +107,26 @@ async def get_problem_detail(
     if not problem:
         raise HTTPException(404, "문제를 찾을 수 없습니다.")
     
+    # 메타데이터 추가
+    metadata = None
+    if data_type == "pa":
+        from problems.prompt import get_current_product_type
+        from backend.generator.product_config import get_kpi_guide
+        
+        p_type = get_current_product_type()
+        guide = get_kpi_guide(p_type)
+        if guide:
+            from backend.schemas.problem import DatasetMetadata
+            metadata = DatasetMetadata(
+                company_name=guide.get("company_name", "Unknown Corp"),
+                company_description=guide.get("company_description", ""),
+                product_type=p_type,
+                north_star=guide.get("north_star"),
+                key_metrics=guide.get("key_metrics")
+            )
+    
     return ProblemDetailResponse(
         problem=problem,
-        tables=get_table_schema("pa_" if data_type == "pa" else "stream_")
+        tables=get_table_schema("pa_" if data_type == "pa" else "stream_"),
+        metadata=metadata
     )

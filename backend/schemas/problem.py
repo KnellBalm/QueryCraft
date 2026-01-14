@@ -42,6 +42,15 @@ class Problem(BaseModel):
     is_correct: Optional[bool] = None
 
 
+class DatasetMetadata(BaseModel):
+    """데이터셋 메타데이터 (배경 설명용)"""
+    company_name: str
+    company_description: str
+    product_type: str
+    north_star: Optional[str] = None
+    key_metrics: Optional[List[str]] = None
+
+
 class ProblemListResponse(BaseModel):
     """문제 목록 응답"""
     date: str
@@ -49,9 +58,11 @@ class ProblemListResponse(BaseModel):
     problems: List[Problem]
     total: int
     completed: int
+    metadata: Optional[DatasetMetadata] = None
 
 
 class ProblemDetailResponse(BaseModel):
     """문제 상세 응답"""
     problem: Problem
     tables: List[TableSchema]
+    metadata: Optional[DatasetMetadata] = None
