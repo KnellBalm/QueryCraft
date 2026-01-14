@@ -60,6 +60,15 @@ def migrate():
                     ADD COLUMN total_tokens INTEGER DEFAULT 0
                 """)
             
+            # Remove legacy columns if they exist
+            if 'endpoint' in existing_columns:
+                logger.info("Dropping legacy 'endpoint' column...")
+                pg.execute("ALTER TABLE public.api_usage_logs DROP COLUMN endpoint")
+            
+            if 'cost_usd' in existing_columns:
+                logger.info("Dropping legacy 'cost_usd' column...")
+                pg.execute("ALTER TABLE public.api_usage_logs DROP COLUMN cost_usd")
+            
             # Change model type from TEXT to VARCHAR(50) if needed
             if 'model' in existing_columns:
                 logger.info("Updating 'model' column type...")
