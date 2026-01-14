@@ -103,7 +103,7 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
     try:
         from backend.grader.sql_grader import SQLGrader
         from backend.grader.engine import check_answer
-        from backend.services.grading_service import save_submission_pg, award_xp
+        from backend.services.grading_service import save_submission_pg, award_xp, get_difficulty_xp
         from backend.common.date_utils import get_today_kst
         from backend.api.auth import get_session
         
@@ -140,9 +140,8 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
         
         # 점수 계산
         xp_value = 0
-        DIFFICULTY_XP = {'easy': 3, 'medium': 5, 'hard': 8}
         if is_correct:
-            xp_value = DIFFICULTY_XP.get(request.difficulty, 5)
+            xp_value = get_difficulty_xp(request.difficulty)
         
         # DB에 저장 (레벨업에 반영)
         # The following two lines seem to be misplaced from another context.
@@ -150,7 +149,7 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
         # job_id = f"stream_incremental_{get_today_kst().isoformat()}"
         try:
             save_submission_pg(
-                session_date=get_today_kst().isoformat(), # Use get_today_kst here
+                session_date=get_today_kst().isoformat(),
                 problem_id=request.problem_id,
                 data_type=f"practice_{request.data_type}",
                 sql_text=request.sql,

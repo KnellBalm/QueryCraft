@@ -15,6 +15,17 @@ from backend.services.problem_service import get_problem_by_id
 
 GRADING_SCHEMA = "grading"
 
+DIFFICULTY_XP = {
+    'easy': 10,
+    'medium': 25,
+    'hard': 50
+}
+
+
+def get_difficulty_xp(difficulty: str) -> int:
+    """난이도별 XP 반환"""
+    return DIFFICULTY_XP.get(difficulty.lower(), 25)
+
 
 def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
     """문제 로드 - 모든 파일 검색 (오늘 날짜뿐만 아니라 과거 문제도)"""
@@ -220,6 +231,10 @@ def grade_submission(
         # 3. 결과 비교
         is_correct, feedback = compare_results(user_df, expected_df, sort_keys)
         today = get_today_kst()
+        
+        from backend.common.logging import get_logger
+        logger = get_logger("grading_service")
+        logger.info(f"Grading result for {user_id}: problem={problem_id}, is_correct={is_correct}")
     
     # 1. PostgreSQL에 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
         if user_id:
@@ -230,12 +245,14 @@ def grade_submission(
                 sql_text=sql,
                 is_correct=is_correct,
                 feedback=feedback,
-                user_id=user_id
+                user_id=user_id,
+                difficulty=problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
             )
         
-        # 5. 정답 시 XP 지급 (문제의 xp_value 또는 기본값 5)
+        # 5. 정답 시 XP 지급 (난이도 기반)
         if is_correct and user_id:
-            xp_value = problem.xp_value or 5
+            diff = problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
+            xp_value = get_difficulty_xp(diff)
             award_xp(user_id, xp_value)
             feedback += f" (+{xp_value} XP)"
         
@@ -268,7 +285,8 @@ def grade_submission(
             sql_text=sql,
             is_correct=False,
             feedback=feedback,
-            user_id=user_id
+            user_id=user_id,
+            difficulty='medium'  # Error case fallback
         )
         
         return SubmitResponse(
@@ -317,7 +335,8 @@ def save_submission_pg(
     sql_text: str,
     is_correct: bool,
     feedback: str,
-    user_id: str = None
+    user_id: str = None,
+    difficulty: str = 'medium'
 ):
     """제출 기록 저장 (PostgreSQL)
     
@@ -326,11 +345,13 @@ def save_submission_pg(
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                INSERT INTO public.submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id))
-    except Exception:
-        pass
+                INSERT INTO public.submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id, difficulty)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id, difficulty))
+    except Exception as e:
+        from backend.common.logging import get_logger
+        logger = get_logger("grading_service")
+        logger.error(f"Failed to save submission to PG: {e}")
 
 
 def award_xp(user_id: str, xp_amount: int):
@@ -347,5 +368,7 @@ def award_xp(user_id: str, xp_amount: int):
                     level = ((xp + %s) / 100) + 1
                 WHERE id = %s
             """, (xp_amount, xp_amount, user_id))
-    except Exception:
-        pass
+    except Exception as e:
+        from backend.common.logging import get_logger
+        logger = get_logger("grading_service")
+        logger.error(f"Failed to award XP: {e}")

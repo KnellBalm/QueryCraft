@@ -14,7 +14,7 @@ services:
       - RUN_HOUR=0 # UTC 0:00 = KST 9:00
       - ENV=development
     ports:
-      - "15174:8000"
+      - "15174:8080"
     volumes:
       - duckdb_data:/app/data
       - ./problems:/app/problems
