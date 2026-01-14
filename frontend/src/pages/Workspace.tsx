@@ -43,6 +43,11 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
     const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
     const [metadata, setMetadata] = useState<any>(null); // DatasetMetadata
+    const [insight, setInsight] = useState<string | null>(null);
+    const [insightLoading, setInsightLoading] = useState(false);
+    const [translateQuery, setTranslateQuery] = useState('');
+    const [translating, setTranslating] = useState(false);
+
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -195,6 +200,34 @@ export function Workspace({ dataType }: WorkspaceProps) {
         }
         setHinting(false);
     }, [sql, selectedProblem, dataType]);
+
+    // AI 인사이트
+    const handleInsight = useCallback(async () => {
+        if (!result?.data || !selectedProblem || !result.success) return;
+        setInsightLoading(true);
+        setInsight(null);
+        try {
+            const res = await sqlApi.insight(selectedProblem.problem_id, sql, result.data, dataType);
+            setInsight(res.data.insight);
+        } catch (error: any) {
+            setInsight(`인사이트 생성 실패: ${error.message}`);
+        }
+        setInsightLoading(false);
+    }, [result, selectedProblem, sql, dataType]);
+
+    // Text-to-SQL
+    const handleTranslate = useCallback(async () => {
+        if (!translateQuery.trim()) return;
+        setTranslating(true);
+        try {
+            const res = await sqlApi.translate(translateQuery, dataType);
+            setSql(res.data.sql);
+            setTranslateQuery('');
+        } catch (error: any) {
+            console.error('Translation failed:', error);
+        }
+        setTranslating(false);
+    }, [translateQuery, dataType]);
 
     // 좌우 리사이저
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -403,6 +436,18 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 <div className="editor-section" style={{ height: `${editorHeightPercent}%` }}>
                     <div className="editor-header">
                         <span>SQL 에디터 <small style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(PostgreSQL 전용)</small></span>
+                        <div className="translate-bar">
+                            <input 
+                                type="text" 
+                                placeholder="자연어로 질문하여 SQL 생성 (예: 매출 상위 5명...)"
+                                value={translateQuery}
+                                onChange={(e) => setTranslateQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleTranslate()}
+                            />
+                            <button onClick={handleTranslate} disabled={translating || !translateQuery.trim()}>
+                                {translating ? '⏳' : '🤖'}
+                            </button>
+                        </div>
                         <span className="shortcut">Ctrl+Enter로 실행</span>
                     </div>
                     <div className="editor-shell">
@@ -439,9 +484,16 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 <div className="result-section">
                     <div className="result-header">
                         <span>실행 결과</span>
-                        {result?.execution_time_ms && (
-                            <span className="exec-time">{result.execution_time_ms.toFixed(0)}ms</span>
-                        )}
+                        <div className="result-meta">
+                            {result?.success && result.data && result.data.length > 0 && (
+                                <button className="btn-insight-trigger" onClick={handleInsight} disabled={insightLoading}>
+                                    {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}
+                                </button>
+                            )}
+                            {result?.execution_time_ms && (
+                                <span className="exec-time">{result.execution_time_ms.toFixed(0)}ms</span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="result-content">
@@ -460,6 +512,16 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             <div className="hint-result">
                                 <div className="hint-title">AI 힌트</div>
                                 <div className="hint-content">{hint}</div>
+                            </div>
+                        )}
+
+                        {/* AI 인사이트 */}
+                        {insight && !insightLoading && (
+                            <div className="insight-result">
+                                <div className="insight-title">✨ AI 분석 리포트</div>
+                                <div className="insight-content">
+                                    {renderMarkdown(insight)}
+                                </div>
                             </div>
                         )}
 

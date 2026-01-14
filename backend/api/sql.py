@@ -5,10 +5,13 @@ from pydantic import BaseModel
 
 from backend.schemas.submission import (
     SQLExecuteRequest, SQLExecuteResponse,
-    SubmitRequest, SubmitResponse
+    SubmitRequest, SubmitResponse,
+    InsightRequest, InsightResponse,
+    TranslateRequest, TranslateResponse
 )
 from backend.services.sql_service import execute_sql
 from backend.services.grading_service import grade_submission, get_hint
+from backend.services.ai_service import get_ai_insight, translate_text_to_sql
 from backend.api.auth import get_session
 
 
@@ -82,3 +85,25 @@ async def request_hint(request: HintRequest):
         data_type=request.data_type
     )
     return HintResponse(hint=hint)
+
+
+@router.post("/insight", response_model=InsightResponse)
+async def request_insight(request: InsightRequest):
+    """AI 인사이트 요청"""
+    insight = get_ai_insight(
+        problem_id=request.problem_id,
+        sql=request.sql,
+        results=request.results,
+        data_type=request.data_type
+    )
+    return InsightResponse(insight=insight)
+
+
+@router.post("/translate", response_model=TranslateResponse)
+async def request_translate(request: TranslateRequest):
+    """자연어-to-SQL 변환 요청"""
+    sql = translate_text_to_sql(
+        question=request.question,
+        data_type=request.data_type
+    )
+    return TranslateResponse(sql=sql)

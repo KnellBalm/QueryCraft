@@ -35,6 +35,9 @@ export const problemsApi = {
 
     schema: (dataType: string) =>
         api.get(`/problems/schema/${dataType}`),
+    
+    recommend: (limit: number = 3) =>
+        api.get('/problems/recommend', { params: { limit } }),
 };
 
 // SQL API
@@ -47,6 +50,12 @@ export const sqlApi = {
 
     hint: (problemId: string, sql: string, dataType: string = 'pa') =>
         api.post('/sql/hint', { problem_id: problemId, sql, data_type: dataType }),
+
+    insight: (problemId: string, sql: string, results: any[], dataType: string = 'pa') =>
+        api.post('/sql/insight', { problem_id: problemId, sql, results, data_type: dataType }),
+
+    translate: (question: string, dataType: string = 'pa') =>
+        api.post('/sql/translate', { question, data_type: dataType }),
 };
 
 // 통계 API

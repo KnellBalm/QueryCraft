@@ -10,6 +10,7 @@ from backend.schemas.problem import (
 from backend.services.problem_service import (
     get_problems, get_problem_by_id, get_table_schema
 )
+from backend.services.recommendation_service import get_recommended_problems
 from backend.common.date_utils import get_today_kst
 from backend.api.auth import get_session
 
@@ -130,3 +131,15 @@ async def get_problem_detail(
         tables=get_table_schema("stream_" if data_type == "stream" else "pa_"),
         metadata=metadata
     )
+
+
+@router.get("/recommend", response_model=list[Problem])
+async def recommend_problems(request: Request, limit: int = 3):
+    """개인화 문제 추천"""
+    user_id = get_user_id_from_request(request)
+    if not user_id:
+        # 로그인 안 된 경우 인기 문제나 최신 문제 리턴 (가짜 ID)
+        problems = get_recommended_problems("guest", limit)
+    else:
+        problems = get_recommended_problems(user_id, limit)
+    return problems

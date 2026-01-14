@@ -58,3 +58,27 @@ class UserStats(BaseModel):
     score: int = 0
     level_progress: int = 0
 
+
+class InsightRequest(BaseModel):
+    """AI 인사이트 요청"""
+    problem_id: str
+    sql: str
+    results: List[dict]
+    data_type: str = "pa"
+
+
+class InsightResponse(BaseModel):
+    """AI 인사이트 응답"""
+    insight: str
+
+
+class TranslateRequest(BaseModel):
+    """Text-to-SQL 요청"""
+    question: str
+    data_type: str = "pa"
+
+
+class TranslateResponse(BaseModel):
+    """Text-to-SQL 응답"""
+    sql: str
+

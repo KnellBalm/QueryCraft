@@ -13,6 +13,8 @@ export interface TableSchema {
 
 export interface Problem {
     problem_id: string;
+    title?: string;
+    data_type?: string;
     difficulty: 'easy' | 'medium' | 'hard';
     topic: string;
     requester?: string;

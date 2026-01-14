@@ -1025,6 +1025,107 @@
   color: var(--warning-color);
 }
 
+.insight-result {
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.15);
+}
+
+.insight-title {
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  color: var(--neon-purple);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.insight-content {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.insight-content strong {
+  color: var(--accent-color);
+}
+
+.translate-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 1rem;
+}
+
+.translate-bar input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.translate-bar input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 5px var(--accent-glow);
+}
+
+.translate-bar button {
+  background: var(--accent-light);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.translate-bar button:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: white;
+}
+
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-insight-trigger {
+  padding: 0.3rem 0.8rem;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+}
+
+.btn-insight-trigger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.6);
+}
+
+.btn-insight-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+  .translate-bar {
+    display: none;
+  }
+}
+
 .hint-content {
   font-size: 0.9rem;
   line-height: 1.6;

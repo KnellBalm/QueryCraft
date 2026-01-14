@@ -125,6 +125,7 @@ QueryCraft/
 ## 🚀 시작하기 (Getting Started)
 
 ### 1. 환경 설정 (Environment)
+
 `.env` 파일을 생성하고 Google Gemini API 키를 설정합니다.
 
 ```bash
@@ -133,6 +134,7 @@ cp .env.example .env
 ```
 
 ### 2. 서비스 실행 (Docker)
+
 Docker Compose를 사용하여 전체 서비스를 즉시 시작할 수 있습니다.
 
 ```bash
@@ -143,6 +145,7 @@ docker compose up -d
 * **API Docs**: [http://localhost:15174/docs](http://localhost:15174/docs)
 
 ### 3. 초기 데이터 셋업 (Initial Setup)
+
 최초 실행 시 실습용 기초 데이터와 문제를 생성해야 합니다.
 
 ```bash

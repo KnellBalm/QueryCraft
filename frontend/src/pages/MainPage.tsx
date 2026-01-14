@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { statsApi } from '../api/client';
+import { statsApi, problemsApi } from '../api/client';
 import { useToast } from '../components/Toast';
+import type { Problem } from '../types';
 import './MainPage.css';
 
 interface LeaderboardEntry {
@@ -18,10 +19,13 @@ export function MainPage() {
     const { user } = useAuth();
     const { showToast } = useToast();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [recommendedProblems, setRecommendedProblems] = useState<Problem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [recLoading, setRecLoading] = useState(true);
 
     useEffect(() => {
         loadLeaderboard();
+        loadRecommendations();
     }, []);
 
     const loadLeaderboard = async () => {
@@ -33,6 +37,19 @@ export function MainPage() {
             setLeaderboard([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadRecommendations = async () => {
+        setRecLoading(true);
+        try {
+            const res = await problemsApi.recommend(3);
+            setRecommendedProblems(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Failed to load recommendations:', err);
+            setRecommendedProblems([]);
+        } finally {
+            setRecLoading(false);
         }
     };
 
@@ -141,6 +158,40 @@ export function MainPage() {
                         <p>DATE_TRUNC으로 시계열 집계</p>
                         <code>DATE_TRUNC('week', created_at)</code>
                     </div>
+                </div>
+            </section>
+
+            {/* 추천 문제 섹션 */}
+            <section className="recommend-section">
+                <h2 className="section-title small">
+                    <span className="title-icon">✨</span>
+                    FOR YOU
+                    <small style={{ fontWeight: 'normal', fontSize: '0.9rem', marginLeft: '10px', color: 'var(--text-muted)' }}>
+                        맞춤 학습 추천 문제
+                    </small>
+                </h2>
+                <div className="rec-grid">
+                    {recLoading ? (
+                        [1, 2, 3].map(i => <div key={i} className="rec-skeleton" />)
+                    ) : recommendedProblems.length > 0 ? (
+                        recommendedProblems.map((p) => (
+                            <Link 
+                                to={`/${p.data_type || 'pa'}?problem_id=${p.problem_id}`} 
+                                key={p.problem_id} 
+                                className={`rec-card ${p.difficulty}`}
+                            >
+                                <div className="rec-difficulty-tag">{p.difficulty.toUpperCase()}</div>
+                                <h4>{p.title}</h4>
+                                <p>{p.question.substring(0, 60)}...</p>
+                                <div className="rec-footer">
+                                    <span className="rec-type"># {p.data_type?.toUpperCase() || 'PA'}</span>
+                                    <span className="rec-action">GO CHALLENGE →</span>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div className="rec-empty">추천할 문제가 없습니다.</div>
+                    )}
                 </div>
             </section>
 
