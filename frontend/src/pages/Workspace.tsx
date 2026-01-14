@@ -19,7 +19,7 @@ function renderMarkdown(text: string | undefined | null) {
 }
 
 interface WorkspaceProps {
-    dataType: 'pa' | 'stream';
+    dataType: 'pa' | 'stream' | 'rca';
 }
 
 interface CompletedStatus {
@@ -240,7 +240,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
     const getStatusIcon = (problemId: string) => {
         const status = completedStatus[problemId];
-        if (!status) return '⬜';
+        if (!status) return dataType === 'rca' ? '🔍' : '⬜';
         return status.is_correct ? '✅' : '❌';
     };
 
@@ -280,8 +280,11 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         {metadata && (
                             <div className="dataset-context">
                                 <div className="context-header">
-                                    <span className="company-badge">BUSINESS CONTEXT</span>
+                                    <span className={`company-badge ${dataType === 'rca' ? 'rca' : ''}`}>
+                                        {dataType === 'rca' ? '🚨 ANOMALY DETECTION' : 'BUSINESS CONTEXT'}
+                                    </span>
                                     <span className="product-type-tag">{metadata.product_type}</span>
+                                    {dataType === 'rca' && <span className="rca-tag">Root Cause Analysis</span>}
                                 </div>
                                 <div className="company-name">{metadata.company_name}</div>
                                 <div className="company-desc">{metadata.company_description}</div>
@@ -313,11 +316,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 </div>
 
                                 {selectedProblem.requester && (
-                                    <div className="slack-message">
+                                    <div className={`slack-message ${dataType === 'rca' ? 'rca' : ''}`}>
                                         <div className="slack-header">
-                                            <span className="slack-avatar">👤</span>
+                                            <span className="slack-avatar">{dataType === 'rca' ? '🌩️' : '👤'}</span>
                                             <span className="slack-sender">{selectedProblem.requester}</span>
                                             <span className="slack-time">오늘 오전 10:30</span>
+                                            {dataType === 'rca' && <span className="anomaly-badge">ABNORMALITY DETECTED</span>}
                                         </div>
                                         <div className="slack-content">
                                             {renderMarkdown(selectedProblem.question)}

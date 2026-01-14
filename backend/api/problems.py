@@ -31,7 +31,7 @@ def get_user_id_from_request(request: Request) -> Optional[str]:
 @router.get("/schema/{data_type}", response_model=list[TableSchema])
 async def get_schema(data_type: str):
     """테이블 스키마 조회"""
-    prefix = "pa_" if data_type == "pa" else "stream_"
+    prefix = "stream_" if data_type == "stream" else "pa_"
     return get_table_schema(prefix)
 
 
@@ -42,8 +42,8 @@ async def list_problems(
     target_date: Optional[str] = Query(None, description="날짜 (YYYY-MM-DD)")
 ):
     """문제 목록 조회 (사용자별 세트 할당)"""
-    if data_type not in ("pa", "stream"):
-        raise HTTPException(400, "data_type은 'pa' 또는 'stream'이어야 합니다.")
+    if data_type not in ("pa", "stream", "rca"):
+        raise HTTPException(400, "data_type은 'pa', 'stream', 또는 'rca'이어야 합니다.")
     
     if target_date:
         try:
@@ -59,7 +59,7 @@ async def list_problems(
     
     # 메타데이터 추가
     metadata = None
-    if data_type == "pa":
+    if data_type in ("pa", "rca"):
         from problems.prompt import get_current_product_type
         from backend.generator.product_config import get_kpi_guide
         
@@ -109,7 +109,7 @@ async def get_problem_detail(
     
     # 메타데이터 추가
     metadata = None
-    if data_type == "pa":
+    if data_type in ("pa", "rca"):
         from problems.prompt import get_current_product_type
         from backend.generator.product_config import get_kpi_guide
         
@@ -127,6 +127,6 @@ async def get_problem_detail(
     
     return ProblemDetailResponse(
         problem=problem,
-        tables=get_table_schema("pa_" if data_type == "pa" else "stream_"),
+        tables=get_table_schema("stream_" if data_type == "stream" else "pa_"),
         metadata=metadata
     )

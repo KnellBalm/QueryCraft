@@ -186,28 +186,41 @@ async def generate_problems(request: GenerateProblemsRequest, admin=Depends(requ
     """문제 생성 (PA 또는 Stream)"""
     today = get_today_kst()
     
-    if request.data_type == "pa":
+    if request.data_type in ["pa", "rca"]:
         try:
             from problems.generator import generate as gen_problems
+            mode = request.data_type
             
             with postgres_connection() as pg:
-                path = gen_problems(today, pg)
+                path = gen_problems(today, pg, mode=mode)
             
             # 생성된 문제 수 확인
             import json
             with open(path, encoding="utf-8") as f:
-                problems = json.load(f)
+                data = json.load(f)
+                # 월별 파일일 경우 전체가 아닌 방금 생성된 문제만 세는 것이 정확하지만, 
+                # 일단 파일 시스템 구조상 daily/_today.json을 확인하는 것이 더 빠를 수 있음
+                import os
+                daily_filename = f"{mode}_{today}.json" if mode != "pa" else f"{today}.json"
+                daily_path = os.path.join("problems/daily", daily_filename)
+                if os.path.exists(daily_path):
+                    with open(daily_path, encoding="utf-8") as df:
+                        problems = json.load(df)
+                        p_count = len(problems)
+                else:
+                    problems = data.get("problems", []) if isinstance(data, dict) else data
+                    p_count = len(problems)
             
             return GenerateProblemsResponse(
                 success=True,
-                message="PA 문제 생성 완료",
+                message=f"{mode.upper()} 문제 생성 완료",
                 path=path,
-                problem_count=len(problems)
+                problem_count=p_count
             )
         except Exception as e:
             return GenerateProblemsResponse(
                 success=False,
-                message=f"PA 문제 생성 실패: {str(e)}"
+                message=f"{request.data_type.upper()} 문제 생성 실패: {str(e)}"
             )
     
     elif request.data_type == "stream":

@@ -89,25 +89,30 @@ def get_current_product_type() -> str:
         pg.close()
 
 
-def build_prompt() -> list[dict]:
+def build_prompt(mode: str = "pa") -> list[dict]:
     """
     generator.py에서 호출하는 메인 함수
     1. 현재 Product Type 조회
     2. 데이터 요약 생성
-    3. Product Type 맞춤형 프롬프트 빌드
+    3. Product Type 및 Mode(pa/rca) 맞춤형 프롬프트 빌드
     4. Gemini 호출
     5. JSON 파싱 후 반환
     """
     # 현재 Product Type 조회
     product_type = get_current_product_type()
-    logger.info(f"building PA problems prompt for product_type: {product_type}")
+    logger.info(f"building {mode.upper()} problems prompt for product_type: {product_type}")
     
     data_summary = get_data_summary()
     logger.info(f"data summary generated:\n{data_summary}")
     
-    # Product Type을 전달하여 맞춤형 프롬프트 생성
-    prompt = build_pa_prompt(data_summary, n=6, product_type=product_type)
-    logger.info("calling Gemini for problem generation")
+    # Mode에 따라 프롬프트 생성 함수 선택
+    if mode == "rca":
+        from problems.prompt_rca import build_rca_prompt
+        prompt = build_rca_prompt(data_summary, n=6, product_type=product_type)
+    else:
+        prompt = build_pa_prompt(data_summary, n=6, product_type=product_type)
+        
+    logger.info(f"calling Gemini for {mode.upper()} problem generation")
     
     problems = call_gemini_json(prompt)
     logger.info(f"received {len(problems)} problems from Gemini")

@@ -71,6 +71,13 @@ export function MainPage() {
                         <p>Product Analytics</p>
                         <span className="mode-tag">DAILY</span>
                     </Link>
+                    <Link to="/rca" className="mode-card mode-rca">
+                        <div className="mode-glow" />
+                        <span className="mode-icon">🔍</span>
+                        <h3>RCA 분석</h3>
+                        <p>Root Cause Analysis</p>
+                        <span className="mode-tag">DAILY</span>
+                    </Link>
                     <div
                         className="mode-card mode-stream mode-disabled"
                         onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}

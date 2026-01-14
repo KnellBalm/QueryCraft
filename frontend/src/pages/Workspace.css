@@ -153,6 +153,22 @@
   border-radius: 4px;
 }
 
+.company-badge.rca {
+  color: var(--warning-color);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.rca-tag {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-radius: 4px;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
 .product-type-tag {
   font-size: 0.65rem;
   padding: 0.15rem 0.5rem;
@@ -856,6 +872,29 @@
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.slack-message.rca {
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.05);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.1);
+}
+
+.anomaly-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fff;
+  background: #ef4444;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .slack-header {

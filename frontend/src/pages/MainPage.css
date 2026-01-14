@@ -185,7 +185,7 @@
 
 .modes-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -225,12 +225,16 @@
     background: radial-gradient(circle, rgba(59, 130, 246, 0.4), transparent 70%);
 }
 
+.mode-rca .mode-glow {
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent 70%);
+}
+
 .mode-stream .mode-glow {
     background: radial-gradient(circle, rgba(16, 185, 129, 0.4), transparent 70%);
 }
 
 .mode-practice .mode-glow {
-    background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent 70%);
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.4), transparent 70%);
 }
 
 .mode-card:hover .mode-glow {
@@ -277,12 +281,16 @@
     border-color: var(--neon-blue);
 }
 
+.mode-rca:hover {
+    border-color: #f59e0b;
+}
+
 .mode-stream:hover {
     border-color: var(--neon-green);
 }
 
 .mode-practice:hover {
-    border-color: var(--warning-color);
+    border-color: var(--neon-purple);
 }
 
 .mode-disabled {

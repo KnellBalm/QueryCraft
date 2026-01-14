@@ -1,6 +1,6 @@
-<p align="center">
+<!-- <p align="center">
   <img src="https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claude-sisyphus/refs/heads/main/logo.png" alt="QueryCraft Logo" width="120" />
-</p>
+</p> -->
 
 <h1 align="center">QueryCraft (쿼리크래프트)</h1>
 

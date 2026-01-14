@@ -75,6 +75,9 @@ function AppContent() {
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
               📈 PA 분석
             </NavLink>
+            <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
+              🔍 RCA 분석
+            </NavLink>
             <span
               className="nav-disabled"
               onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
@@ -135,6 +138,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<MainPage />} />
               <Route path="/pa" element={<Workspace dataType="pa" />} />
+              <Route path="/rca" element={<Workspace dataType="rca" />} />
               <Route path="/stream" element={<Workspace dataType="stream" />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/practice" element={<Practice />} />
@@ -389,6 +393,19 @@ function AdminPage() {
     setLoading(false);
   };
 
+   const generateRcaProblems = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      const res = await adminApi.generateProblems('rca');
+      setMessage(res.data.message || '완료');
+      refreshStatus();
+    } catch (e) {
+      setMessage('오류 발생');
+    }
+    setLoading(false);
+  };
+
   const generateStreamProblems = async () => {
     setLoading(true);
     setMessage('');
@@ -478,6 +495,9 @@ function AdminPage() {
         <div className="action-buttons">
           <button onClick={generateProblems} disabled={loading}>
             🤖 PA 문제 생성
+          </button>
+          <button onClick={generateRcaProblems} disabled={loading}>
+            🔍 RCA 문제 생성
           </button>
           <button onClick={generateStreamProblems} disabled={loading}>
             🤖 Stream 문제 생성

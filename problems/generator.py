@@ -83,15 +83,15 @@ def get_expected_result(pg: PostgresEngine, answer_sql: str, limit: int = 1000) 
         return []
 
 
-def generate_single_set(today: date, pg: PostgresEngine, set_index: int) -> list:
+def generate_single_set(today: date, pg: PostgresEngine, set_index: int, mode: str = "pa") -> list:
     """단일 문제 세트 생성 - 정답 데이터 포함"""
-    logger.info(f"generating PA problems set {set_index} for {today}")
-    problems = build_prompt()  # Gemini 호출
-    logger.info(f"generated {len(problems)} problems from Gemini for set {set_index}")
+    logger.info(f"generating {mode.upper()} problems set {set_index} for {today}")
+    problems = build_prompt(mode=mode)  # Gemini 호출
+    logger.info(f"generated {len(problems)} problems from Gemini for set {set_index} (mode: {mode})")
 
     # 검증
     if len(problems) != 6:
-        raise ValueError(f"문제는 반드시 6개여야 합니다. (세트 {set_index})")
+        raise ValueError(f"문제는 반드시 6개여야 합니다. (세트 {set_index}, 모드 {mode})")
 
     # 난이도 정규화 및 검증
     diff_cnt = {"easy": 0, "medium": 0, "hard": 0}
@@ -106,11 +106,12 @@ def generate_single_set(today: date, pg: PostgresEngine, set_index: int) -> list
             p["difficulty"] = "medium"
         diff_cnt[p["difficulty"]] += 1
         
-        # 문제 ID에 날짜 + 세트 인덱스 포함
+        # 문제 ID에 날짜 + 세트 인덱스 + 모드 포함
         original_id = p["problem_id"]
-        p["problem_id"] = f"{today}_{original_id}_set{set_index}"
+        p["problem_id"] = f"{today}_{original_id}_set{set_index}_{mode}"
         p["date"] = today.isoformat()
         p["set_index"] = set_index
+        p["data_type"] = mode
         
         # XP 값 설정
         if "xp_value" not in p:
@@ -121,7 +122,7 @@ def generate_single_set(today: date, pg: PostgresEngine, set_index: int) -> list
             else:  # hard
                 p["xp_value"] = 8
         
-        # 정답 결과 데이터 생성 (DB 테이블 대신 JSON에 저장)
+        # 정답 결과 데이터 생성
         answer_sql = p.get("answer_sql")
         if answer_sql:
             expected_result = get_expected_result(pg, answer_sql)
@@ -132,9 +133,6 @@ def generate_single_set(today: date, pg: PostgresEngine, set_index: int) -> list
             logger.warning(f"answer_sql missing for {p['problem_id']}")
             p["expected_result"] = []
             p["expected_row_count"] = 0
-
-    if any(v != 2 for v in diff_cnt.values()):
-        logger.warning(f"난이도 분배가 2:2:2가 아님: {diff_cnt}")
 
     return problems
 
@@ -191,43 +189,53 @@ def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_ty
             logger.error(f"Failed to save problem {p.get('problem_id')} to DB: {e}")
 
 
-def generate(today: date, pg: PostgresEngine) -> str:
-    """3개 문제 세트 생성 - 월별 JSON에 누적 + DB 저장"""
-    logger.info(f"start generating {NUM_PROBLEM_SETS} PA problem sets for {today}")
+def generate(today: date, pg: PostgresEngine, mode: str = "pa") -> str:
+    """문제 세트 생성 - 월별 JSON에 누적 + DB 저장"""
+    logger.info(f"start generating {NUM_PROBLEM_SETS} {mode.upper()} problem sets for {today}")
     
     month_str = today.strftime("%Y-%m")
-    monthly_data = load_monthly_file(month_str)
+    # 파일명에 모드 포함
+    path = PROBLEM_DIR / f"{mode}_{month_str}.json"
+    
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            monthly_data = json.load(f)
+    else:
+        monthly_data = {"month": month_str, "data_type": mode, "problems": []}
     
     all_problems = []
     for set_idx in range(NUM_PROBLEM_SETS):
         try:
-            problems = generate_single_set(today, pg, set_idx)
+            problems = generate_single_set(today, pg, set_idx, mode=mode)
             all_problems.extend(problems)
         except Exception as e:
-            logger.error(f"Failed to generate set {set_idx}: {e}")
+            logger.error(f"Failed to generate {mode} set {set_idx}: {e}")
     
     if not all_problems:
         return ""
 
-    # 1. DB 저장 (가장 중요)
-    save_problems_to_db(pg, all_problems, today, "pa")
+    # 1. DB 저장
+    save_problems_to_db(pg, all_problems, today, mode)
     
     # 2. 월별 파일에 추가
     monthly_data["problems"].extend(all_problems)
-    save_monthly_file(month_str, monthly_data)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(monthly_data, f, ensure_ascii=False, indent=2)
     
-    # 3. 기존 daily 폴더 호환을 위해 오늘 문제만 별도 저장
-    daily_path = Path("problems/daily") / f"{today}.json"
+    # 3. 기존 daily 폴더 호환
+    daily_filename = f"{mode}_{today}.json" if mode != "pa" else f"{today}.json"
+    daily_path = Path("problems/daily") / daily_filename
     with open(daily_path, "w", encoding="utf-8") as f:
         json.dump(all_problems, f, ensure_ascii=False, indent=2)
     
-    # 4. 세트별 파일도 저장 (호환성)
+    # 4. 세트별 파일 저장
     for set_idx in range(NUM_PROBLEM_SETS):
         set_problems = [p for p in all_problems if p.get("set_index") == set_idx]
         if set_problems:
-            set_path = Path("problems/daily") / f"{today}_set{set_idx}.json"
+            set_filename = f"{mode}_{today}_set{set_idx}.json" if mode != "pa" else f"{today}_set{set_idx}.json"
+            set_path = Path("problems/daily") / set_filename
             with open(set_path, "w", encoding="utf-8") as f:
                 json.dump(set_problems, f, ensure_ascii=False, indent=2)
     
-    logger.info(f"generated and saved {len(all_problems)} problems for {today}")
-    return str(PROBLEM_DIR / f"pa_{month_str}.json")
+    logger.info(f"generated and saved {len(all_problems)} {mode} problems for {today}")
+    return str(path)
