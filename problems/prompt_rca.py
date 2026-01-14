@@ -9,6 +9,10 @@ from backend.generator.product_config import (
     get_kpi_guide,
     PRODUCT_KPI_GUIDE
 )
+from problems.prompt_templates import (
+    SUBMISSION_REQUIREMENTS_TEMPLATE,
+    DATE_FORMAT_GUIDANCE,
+)
 
 # RCA 전용 상황 설정
 RCA_SCENARIOS = {
@@ -69,6 +73,15 @@ def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerc
 3. **상황 설명은 실제 장애 보고서나 긴급 슬랙 메시지처럼** 긴박하게 작성
 4. 유저가 이 문제를 풀고 나면 **"어디서 문제가 발생했는지"**를 명확히 알 수 있어야 함
 5. **answer_sql은 반드시 위 데이터 스키마에 맞게 작성** (실제 실행 가능해야 함)
+6. 문제 간 **topic/requester/비교 대상이 중복되지 않도록** 다양성 확보
+7. 각 문제는 **서로 다른 이벤트/테이블 중심**으로 구성 (동일 패턴 반복 금지)
+
+[정답 SQL 품질 기준]
+- SELECT * 사용 금지, **명시적 컬럼/별칭** 사용
+- **expected_columns와 동일한 순서/이름**으로 출력
+- **정렬 기준(sort_keys)과 일치하는 ORDER BY** 포함
+- **CTE 사용 권장** (가독성), 필요 시 NULLIF/CASE로 0 나눗셈 방지
+- 불필요한 주석/플레이스홀더 금지, **즉시 실행 가능한 SQL**
 
 [JSON 스키마]
 {{
@@ -78,7 +91,7 @@ def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerc
   "requester": "CTO, 경영진, 또는 그로스팀 리더",
   "question": "구체적인 장애 상황과 분석 요청 사항",
   "context": "지표가 언제부터 왜 변했는지, 어떤 가설이 있는지 설명",
-  "submission_requirements": "결과 컬럼(필수), 정렬, 자릿수, 날짜 형식 등 구체적 명시",
+  "submission_requirements": "{SUBMISSION_REQUIREMENTS_TEMPLATE}",
   "answer_sql": "원인을 밝혀낼 수 있는 PostgreSQL 쿼리",
   "expected_description": "어떤 결과가 나와야 원인이 증명되는지 설명",
   "expected_columns": ["col1", "col2", "..."],
@@ -90,6 +103,8 @@ def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerc
 - 단순히 데이터를 뽑는 게 아니라, **비교 분석(Comparison)**을 유도하라.
 - ❌ 나쁜 예: "오늘 탈퇴한 유저를 구하세요"
 - ✅ 좋은 예: "지난주와 이번주 채널별 탈퇴율을 비교하여, 유독 탈퇴율이 치솟은 채널과 그 원인(이벤트 로그)을 파악하세요"
+
+{DATE_FORMAT_GUIDANCE}
 
 [데이터 스키마 - answer_sql 작성 시 반드시 사용]
 - pa_users: user_id, signup_at, country, channel

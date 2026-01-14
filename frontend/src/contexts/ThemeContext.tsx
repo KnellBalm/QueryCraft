@@ -12,8 +12,16 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setTheme] = useState<Theme>(() => {
+        // 1회 한정 강제 다크 모드 마이그레이션 (v2)
+        const migrated = localStorage.getItem('theme_migrated_v2');
+        if (!migrated) {
+            localStorage.setItem('theme', 'dark');
+            localStorage.setItem('theme_migrated_v2', 'true');
+            return 'dark';
+        }
+
         const saved = localStorage.getItem('theme');
-        return (saved as Theme) || 'light';
+        return (saved as Theme) || 'dark';
     });
 
     useEffect(() => {

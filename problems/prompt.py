@@ -5,13 +5,43 @@ prompt_pa와 gemini 모듈을 연결
 """
 from __future__ import annotations
 
+import hashlib
+import os
+
 from backend.engine.postgres_engine import PostgresEngine
 from backend.config.db import PostgresEnv
 from problems.prompt_pa import build_pa_prompt
 from problems.gemini import call_gemini_json
+from problems.prompt_templates import PROMPT_VERSION
 from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
+
+PROMPT_AB_TEST_ENABLED = os.getenv("PROMPT_AB_TEST_ENABLED", "false").lower() in {"1", "true", "yes"}
+PROMPT_AB_TEST_SALT = os.getenv("PROMPT_AB_TEST_SALT", "querycraft")
+
+
+def get_experiment_group(user_id: str | None) -> str:
+    """고정 그룹 분기 (기본값 A, A/B 테스트 비활성 시 A)"""
+    if not PROMPT_AB_TEST_ENABLED or not user_id:
+        return "A"
+    hash_input = f"{user_id}:{PROMPT_AB_TEST_SALT}".encode("utf-8")
+    digest = hashlib.sha256(hash_input).hexdigest()
+    return "A" if int(digest, 16) % 2 == 0 else "B"
+
+
+def get_prompt_metadata(user_id: str | None) -> dict:
+    return {
+        "prompt_version": PROMPT_VERSION,
+        "experiment_group": get_experiment_group(user_id),
+    }
+
+
+def attach_prompt_metadata(problems: list[dict], metadata: dict) -> list[dict]:
+    for problem in problems:
+        problem.setdefault("prompt_version", metadata.get("prompt_version", PROMPT_VERSION))
+        problem.setdefault("experiment_group", metadata.get("experiment_group", "A"))
+    return problems
 
 
 def get_data_summary() -> str:
@@ -89,7 +119,7 @@ def get_current_product_type() -> str:
         pg.close()
 
 
-def build_prompt(mode: str = "pa") -> list[dict]:
+def build_prompt(mode: str = "pa", user_id: str | None = None) -> list[dict]:
     """
     generator.py에서 호출하는 메인 함수
     1. 현재 Product Type 조회
@@ -97,6 +127,7 @@ def build_prompt(mode: str = "pa") -> list[dict]:
     3. Product Type 및 Mode(pa/rca) 맞춤형 프롬프트 빌드
     4. Gemini 호출
     5. JSON 파싱 후 반환
+    6. 프롬프트 메타데이터 주입
     """
     # 현재 Product Type 조회
     product_type = get_current_product_type()
@@ -116,6 +147,7 @@ def build_prompt(mode: str = "pa") -> list[dict]:
     
     problems = call_gemini_json(prompt)
     logger.info(f"received {len(problems)} problems from Gemini")
-    
-    return problems
+
+    metadata = get_prompt_metadata(user_id)
+    return attach_prompt_metadata(problems, metadata)
 

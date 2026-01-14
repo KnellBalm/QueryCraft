@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import json
 from problems.gemini import _call_gemini_with_retry, GeminiModels
-from backend.services.problem_service import get_problem_by_id
-from backend.services.grading_service import get_table_schema
+from backend.services.problem_service import get_problem_by_id, get_table_schema
 from backend.common.logging import get_logger
 
 logger = get_logger(__name__)

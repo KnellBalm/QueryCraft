@@ -9,6 +9,10 @@ from backend.generator.product_config import (
     get_kpi_guide,
     PRODUCT_KPI_GUIDE
 )
+from problems.prompt_templates import (
+    SUBMISSION_REQUIREMENTS_TEMPLATE,
+    DATE_FORMAT_GUIDANCE,
+)
 
 
 # Product Type별 요청자 및 문제 유형 매핑
@@ -145,6 +149,15 @@ def build_pa_prompt(data_summary: str, n: int = 6, product_type: str = "commerce
 3. **반드시 다른 팀/직무가 요청하는 형태**로 작성
 4. **answer_sql은 반드시 위 데이터 스키마에 맞게 작성** (실제 실행 가능해야 함)
 5. **{product_type.upper()} 프로덕트 특성에 맞는 문제만 출제**
+6. 문제 간 **topic/requester/분석단위가 중복되지 않도록** 다양성 확보
+7. 각 문제는 **서로 다른 이벤트/테이블 중심**으로 구성 (동일 패턴 반복 금지)
+
+[정답 SQL 품질 기준]
+- SELECT * 사용 금지, **명시적 컬럼/별칭** 사용
+- **expected_columns와 동일한 순서/이름**으로 출력
+- **정렬 기준(sort_keys)과 일치하는 ORDER BY** 포함
+- **CTE 사용 권장** (가독성), 필요 시 NULLIF/CASE로 0 나눗셈 방지
+- 불필요한 주석/플레이스홀더 금지, **즉시 실행 가능한 SQL**
 
 [{context['name']} 핵심 KPI]
 North Star: {kpi_guide.get('north_star', 'N/A')}
@@ -168,13 +181,7 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
   "requester": "요청팀 또는 직무 (예: PM팀, 마케팅팀)",
   "question": "실제 업무 요청처럼 작성. 반드시 다음을 명시: 1)분석 단위(일별/월별/주별 등) 2)필요한 컬럼 3)정렬 기준 4)기간/조건",
   "context": "배경 설명 (왜 이 분석이 필요한지)",
-  "submission_requirements": "제출 조건을 다음 형식으로 구체적으로 명시 (모든 항목 필수):
-    1. 결과 컬럼: 'user_id, conversion_rate, total_amount' 순서로 출력
-    2. 집계 단위: '일별(Daily)' 또는 '월별(Monthly)' 등 명시
-    3. 날짜 형식: 일별 분석은 'YYYY-MM-DD', 월별 분석은 'YYYY-MM' 형식 (예: TO_CHAR(date, 'YYYY-MM'))
-    4. 숫자 형식: 소수점 2자리까지 반올림 (예: ROUND(rate::numeric, 2))
-    5. 정렬: date 컬럼 기준 오름차순 정렬
-    6. NULL 처리: NULL 값은 0으로 표시",
+  "submission_requirements": "{SUBMISSION_REQUIREMENTS_TEMPLATE}",
   "answer_sql": "PostgreSQL 정답 SQL (위 데이터 스키마의 테이블명/컬럼명 정확히 사용)",
   "expected_description": "기대 결과 테이블 설명",
   "expected_columns": ["col1", "col2", "..."],
@@ -192,15 +199,17 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
 {events_str}
 
 [CRITICAL - submission_requirements 작성 가이드]
-**반드시 모든 문제에 다음 5가지 항목을 구체적으로 명시하라:**
+**반드시 모든 문제에 다음 6가지 항목을 구체적으로 명시하라:**
 
 1. **결과 컬럼**: 출력할 컬럼명과 순서를 정확히 나열
    - ❌ 나쁜 예: "날짜와 전환율을 보여주세요"
    - ✅ 좋은 예: "date, conversion_rate, user_count 순서로 출력"
 
-2. **날짜 형식**: 날짜/시간 컬럼의 정확한 형식 지정
-   - ❌ 나쁜 예: "날짜별로 집계"
-   - ✅ 좋은 예: "날짜는 YYYY-MM-DD 형식으로 출력 (예: 2026-01-08)"
+2. **날짜 형식**: 날짜/시간 컬럼의 정확한 형식 지정 + **예시 필수**
+   - 분석 단위와 **완전히 일치**해야 함
+   - 일별(Daily) → **YYYY-MM-DD** (예: 2026-01-08)
+   - 월별(Monthly) → **YYYY-MM** (예: 2026-01)
+   - 주별(Weekly) → **YYYY-MM-DD** (주 시작일 기준, 예: 2026-01-05)
 
 3. **숫자 형식**: 소수점 자릿수 명시
    - ❌ 나쁜 예: "비율을 계산하세요"
@@ -219,11 +228,13 @@ Activation: {kpi_guide.get('activation_event', 'N/A')} ({kpi_guide.get('activati
    - ❌ 나쁜 예: "값이 없으면 처리"
    - ✅ 좋은 예: "NULL 값은 0으로 표시, 데이터가 없는 날짜는 결과에서 제외"
 
+{DATE_FORMAT_GUIDANCE}
+
 [중요 - 문제 명확성]
 - **{product_type.upper()} 프로덕트 관점**에서 문제 출제
 - purchase 중심이 아닌, **{kpi_guide.get('activation_event', '핵심 이벤트')} 중심**으로 사고
 - 문제는 **다른 팀에서 슬랙으로 요청하는 톤**으로 작성하되, 업무 내용은 명확하게
-- **submission_requirements**는 위 5가지 항목을 반드시 모두 포함하여 구체적으로 작성
+- **submission_requirements**는 위 6가지 항목을 반드시 모두 포함하여 구체적으로 작성
 - answer_sql은 **위 테이블/컬럼만 사용**하여 실제 실행 가능하게 작성
 - answer_sql의 결과가 submission_requirements와 100% 일치하도록 작성
 - JSON 배열 형식으로만 출력

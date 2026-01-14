@@ -35,6 +35,9 @@ def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
     if data_type == "stream":
         # 모든 stream 파일 검색 (최신 순)
         paths = sorted(problems_dir.glob("stream_*.json"), reverse=True)
+    elif data_type == "rca":
+        # 모든 RCA 파일 검색 (최신 순)
+        paths = sorted(problems_dir.glob("rca_*.json"), reverse=True)
     else:
         # 모든 PA 파일 검색 (최신 순)
         all_files = sorted(problems_dir.glob("20??-??-??*.json"), reverse=True)

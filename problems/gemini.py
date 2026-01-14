@@ -19,9 +19,13 @@ load_dotenv()
 # -------------------------------------------------
 # Gemini Client & Multi-Model Support
 # -------------------------------------------------
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
+# Gemini Client & Multi-Model Support
+api_key = os.getenv("GEMINI_API_KEY")
+if api_key:
+    client = genai.Client(api_key=api_key)
+else:
+    logger.warning("GEMINI_API_KEY not found. AI features will be disabled.")
+    client = None
 
 # 용도별 모델 설정 (무료 티어 할당량 분산)
 class GeminiModels:
@@ -68,6 +72,10 @@ def log_api_usage(purpose: str, model: str, input_tokens: int = 0, output_tokens
 
 def _call_gemini_with_retry(model: str, contents: str, purpose: str = "general", max_retries: int = 3):
     """Gemini API 호출 (503/429 발생 시 재시도 + 마지막에 모델 폴백)"""
+    if not client:
+        logger.error(f"[GEMINI] Client not initialized. Purpose: {purpose}")
+        raise RuntimeError("Gemini API Client가 초기화되지 않았습니다. API 키를 확인해주세요.")
+
     current_model = model
     
     for i in range(max_retries):

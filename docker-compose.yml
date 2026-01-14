@@ -10,12 +10,14 @@ services:
       - DUCKDB_PATH=/app/data/local.duckdb
       - ENABLE_SCHEDULER=true
       - ENV=development
+      - PORT=8000
       - RUN_HOUR=0 # UTC 0:00 = KST 9:00
     ports:
       - "15174:8000"
     volumes:
       - duckdb_data:/app/data
       - ./problems:/app/problems
+      - ./backend:/app/backend
     restart: unless-stopped
 
   frontend:

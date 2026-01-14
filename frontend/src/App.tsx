@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink, Link, Navigate } from 'react-rou
 import { Workspace } from './pages/Workspace';
 import Practice from './pages/Practice';
 import { MainPage } from './pages/MainPage';
+import { AILab } from './pages/AILab';
 import { MyPage } from './pages/MyPage';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
@@ -13,7 +14,7 @@ import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
-// 다크 모드 비활성화: import { useTheme } from './contexts/ThemeContext';
+import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import type { UserStats } from './types';
 import './App.css';
@@ -21,7 +22,7 @@ import './App.css';
 function AppContent() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  // 다크 모드 비활성화: const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
   const { showToast } = useToast();
 
@@ -75,18 +76,21 @@ function AppContent() {
             <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
               📈 PA 분석
             </NavLink>
+            <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
+              ♾️ 무한 연습
+            </NavLink>
             <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
               🔍 RCA 분석
             </NavLink>
+            <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
+              🤖 AI 연구소 <span className="badge-new-tiny">NEW</span>
+            </NavLink>
             <span
-              className="nav-disabled"
+              className="nav-disabled nav-hide-mobile"
               onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
             >
               📴스트림 분석
             </span>
-            <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-              ♾️ 무한 연습
-            </NavLink>
           </nav>
           <div className="user-stats">
             {user && stats && (
@@ -106,10 +110,10 @@ function AppContent() {
             )}
             <button
               className="theme-toggle"
-              onClick={() => showToast('라이트 모드는 준비 중입니다! ☀️', 'info')}
+              onClick={toggleTheme}
               aria-label="Toggle theme"
             >
-              🌙
+              {theme === 'dark' ? '☀️' : '🌙'}
             </button>
             <button onClick={resetOnboarding} className="help-toggle" title="도움말 보기">
               ❓
@@ -142,6 +146,7 @@ function AppContent() {
               <Route path="/stream" element={<Workspace dataType="stream" />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/practice" element={<Practice />} />
+              <Route path="/ailab" element={<AILab />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Routes>

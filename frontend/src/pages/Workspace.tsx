@@ -445,7 +445,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 onKeyDown={(e) => e.key === 'Enter' && handleTranslate()}
                             />
                             <button onClick={handleTranslate} disabled={translating || !translateQuery.trim()}>
-                                {translating ? '⏳' : '🤖'}
+                                {translating ? '⏳' : '🤖'}<span className="badge-new-tiny" style={{ background: '#6366f1' }}>AI</span>
                             </button>
                         </div>
                         <span className="shortcut">Ctrl+Enter로 실행</span>
@@ -487,7 +487,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         <div className="result-meta">
                             {result?.success && result.data && result.data.length > 0 && (
                                 <button className="btn-insight-trigger" onClick={handleInsight} disabled={insightLoading}>
-                                    {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}
+                                    {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}<span className="badge-new-tiny">NEW</span>
                                 </button>
                             )}
                             {result?.execution_time_ms && (

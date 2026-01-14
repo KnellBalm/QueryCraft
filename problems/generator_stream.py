@@ -10,6 +10,7 @@ from typing import List
 
 from backend.engine.postgres_engine import PostgresEngine
 from problems.gemini import call_gemini_json
+from problems.prompt import attach_prompt_metadata, get_prompt_metadata
 from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -246,6 +247,7 @@ def generate_stream_problems(target_date: date, pg: PostgresEngine) -> str:
     prompt = build_stream_prompt(data_summary, n=6)
     problems = call_gemini_json(prompt)
     logger.info("generated %d stream problems from Gemini", len(problems))
+    problems = attach_prompt_metadata(problems, get_prompt_metadata(None))
     
     if not problems:
         return ""

@@ -100,12 +100,27 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
             
             if not path.exists():
                 pa_files = sorted(PROBLEM_DIR.glob("*_set*.json"), reverse=True)
-                if pa_files: path = pa_files[0]
+                if pa_files:
+                    path = pa_files[0]
+        elif data_type == "rca":
+            path = PROBLEM_DIR / f"rca_{target_date}_set{set_index}.json"
+            if not path.exists():
+                path = PROBLEM_DIR / f"rca_{target_date}.json"
+            
+            if not path.exists():
+                rca_files = sorted(PROBLEM_DIR.glob("rca_*_set*.json"), reverse=True)
+                if rca_files:
+                    path = rca_files[0]
+                else:
+                    rca_files = sorted(PROBLEM_DIR.glob("rca_*.json"), reverse=True)
+                    if rca_files:
+                        path = rca_files[0]
         else:
             path = PROBLEM_DIR / f"stream_{target_date}.json"
             if not path.exists():
                 stream_files = sorted(PROBLEM_DIR.glob("stream_*.json"), reverse=True)
-                if stream_files: path = stream_files[0]
+                if stream_files:
+                    path = stream_files[0]
         
         if path and path.exists():
             try:

@@ -2,38 +2,7 @@
 /* Gaming-style 라이트/다크 모드 CSS 변수 */
 
 :root {
-    /* Light mode (default) - Gaming Bright */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8f9fc;
-    --bg-tertiary: #eef1f6;
-    --bg-dark: #1a1a2e;
-    --text-primary: #1a1a2e;
-    --text-secondary: #4a4a6a;
-    --text-muted: #7a7a9a;
-    --border-color: #e0e4ef;
-    --accent-color: #6366f1;
-    --accent-hover: #4f46e5;
-    --accent-light: rgba(99, 102, 241, 0.1);
-    --accent-glow: rgba(99, 102, 241, 0.2);
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --warning-color: #f59e0b;
-    --header-bg: linear-gradient(135deg, #1a1a2e, #16213e);
-    --card-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
-    --neon-purple: #a855f7;
-    --neon-blue: #3b82f6;
-    --neon-green: #10b981;
-    --result-table-header: #6366f1;
-    --editor-bg: #1e1e1e;
-    --panel-bg: #ffffff;
-    --hero-bg: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 50%, #f5f0ff 100%);
-    --hero-text: #1a1a2e;
-    --mode-card-bg: #ffffff;
-    --mode-card-border: rgba(99, 102, 241, 0.2);
-}
-
-[data-theme="dark"] {
-    /* Dark mode - Gaming Dark */
+    /* Dark mode (default) - Gaming Dark */
     --bg-primary: #0d0d1a;
     --bg-secondary: #0a0a12;
     --bg-tertiary: #1a1a2e;
@@ -61,6 +30,37 @@
     --hero-text: #ffffff;
     --mode-card-bg: rgba(13, 13, 26, 0.8);
     --mode-card-border: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="light"] {
+    /* Light mode - Gaming Bright */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fc;
+    --bg-tertiary: #eef1f6;
+    --bg-dark: #1a1a2e;
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a6a;
+    --text-muted: #7a7a9a;
+    --border-color: #e0e4ef;
+    --accent-color: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-light: rgba(99, 102, 241, 0.1);
+    --accent-glow: rgba(99, 102, 241, 0.2);
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+    --header-bg: linear-gradient(135deg, #1a1a2e, #16213e);
+    --card-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+    --neon-purple: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #10b981;
+    --result-table-header: #6366f1;
+    --editor-bg: #1e1e1e;
+    --panel-bg: #ffffff;
+    --hero-bg: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 50%, #f5f0ff 100%);
+    --hero-text: #1a1a2e;
+    --mode-card-bg: #ffffff;
+    --mode-card-border: rgba(99, 102, 241, 0.2);
 }
 
 /* 전역 스타일에 변수 적용 */
