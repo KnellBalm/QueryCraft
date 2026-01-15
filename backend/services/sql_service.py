@@ -2,6 +2,7 @@
 """SQL 실행 서비스"""
 import time
 import re
+import pandas as pd
 from typing import Tuple, Optional, List, Dict, Any
 
 from backend.services.database import postgres_connection
@@ -61,7 +62,7 @@ def execute_sql(
     # 안전성 검사
     is_safe, error_msg = is_safe_sql(sql)
     if not is_safe:
-        return None, None, error_msg, 0
+        return None, None, error_msg, 0.0
     
     # 쿼리 정리
     query = sql.strip().rstrip(";")
@@ -76,7 +77,7 @@ def execute_sql(
         with postgres_connection() as pg:
             df = pg.fetch_df(query)
         
-        elapsed = (time.time() - start) * 1000  # ms
+        elapsed = round((time.time() - start) * 1000, 2)  # ms, 소수점 2자리
         
         # 중복 컬럼 처리: 고유 컬럼명 생성
         original_columns = list(df.columns)
@@ -93,11 +94,11 @@ def execute_sql(
         
         df.columns = unique_columns
         
-        columns = unique_columns
-        data = df.to_dict(orient="records")
+        # NaN 값을 None으로 변환 (Pydantic/JSON 직렬화 안정성)
+        data_df = df.where(pd.notnull(df), None)
+        data = data_df.to_dict(orient="records")
         
-        return data, columns, None, elapsed
+        return data, unique_columns, None, elapsed
     
     except Exception as e:
-        return None, None, str(e), 0
-
+        return None, None, str(e), 0.0
