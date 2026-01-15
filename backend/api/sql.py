@@ -107,3 +107,36 @@ async def request_translate(request: TranslateRequest):
         data_type=request.data_type
     )
     return TranslateResponse(sql=sql)
+
+
+class AIHelpRequest(BaseModel):
+    problem_id: str
+    help_type: str  # "hint" or "solution"
+    current_sql: str = ""
+    attempt_count: int = 0
+    data_type: str = "pa"
+
+
+class AIHelpResponse(BaseModel):
+    type: str
+    content: str
+
+
+@router.post("/ai-help", response_model=AIHelpResponse)
+async def request_ai_help(request: AIHelpRequest):
+    """
+    Daily 문제 AI 도움 요청
+    
+    - help_type: "hint" (접근 방향 힌트) 또는 "solution" (정답 쿼리)
+    - 문제당 1회 제한은 프론트엔드에서 처리
+    """
+    from backend.services.ai_service import get_ai_help
+    
+    result = get_ai_help(
+        problem_id=request.problem_id,
+        help_type=request.help_type,
+        current_sql=request.current_sql,
+        attempt_count=request.attempt_count,
+        data_type=request.data_type
+    )
+    return AIHelpResponse(**result)
