@@ -124,51 +124,36 @@ async def get_system_status(admin=Depends(require_admin)):
     except:
         pass
     
-    # 오늘의 문제 현황 확인
+    # 오늘의 문제 현황 확인 (DB 기반 - Cloud Run 파일 시스템 휘발성 대응)
     today = get_today_kst()
-    patterns = [
-        f"problems/daily/{today.isoformat()}.json",
-        f"problems/daily/{today.isoformat()}_set0.json",
-        f"problems/daily/{today.isoformat()}_set1.json",
-        f"problems/daily/stream_{today.isoformat()}.json"
-    ]
-    
     today_problems = None
-    all_problems = []
-    found_any = False
     
     try:
-        for p_path in patterns:
-            # 절대 경로와 상대 경로 모두 체크 (컨테이너 내 환경 고려)
-            abs_path = os.path.join("/app", p_path) if not p_path.startswith("/") else p_path
-            target_path = abs_path if os.path.exists(abs_path) else p_path
+        with postgres_connection() as pg:
+            # problems 테이블에서 오늘 날짜 문제 조회
+            df = pg.fetch_df("""
+                SELECT problem_id, difficulty, data_type
+                FROM public.problems
+                WHERE session_date = %s
+            """, [today])
             
-            if os.path.exists(target_path):
-                found_any = True
-                with open(target_path, encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        all_problems.extend(data)
-                    else:
-                        all_problems.append(data)
-        
-        if found_any:
-            difficulties = {}
-            for p in all_problems:
-                diff = p.get("difficulty", "unknown")
-                difficulties[diff] = difficulties.get(diff, 0) + 1
-            
-            today_problems = TodayProblemsStatus(
-                exists=True,
-                count=len(all_problems),
-                difficulties=difficulties,
-                path=patterns[0] # 대표 경로
-            )
-        else:
-            today_problems = TodayProblemsStatus(exists=False)
+            if len(df) > 0:
+                difficulties = {}
+                for _, row in df.iterrows():
+                    diff = row.get("difficulty", "unknown")
+                    difficulties[diff] = difficulties.get(diff, 0) + 1
+                
+                today_problems = TodayProblemsStatus(
+                    exists=True,
+                    count=len(df),
+                    difficulties=difficulties,
+                    path=f"DB: {today.isoformat()} ({len(df)} problems)"
+                )
+            else:
+                today_problems = TodayProblemsStatus(exists=False)
     except Exception as e:
         from backend.common.logging import get_logger
-        get_logger(__name__).error(f"Error checking today problems: {e}")
+        get_logger(__name__).error(f"Error checking today problems from DB: {e}")
         today_problems = TodayProblemsStatus(exists=False)
     
     return SystemStatus(
@@ -777,23 +762,65 @@ async def trigger_daily_generation(request: Request):
     from backend.common.logging import get_logger
     logger = get_logger(__name__)
     
+    # 요청 정보 로깅 (디버깅용)
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("User-Agent", "unknown")
+    logger.info(f"[TRIGGER] Request received from IP={client_ip}, UA={user_agent[:50]}")
+    
     # API 키 검증
     expected_key = os.environ.get("SCHEDULER_API_KEY", "")
     provided_key = request.headers.get("X-Scheduler-Key", "")
     
     if not expected_key:
-        logger.warning("SCHEDULER_API_KEY not configured")
+        logger.warning("[TRIGGER] SCHEDULER_API_KEY not configured in environment")
         raise HTTPException(403, "Scheduler API key not configured")
     
     if provided_key != expected_key:
-        logger.warning("Invalid scheduler API key")
+        logger.warning(f"[TRIGGER] Invalid API key provided (length={len(provided_key)})")
         raise HTTPException(403, "Invalid API key")
     
-    logger.info("[TRIGGER] Daily generation triggered by Cloud Scheduler")
-    db_log(LogCategory.SCHEDULER, "Cloud Scheduler 트리거 수신", LogLevel.INFO, "trigger")
-    
+    logger.info("[TRIGGER] API key validated, starting daily generation")
+    db_log(LogCategory.SCHEDULER, "Cloud Scheduler 트리거 수신 (인증 성공)", LogLevel.INFO, "trigger")
+
     # KST 기준 오늘 날짜 계산 (GCP 환경 대비)
     today = get_today_kst()
+    logger.info(f"[TRIGGER] Target date: {today}")
+
+    # 중복 실행 방지: 오늘 날짜로 이미 생성되었는지 확인
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            # PA와 Stream 문제 모두 확인
+            existing = pg.fetch_df("""
+                SELECT data_type, COUNT(*) as cnt 
+                FROM public.problems 
+                WHERE session_date = %s 
+                GROUP BY data_type
+            """, [today])
+            
+            pa_count = 0
+            stream_count = 0
+            for _, row in existing.iterrows():
+                if row.get("data_type") == "pa":
+                    pa_count = int(row.get("cnt", 0))
+                elif row.get("data_type") == "stream":
+                    stream_count = int(row.get("cnt", 0))
+            
+            if pa_count > 0 and stream_count > 0:
+                logger.info(f"[TRIGGER] Problems already exist for {today}: PA={pa_count}, Stream={stream_count}")
+                db_log(LogCategory.SCHEDULER, f"{today} 중복 생성 방지 (PA={pa_count}, Stream={stream_count})", LogLevel.INFO, "trigger")
+                return {
+                    "status": "already_generated",
+                    "date": str(today),
+                    "pa_count": pa_count,
+                    "stream_count": stream_count,
+                    "message": f"{today} 날짜의 문제가 이미 생성되어 있습니다."
+                }
+            elif pa_count > 0 or stream_count > 0:
+                logger.info(f"[TRIGGER] Partial generation detected for {today}: PA={pa_count}, Stream={stream_count}")
+    except Exception as e:
+        logger.warning(f"[TRIGGER] Duplicate check failed (continuing anyway): {e}")
+
     results = {"date": str(today), "pa_data": False, "stream_data": False, "pa_problems": False, "stream_problems": False}
     
     try:
