@@ -26,7 +26,7 @@ function AppContent() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
-  const { track, setTrack, isCore, isFuture } = useTrack();
+  const { setTrack, isCore, isFuture } = useTrack();
   const { showToast } = useToast();
 
   useEffect(() => {
