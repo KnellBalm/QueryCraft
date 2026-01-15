@@ -104,43 +104,65 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
     user_df = user_df[common_cols]
     expected_df = expected_df[common_cols]
     
-    # 값 비교 (날짜 관대 처리 포함)
-    for i in range(len(user_df)):
-        for col in common_cols:
-            u_val = user_df.iloc[i][col]
-            e_val = expected_df.iloc[i][col]
-            
-            # None/NaN 비교
-            u_is_null = pd.isna(u_val)
-            e_is_null = pd.isna(e_val)
-            if u_is_null and e_is_null:
+    # 값 비교 (벡터화된 방식)
+    for col in common_cols:
+        u_col = user_df[col]
+        e_col = expected_df[col]
+
+        # NULL 비교 (벡터화)
+        u_nulls = pd.isna(u_col)
+        e_nulls = pd.isna(e_col)
+
+        # 둘 다 NULL이 아닌 위치에서만 비교
+        both_null = u_nulls & e_nulls
+        null_mismatch = u_nulls != e_nulls
+
+        if null_mismatch.any():
+            idx = null_mismatch.idxmax()
+            return False, f"{idx+1}번째 행 '{col}' 값 불일치: 제출={u_col[idx]}, 정답={e_col[idx]}"
+
+        # NULL이 아닌 값들만 비교
+        compare_mask = ~(u_nulls | e_nulls)
+        if not compare_mask.any():
+            continue
+
+        u_vals = u_col[compare_mask]
+        e_vals = e_col[compare_mask]
+
+        # 날짜 컬럼인지 확인 (첫 번째 non-null 값으로 판단)
+        first_u = u_vals.iloc[0] if len(u_vals) > 0 else None
+        first_e = e_vals.iloc[0] if len(e_vals) > 0 else None
+
+        if _is_date_like(first_u) or _is_date_like(first_e):
+            # 날짜 비교 (DATE 부분만)
+            try:
+                u_dates = u_vals.apply(_extract_date)
+                e_dates = e_vals.apply(_extract_date)
+                mismatch = u_dates != e_dates
+                if mismatch.any():
+                    idx = mismatch[mismatch].index[0]
+                    return False, f"{idx+1}번째 행 '{col}' 날짜 불일치: 제출={u_dates[idx]}, 정답={e_dates[idx]}"
                 continue
-            if u_is_null != e_is_null:
-                return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
-            
-            # 날짜/시간 비교 (DATE 부분만 비교하여 관대하게 처리)
-            if _is_date_like(u_val) or _is_date_like(e_val):
-                try:
-                    u_date = _extract_date(u_val)
-                    e_date = _extract_date(e_val)
-                    if u_date == e_date:
-                        continue
-                    return False, f"{i+1}번째 행 '{col}' 날짜 불일치: 제출={u_date}, 정답={e_date}"
-                except:
-                    pass
-            
-            # 숫자 비교 (소수점 차이 허용)
-            if isinstance(u_val, (int, float)) and isinstance(e_val, (int, float)):
-                if abs(float(u_val) - float(e_val)) < 0.0001:
-                    continue
-                return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
-            
-            # 문자열 비교 (strip 후)
-            if str(u_val).strip() == str(e_val).strip():
-                continue
-            
-            return False, f"{i+1}번째 행 '{col}' 값 불일치: 제출={u_val}, 정답={e_val}"
-    
+            except Exception:
+                pass
+
+        # 숫자 비교 (소수점 차이 허용)
+        if pd.api.types.is_numeric_dtype(u_vals) and pd.api.types.is_numeric_dtype(e_vals):
+            diff = (u_vals.astype(float) - e_vals.astype(float)).abs()
+            mismatch = diff >= 0.0001
+            if mismatch.any():
+                idx = mismatch[mismatch].index[0]
+                return False, f"{idx+1}번째 행 '{col}' 값 불일치: 제출={u_col[idx]}, 정답={e_col[idx]}"
+            continue
+
+        # 문자열 비교 (strip 후)
+        u_str = u_vals.astype(str).str.strip()
+        e_str = e_vals.astype(str).str.strip()
+        mismatch = u_str != e_str
+        if mismatch.any():
+            idx = mismatch[mismatch].index[0]
+            return False, f"{idx+1}번째 행 '{col}' 값 불일치: 제출={u_col[idx]}, 정답={e_col[idx]}"
+
     return True, "정답입니다! 🎉"
 
 

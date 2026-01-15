@@ -7,26 +7,44 @@ from typing import Tuple, Optional, List, Dict, Any
 from backend.services.database import postgres_connection
 
 
-# 허용되지 않는 SQL 키워드
-DANGEROUS_KEYWORDS = [
-    "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", 
-    "TRUNCATE", "GRANT", "REVOKE", "EXEC", "EXECUTE"
-]
+# 허용되는 SQL 키워드 (Allowlist 방식)
+ALLOWED_KEYWORDS = ["SELECT", "WITH", "EXPLAIN"]
 
 
 def is_safe_sql(sql: str) -> Tuple[bool, Optional[str]]:
-    """SQL 안전성 검사"""
+    """SQL 안전성 검사 (Allowlist 방식)"""
     clean = sql.strip().upper()
-    
-    for keyword in DANGEROUS_KEYWORDS:
-        if clean.startswith(keyword):
-            return False, f"{keyword} 문은 실행할 수 없습니다."
-    
+
+    # 빈 쿼리 체크
+    if not clean:
+        return False, "SQL 쿼리가 비어있습니다."
+
     # 세미콜론으로 구분된 다중 쿼리 방지
     statements = [s.strip() for s in sql.split(";") if s.strip()]
     if len(statements) > 1:
-        return False, "하나의 SELECT 문만 실행할 수 있습니다."
-    
+        return False, "하나의 쿼리만 실행할 수 있습니다."
+
+    # Allowlist 검증: 허용된 키워드로만 시작해야 함
+    is_allowed = False
+    for keyword in ALLOWED_KEYWORDS:
+        if clean.startswith(keyword):
+            is_allowed = True
+            break
+
+    if not is_allowed:
+        return False, f"SELECT, WITH, EXPLAIN 쿼리만 실행할 수 있습니다."
+
+    # 추가 보안 검사: 위험한 함수 호출 차단
+    dangerous_patterns = [
+        r"pg_sleep",  # 시간 지연 공격
+        r"copy\s+",   # 파일 읽기/쓰기
+        r"lo_import", r"lo_export",  # Large Object 파일 작업
+    ]
+
+    for pattern in dangerous_patterns:
+        if re.search(pattern, clean, re.IGNORECASE):
+            return False, "보안상 허용되지 않는 함수가 포함되어 있습니다."
+
     return True, None
 
 

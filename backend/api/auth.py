@@ -4,7 +4,7 @@ import os
 from typing import Optional
 from datetime import datetime, timedelta
 import secrets
-import hashlib
+import bcrypt
 
 from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import RedirectResponse
@@ -160,17 +160,17 @@ class LoginRequest(BaseModel):
 
 
 def hash_password(password: str) -> str:
-    """비밀번호 해시 (SHA256 + salt)"""
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{hashed}"
+    """비밀번호 해시 (bcrypt)"""
+    # bcrypt는 자동으로 salt를 생성하고 포함함
+    salt = bcrypt.gensalt(rounds=12)  # 12 rounds (보안과 성능 균형)
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')  # 문자열로 저장
 
 
 def verify_password(password: str, password_hash: str) -> bool:
     """비밀번호 검증"""
     try:
-        salt, hashed = password_hash.split(":")
-        return hashlib.sha256((password + salt).encode()).hexdigest() == hashed
+        return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
     except Exception:
         return False
 
