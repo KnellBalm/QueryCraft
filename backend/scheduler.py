@@ -144,14 +144,10 @@ def get_db_last_run_times():
 
 
 def run_weekday_generation():
-    """PA 전용 문제/데이터 생성 (KST 01:00, 월~금)"""
+    """PA 전용 문제/데이터 생성 (KST 01:00, 매일)"""
     import time as time_module
     start_time = time_module.time()
     today = get_today_kst()
-    
-    # 주말 스킵로직은 CronTrigger에서 처리되지만, 안전을 위해 유지
-    if today.weekday() >= 5:
-        return
     
     logger.info(f"[SCHEDULER] Starting PA generation for {today}")
     db_log(LogCategory.SCHEDULER, f"PA 생성 시작: {today}", LogLevel.INFO, "scheduler")
