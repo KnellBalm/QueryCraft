@@ -246,9 +246,9 @@ def start_scheduler():
     
     scheduler.add_job(
         run_weekday_generation,
-        CronTrigger(hour=1, minute=0, day_of_week='0-4', timezone=tz),
-        id="weekday_generation",
-        name="평일 문제/데이터 생성 (월~금 01:00)",
+        CronTrigger(hour=1, minute=0, day_of_week='0-6', timezone=tz),
+        id="daily_generation",
+        name="일일 문제/데이터 생성 (매일 01:00)",
         replace_existing=True
     )
     

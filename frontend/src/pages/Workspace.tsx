@@ -450,18 +450,20 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 <div className="editor-section" style={{ height: `${editorHeightPercent}%` }}>
                     <div className="editor-header">
                         <span>SQL 에디터 <small style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(PostgreSQL 전용)</small></span>
-                        <div className="translate-bar">
-                            <input
-                                type="text"
-                                placeholder="자연어로 질문하여 SQL 생성 (예: 매출 상위 5명...)"
-                                value={translateQuery}
-                                onChange={(e) => setTranslateQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleTranslate()}
-                            />
-                            <button onClick={handleTranslate} disabled={translating || !translateQuery.trim()}>
-                                {translating ? '⏳' : '🤖'}<span className="badge-new-tiny" style={{ background: '#6366f1' }}>AI</span>
-                            </button>
-                        </div>
+                        {track === 'future' && (
+                            <div className="translate-bar">
+                                <input
+                                    type="text"
+                                    placeholder="자연어로 질문하여 SQL 생성 (예: 매출 상위 5명...)"
+                                    value={translateQuery}
+                                    onChange={(e) => setTranslateQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleTranslate()}
+                                />
+                                <button onClick={handleTranslate} disabled={translating || !translateQuery.trim()}>
+                                    {translating ? '⏳' : '🤖'}<span className="badge-new-tiny" style={{ background: '#6366f1' }}>AI</span>
+                                </button>
+                            </div>
+                        )}
                         <span className="shortcut">Ctrl+Enter로 실행</span>
                     </div>
                     <div className="editor-shell">
