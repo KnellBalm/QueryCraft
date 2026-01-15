@@ -63,6 +63,9 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/status", response_model=SystemStatus)
 async def get_system_status(admin=Depends(require_admin)):
     """시스템 상태 조회"""
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+
     # PostgreSQL 연결 확인
     postgres_connected = False
     tables = []
@@ -94,8 +97,8 @@ async def get_system_status(admin=Depends(require_admin)):
                     row_count=row_count,
                     column_count=int(col_cnt.iloc[0]["cnt"])
                 ))
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to fetch PostgreSQL table metadata: {e}")
     
     # DuckDB 연결 확인
     duckdb_connected = False
@@ -121,8 +124,8 @@ async def get_system_status(admin=Depends(require_admin)):
                 )
                 for r in rows
             ]
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to fetch DuckDB scheduler sessions: {e}")
     
     # 오늘의 문제 현황 확인 (DB 기반 - Cloud Run 파일 시스템 휘발성 대응)
     today = get_today_kst()
@@ -545,6 +548,9 @@ async def run_scheduler_job(job_type: str, admin=Depends(require_admin)):
 @router.post("/reset-submissions")
 async def reset_submissions(admin=Depends(require_admin)):
     """제출 기록 초기화 및 XP 리셋"""
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+
     try:
         with postgres_connection() as pg:
             pg.execute("TRUNCATE TABLE public.submissions RESTART IDENTITY")
@@ -554,8 +560,8 @@ async def reset_submissions(admin=Depends(require_admin)):
         try:
             with duckdb_connection() as duck:
                 duck.execute("DELETE FROM pa_submissions")
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to delete DuckDB submissions during reset: {e}")
         
         return {
             "success": True,

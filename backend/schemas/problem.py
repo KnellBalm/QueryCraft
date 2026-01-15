@@ -30,7 +30,9 @@ class Problem(BaseModel):
     expected_columns: Optional[List[str]] = None
     sort_keys: Optional[List[str]] = None
     hint: Optional[str] = None
-    
+    hints: Optional[List[str]] = None  # Progressive hints array (for RCA)
+    anomaly_metadata_id: Optional[int] = None  # Link to rca_anomaly_metadata table
+
     # 채점 관련 필드
     answer_sql: Optional[str] = None
     expected_result: Optional[List[dict]] = None

@@ -298,7 +298,26 @@ def init_database():
                 );
             """)
             logger.info("✓ versioning tables ready")
-            
+
+            # 13. rca_anomaly_metadata - RCA 시나리오 이상 패턴 메타데이터
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.rca_anomaly_metadata (
+                    id SERIAL PRIMARY KEY,
+                    problem_date DATE NOT NULL,
+                    product_type VARCHAR(50) NOT NULL,
+                    anomaly_type VARCHAR(100) NOT NULL,
+                    anomaly_params JSONB NOT NULL DEFAULT '{}',
+                    affected_scope TEXT,
+                    description TEXT,
+                    hints JSONB NOT NULL DEFAULT '[]',
+                    root_cause TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_rca_anomaly_date ON public.rca_anomaly_metadata(problem_date)")
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_rca_anomaly_type ON public.rca_anomaly_metadata(anomaly_type)")
+            logger.info("✓ rca_anomaly_metadata table ready")
+
             # 관리자 설정
             pg.execute("""
                 UPDATE public.users SET is_admin = TRUE 

@@ -144,9 +144,6 @@ async def submit_practice(request: SubmitPracticeRequest, req: Request):
             xp_value = get_difficulty_xp(request.difficulty)
         
         # DB에 저장 (레벨업에 반영)
-        # The following two lines seem to be misplaced from another context.
-        # logger.info(f"Starting stream incremental for {today}")
-        # job_id = f"stream_incremental_{get_today_kst().isoformat()}"
         try:
             save_submission_pg(
                 session_date=get_today_kst().isoformat(),

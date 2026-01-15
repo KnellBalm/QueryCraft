@@ -10,6 +10,9 @@ import os
 from backend.schemas.problem import Problem, TableSchema, TableColumn
 from backend.services.database import postgres_connection, duckdb_connection
 from backend.common.date_utils import get_today_kst
+from backend.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 PROBLEM_DIR = Path("problems/daily")
 NUM_PROBLEM_SETS = 2
@@ -80,7 +83,7 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                 """, [target_date.isoformat(), data_type])
                 
                 if len(df_fallback) > 0:
-                    print(f"Assigned set {set_index} empty, falling back to any available set for {target_date}")
+                    logger.warning(f"Assigned set {set_index} empty, falling back to any available set for {target_date}")
                     for _, row in df_fallback.iterrows():
                         desc = row["description"]
                         if isinstance(desc, str):
@@ -88,7 +91,7 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                         else:
                             problems_data.append(desc)
     except Exception as e:
-        print(f"Failed to fetch problems from DB: {e}")
+        logger.error(f"Failed to fetch problems from DB: {e}")
 
     # 2. DB에 없으면 파일에서 조회 (폴백)
     if not problems_data:
@@ -149,7 +152,7 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                 problem.is_completed = False
             problems.append(problem)
         except Exception as e:
-            print(f"Error parsing problem data: {e}")
+            logger.error(f"Error parsing problem data: {e}")
     
     return problems
 
@@ -187,7 +190,7 @@ def get_problem_by_id(
                     problem.is_completed = False
                 return problem
     except Exception as e:
-        print(f"Failed to fetch problem by id from DB: {e}")
+        logger.error(f"Failed to fetch problem by id from DB: {e}")
 
     # 2. 없으면 전체 리스트에서 검색 (폴백)
     problems = get_problems(target_date, data_type, user_id)
@@ -265,6 +268,6 @@ def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
                     row_count=row_count
                 ))
     except Exception as e:
-        print(f"Error fetching schema: {e}")
+        logger.error(f"Error fetching schema: {e}")
     
     return tables
