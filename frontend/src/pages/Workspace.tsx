@@ -4,6 +4,7 @@ import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { ResultTable } from '../components/ResultTable';
 import { InsightModal } from '../components/InsightModal';
+import { useTrack } from '../contexts/TrackContext';
 import { problemsApi, sqlApi } from '../api/client';
 import { analytics } from '../services/analytics';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
@@ -56,6 +57,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const lastAttemptedRef = useRef<string | null>(null);
 
     const selectedProblem = problems[selectedIndex] || null;
+    const { track } = useTrack(); // Future Lab에서만 AI 기능 활성화
 
     // 데이터 로드
     const loadData = useCallback(async () => {
@@ -497,7 +499,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     <div className="result-header">
                         <span>실행 결과</span>
                         <div className="result-meta">
-                            {result?.success && result.data && result.data.length > 0 && (
+                            {/* Future Lab에서만 AI 인사이트 표시 */}
+                            {track === 'future' && result?.success && result.data && result.data.length > 0 && (
                                 <button className="btn-insight-trigger" onClick={handleInsight} disabled={insightLoading}>
                                     {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}<span className="badge-new-tiny">NEW</span>
                                 </button>
