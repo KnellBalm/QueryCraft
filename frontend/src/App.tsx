@@ -12,7 +12,7 @@ import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
 import { ToastProvider, useToast } from './components/Toast';
 import WeekendClosed from './components/WeekendClosed';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
 import { useTheme } from './contexts/ThemeContext';
@@ -20,6 +20,38 @@ import { useAuth } from './contexts/AuthContext';
 import { TrackProvider, useTrack } from './contexts/TrackContext';
 import type { UserStats } from './types';
 import './App.css';
+
+// 드롭다운 메뉴 컴포넌트
+function DropdownMenu({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={dropdownRef}>
+      <button 
+        className={`nav-dropdown-trigger ${isOpen ? 'active' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {icon} {label} <span className="dropdown-arrow">▼</span>
+      </button>
+      {isOpen && (
+        <div className="nav-dropdown-menu">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AppContent() {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -95,38 +127,38 @@ function AppContent() {
           <nav className="nav">
             {/* Core Skills Track 메뉴 */}
             {isCore && (
-              <>
-                <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-                  📈 PA 분석
+              <DropdownMenu label="문제 풀기" icon="📝">
+                <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => {}}>
+                  📅 오늘의 도전
                 </NavLink>
-                <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => {}}>
                   ♾️ 무한 연습
                 </NavLink>
                 <span
-                  className="nav-disabled nav-hide-mobile"
+                  className="nav-dropdown-item disabled"
                   onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
                 >
-                  📴스트림 분석
+                  📡 스트림 분석 <span className="badge-soon">준비중</span>
                 </span>
-              </>
+              </DropdownMenu>
             )}
 
             {/* Future Lab Track 메뉴 */}
             {isFuture && (
-              <>
-                <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
+              <DropdownMenu label="AI Lab" icon="🚀">
+                <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => {}}>
                   🤖 AI Workspace
                 </NavLink>
-                <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => {}}>
                   🔍 Crisis Simulator
                 </NavLink>
                 <span
-                  className="nav-disabled nav-hide-mobile"
+                  className="nav-dropdown-item disabled"
                   onClick={() => showToast('Adaptive Tutor는 준비 중입니다! 🎓', 'info')}
                 >
-                  🎓 Tutor
+                  🎓 Adaptive Tutor <span className="badge-soon">준비중</span>
                 </span>
-              </>
+              </DropdownMenu>
             )}
           </nav>
           <div className="user-stats">

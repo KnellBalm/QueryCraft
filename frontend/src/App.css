@@ -174,6 +174,108 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Dropdown Menu Styles */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-dropdown-trigger:hover,
+.nav-dropdown-trigger.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dropdown-arrow {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  transition: transform 0.2s;
+}
+
+.nav-dropdown-trigger.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 180px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-dropdown-menu a,
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+
+.nav-dropdown-menu a:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.nav-dropdown-menu a.active {
+  background: rgba(var(--track-primary-rgb), 0.15);
+  color: var(--track-primary);
+  font-weight: 600;
+}
+
+.nav-dropdown-item.disabled {
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.nav-dropdown-item.disabled:hover {
+  background: var(--bg-tertiary);
+}
+
+.badge-soon {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(var(--track-primary-rgb), 0.2);
+  color: var(--track-primary);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .user-stats {
   margin-left: auto;
   display: flex;
