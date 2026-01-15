@@ -1,42 +1,14 @@
 # TODO List
 
-> 📅 마지막 업데이트: 2026-01-16
+> 📅 마지막 업데이트: 2026-01-16 (GNB & 서비스 구축 완료)
 
 ---
-
-## 🆕 다음 작업 (2026-01-16 설계 완료)
-
-### 데이터 파이프라인 설계 ✅
-- [x] `generators/` 디렉토리 구조 생성
-- [x] `BaseGenerator` 추상 클래스 구현
-- [x] `DataValidator` 데이터 품질 검증 클래스
 
 ### Mixpanel 분석
 - [ ] 대시보드 설정 (Funnel, Retention, Flow)
 - [x] AI 사용 임계치 이벤트 트래킹 추가
 
-### Daily 문제 AI 도움 기능 ✅
-- [x] UI: AI 도움 버튼 (문제당 1회 제한)
-- [x] 도움 유형: 💡 힌트 / 📝 쿼리 작성
-- [x] `api/sql.py`: AI 도움 엔드포인트
-- [x] `services/ai_service.py`: Gemini API 호출
-
 > 📎 상세 설계: `docs/IMPLEMENTATION_PLAN.md`
-
----
-
-## 0. 서비스 구조 개편 (2-Track Strategy) ✅
-
-- [x] `docs/SERVICE_STRUCTURE.md` 작성: 메뉴 구조 및 컨셉 정의
-- [x] 프론트엔드 라우팅 및 테마 시스템 구축 (`TrackContext`)
-- [x] **GNB (Global Navigation Bar) 재설계**
-  - [x] 트랙 전환 스위치 (Core Skills ↔ Future Lab) 구현
-  - [x] 트랙별 테마(글라스모피즘, 컬러셋) 분리 적용
-- [x] **Core Skills (Track A) 구성**
-  - [x] 기존 메뉴(`Daily Training`, `Practice`, `Stats`)를 Core 카테고리로 재배치
-- [x] **Future Lab (Track B) 구성**
-  - [x] AI Workspace, RCA Simulator 메뉴 배치
-  - [x] 플레이스홀더 완료: `MCP Sandbox`, `Adaptive Tutor` 라우트 연결
 
 
 ---
