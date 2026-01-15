@@ -5,8 +5,12 @@ import sys
 from datetime import datetime
 
 LOG_DIR = os.getenv("LOG_DIR", "logs")
-if os.getenv("ENV") != "production":
-    os.makedirs(LOG_DIR, exist_ok=True)
+# logs 디렉토리 생성 (실패해도 계속 진행)
+try:
+    if os.getenv("ENV") != "production":
+        os.makedirs(LOG_DIR, exist_ok=True)
+except (PermissionError, OSError) as e:
+    print(f"Warning: Could not create log directory: {e}")
 
 class JSONFormatter(logging.Formatter):
     """GCP Cloud Run 호환 JSON 포맷터"""
@@ -44,12 +48,17 @@ def setup_logging():
         console_handler.setFormatter(logging.Formatter(
             "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
         ))
-        file_handler = logging.FileHandler(f"{LOG_DIR}/query_craft.log")
-        file_handler.setFormatter(logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-        ))
         root_logger.addHandler(console_handler)
-        root_logger.addHandler(file_handler)
+        
+        # 파일 핸들러는 권한이 있을 때만 추가
+        try:
+            file_handler = logging.FileHandler(f"{LOG_DIR}/query_craft.log")
+            file_handler.setFormatter(logging.Formatter(
+                "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+            ))
+            root_logger.addHandler(file_handler)
+        except (PermissionError, OSError) as e:
+            print(f"Warning: Could not create log file, using console only: {e}")
 
 # 앱 시작 시 호출
 setup_logging()
