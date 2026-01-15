@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { ResultTable } from '../components/ResultTable';
+import { InsightModal } from '../components/InsightModal';
 import { problemsApi, sqlApi } from '../api/client';
 import { analytics } from '../services/analytics';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
@@ -43,7 +44,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
     const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
     const [metadata, setMetadata] = useState<any>(null); // DatasetMetadata
-    const [insight, setInsight] = useState<string | null>(null);
+    const [insightData, setInsightData] = useState<any>(null); // 구조화된 인사이트 데이터
+    const [showInsightModal, setShowInsightModal] = useState(false);
     const [insightLoading, setInsightLoading] = useState(false);
     const [translateQuery, setTranslateQuery] = useState('');
     const [translating, setTranslating] = useState(false);
@@ -205,12 +207,22 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const handleInsight = useCallback(async () => {
         if (!result?.data || !selectedProblem || !result.success) return;
         setInsightLoading(true);
-        setInsight(null);
+        setInsightData(null);
         try {
             const res = await sqlApi.insight(selectedProblem.problem_id, sql, result.data, dataType);
-            setInsight(res.data.insight);
+            setInsightData(res.data);
+            setShowInsightModal(true);
         } catch (error: any) {
-            setInsight(`인사이트 생성 실패: ${error.message}`);
+            console.error('Failed to get AI insight:', error);
+            // 에러 시에도 간단한 메시지 표시
+            setInsightData({
+                key_findings: [],
+                insights: [],
+                action_items: [],
+                suggested_queries: [],
+                report_markdown: `# 오류\n\n인사이트 생성 실패: ${error.message}`
+            });
+            setShowInsightModal(true);
         }
         setInsightLoading(false);
     }, [result, selectedProblem, sql, dataType]);
@@ -321,7 +333,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                                 </div>
                                 <div className="company-name">{metadata.company_name}</div>
                                 <div className="company-desc">{metadata.company_description}</div>
-                                
+
                                 {metadata.north_star && (
                                     <div className="kpi-row">
                                         <div className="kpi-item">
@@ -437,8 +449,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     <div className="editor-header">
                         <span>SQL 에디터 <small style={{ marginLeft: '10px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(PostgreSQL 전용)</small></span>
                         <div className="translate-bar">
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 placeholder="자연어로 질문하여 SQL 생성 (예: 매출 상위 5명...)"
                                 value={translateQuery}
                                 onChange={(e) => setTranslateQuery(e.target.value)}
@@ -515,15 +527,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             </div>
                         )}
 
-                        {/* AI 인사이트 */}
-                        {insight && !insightLoading && (
-                            <div className="insight-result">
-                                <div className="insight-title">✨ AI 분석 리포트</div>
-                                <div className="insight-content">
-                                    {renderMarkdown(insight)}
-                                </div>
-                            </div>
-                        )}
+                        {/* AI 인사이트 모달로 이동 */}
 
                         {/* 제출 결과 */}
                         {submitResult && !submitting && (
@@ -550,6 +554,18 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     </div>
                 </div>
             </div>
+
+            {/* AI 인사이트 모달 */}
+            <InsightModal
+                isOpen={showInsightModal}
+                onClose={() => setShowInsightModal(false)}
+                insightData={insightData}
+                onQuerySelect={(newSql) => {
+                    setSql(newSql);
+                    setResult(null);
+                    setSubmitResult(null);
+                }}
+            />
         </div>
     );
 }

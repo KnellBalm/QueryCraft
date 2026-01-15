@@ -8,8 +8,8 @@ from backend.common.logging import get_logger
 
 logger = get_logger(__name__)
 
-def get_ai_insight(problem_id: str, sql: str, results: list[dict], data_type: str = "pa") -> str:
-    """SQL 실행 결과를 바탕으로 AI 인사이트 생성"""
+def get_ai_insight(problem_id: str, sql: str, results: list[dict], data_type: str = "pa") -> dict:
+    """SQL 실행 결과를 바탕으로 AI 인사이트 생성 (구조화된 JSON 반환)"""
     problem = get_problem_by_id(problem_id, data_type)
     schema = get_table_schema("stream_" if data_type == "stream" else "pa_")
     
@@ -17,46 +17,105 @@ def get_ai_insight(problem_id: str, sql: str, results: list[dict], data_type: st
     sample_data = results[:20] if results else []
     
     prompt = f"""
-너는 숙련된 데이터 분석가이자 비즈니스 전략가다.
-사용자가 작성한 SQL 쿼리와 그 실행 결과를 분석하여 비즈니스 인사이트와 액션 플랜을 제안하라.
+당신은 데이터 분석 결과를 비즈니스 인사이트로 변환하는 전문가입니다.
 
-[분석 맥락]
-- 문제: {problem.title if problem else "비공개 분석"}
-- 질문: {problem.question if problem else "데이터 탐색"}
-- 사용된 SQL:
+**입력 데이터**:
+```
+{json.dumps(sample_data, ensure_ascii=False, indent=2)}
+```
+
+**실행한 SQL**:
 ```sql
 {sql}
 ```
 
-[실행 결과 (상위 20개 샘플)]
-{json.dumps(sample_data, ensure_ascii=False, indent=2)}
-
-[데이터 스키마 정보]
+**데이터 스키마**:
 {schema}
 
-[요청 사항]
-1. 위 데이터를 바탕으로 발견할 수 있는 핵심 인사이트(Fact & Insight)를 3가지 이내로 요약하라.
-2. 발견된 문제점이나 기회 요인을 바탕으로 구체적인 '비즈니스 액션 플랜'을 제안하라.
-3. 분석가다운 전문적인 톤을 유지하되, 이해하기 쉽게 설명하라.
-4. 결과는 마크다운 형식으로 작성하라.
+**요구사항**:
+1. **핵심 발견 (Key Findings)**: 데이터에서 발견한 정량적 사실 3가지
+2. **비즈니스 인사이트**: 발견의 의미와 배경 해석
+3. **추천 액션**: 구체적이고 실행 가능한 액션 아이템
+4. **추가 분석 제안**: 더 깊이 파고들 수 있는 SQL 쿼리 제안 (제목 + 쿼리)
 
-[출력 형식]
-### 📊 핵심 인사이트
-- ...
-### 💡 액션 플랜 (Action Plan)
-- ...
+**출력 형식**: JSON만 출력하세요. 다른 텍스트는 포함하지 마세요.
+{{
+  "key_findings": ["문장1", "문장2", "문장3"],
+  "insights": ["인사이트1", "인사이트2"],
+  "action_items": ["액션1", "액션2"],
+  "suggested_queries": [
+    {{"title": "제목", "sql": "SELECT ..."}}
+  ]
+}}
 """
 
     try:
         response = _call_gemini_with_retry(
-            model=GeminiModels.PROBLEM, # 인사이트는 추론 능력이 좋은 모델 사용
+            model=GeminiModels.PROBLEM,  # 인사이트는 추론 능력이 좋은 모델 사용
             contents=prompt,
             purpose="ai_insight"
         )
-        return response.text.strip()
+        
+        # JSON 파싱
+        raw_text = response.text.strip()
+        
+        # JSON 블록 추출 시도
+        import re
+        json_match = re.search(r'```json\s*(.*?)\s*```', raw_text, re.DOTALL | re.IGNORECASE)
+        if json_match:
+            json_text = json_match.group(1).strip()
+        else:
+            # 블록이 없으면 전체 텍스트에서 JSON 파싱 시도
+            json_text = raw_text
+        
+        # JSON 파싱
+        parsed = json.loads(json_text)
+        
+        # 마크다운 리포트 생성
+        report_md = f"""# AI 인사이트 리포트
+
+## 📌 핵심 발견 (Key Findings)
+{chr(10).join(f"{i+1}. {finding}" for i, finding in enumerate(parsed.get('key_findings', [])))}
+
+## 💡 비즈니스 인사이트
+{chr(10).join(f"- {insight}" for insight in parsed.get('insights', []))}
+
+## 🎯 추천 액션 (Action Items)
+{chr(10).join(f"{i+1}. {action}" for i, action in enumerate(parsed.get('action_items', [])))}
+
+## 🔍 추가 분석 제안
+{chr(10).join(f"### {q['title']}\n```sql\n{q['sql']}\n```\n" for q in parsed.get('suggested_queries', []))}
+"""
+        
+        return {
+            "key_findings": parsed.get('key_findings', []),
+            "insights": parsed.get('insights', []),
+            "action_items": parsed.get('action_items', []),
+            "suggested_queries": parsed.get('suggested_queries', []),
+            "report_markdown": report_md
+        }
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI insight JSON: {e}")
+        logger.error(f"Raw response: {raw_text[:500]}")
+        return {
+            "key_findings": [],
+            "insights": [],
+            "action_items": [],
+            "suggested_queries": [],
+            "report_markdown": "# 오류\n\nAI 인사이트를 파싱하는 중 오류가 발생했습니다.",
+            "insight": raw_text  # 하위 호환
+        }
     except Exception as e:
         logger.error(f"Failed to get AI insight: {e}")
-        return "인사이트를 생성하는 중 오류가 발생했습니다."
+        return {
+            "key_findings": [],
+            "insights": [],
+            "action_items": [],
+            "suggested_queries": [],
+            "report_markdown": "# 오류\n\n인사이트를 생성하는 중 오류가 발생했습니다.",
+            "insight": "인사이트를 생성하는 중 오류가 발생했습니다."  # 하위 호환
+        }
 
 def translate_text_to_sql(question: str, data_type: str = "pa") -> str:
     """자연어 질문을 SQL로 변환"""

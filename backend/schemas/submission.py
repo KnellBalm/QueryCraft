@@ -67,9 +67,22 @@ class InsightRequest(BaseModel):
     data_type: str = "pa"
 
 
+class SuggestedQuery(BaseModel):
+    """추천 쿼리"""
+    title: str
+    sql: str
+
+
 class InsightResponse(BaseModel):
     """AI 인사이트 응답"""
-    insight: str
+    key_findings: List[str] = Field(default_factory=list, description="핵심 발견 사항")
+    insights: List[str] = Field(default_factory=list, description="비즈니스 인사이트")
+    action_items: List[str] = Field(default_factory=list, description="추천 액션")
+    suggested_queries: List[SuggestedQuery] = Field(default_factory=list, description="추가 분석 제안")
+    report_markdown: str = Field(default="", description="마크다운 형식 리포트")
+    
+    # 하위 호환성 위해 유지 (deprecated)
+    insight: Optional[str] = None
 
 
 class TranslateRequest(BaseModel):

@@ -90,13 +90,13 @@ async def request_hint(request: HintRequest):
 @router.post("/insight", response_model=InsightResponse)
 async def request_insight(request: InsightRequest):
     """AI 인사이트 요청"""
-    insight = get_ai_insight(
+    insight_data = get_ai_insight(
         problem_id=request.problem_id,
         sql=request.sql,
         results=request.results,
         data_type=request.data_type
     )
-    return InsightResponse(insight=insight)
+    return InsightResponse(**insight_data)
 
 
 @router.post("/translate", response_model=TranslateResponse)
