@@ -56,6 +56,16 @@ export const sqlApi = {
 
     translate: (question: string, dataType: string = 'pa') =>
         api.post('/sql/translate', { question, data_type: dataType }),
+
+    // AI 도움 기능 (Daily 문제용, 문제당 1회)
+    aiHelp: (problemId: string, helpType: 'hint' | 'solution', currentSql: string = '', attemptCount: number = 0, dataType: string = 'pa') =>
+        api.post('/sql/ai-help', { 
+            problem_id: problemId, 
+            help_type: helpType, 
+            current_sql: currentSql,
+            attempt_count: attemptCount,
+            data_type: dataType 
+        }),
 };
 
 // 통계 API

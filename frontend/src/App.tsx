@@ -12,7 +12,7 @@ import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
 import { ToastProvider, useToast } from './components/Toast';
 import WeekendClosed from './components/WeekendClosed';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
 import { useTheme } from './contexts/ThemeContext';
@@ -20,6 +20,38 @@ import { useAuth } from './contexts/AuthContext';
 import { TrackProvider, useTrack } from './contexts/TrackContext';
 import type { UserStats } from './types';
 import './App.css';
+
+// 드롭다운 메뉴 컴포넌트
+function DropdownMenu({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={dropdownRef}>
+      <button 
+        className={`nav-dropdown-trigger ${isOpen ? 'active' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {icon} {label} <span className="dropdown-arrow">▼</span>
+      </button>
+      {isOpen && (
+        <div className="nav-dropdown-menu">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AppContent() {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -96,18 +128,29 @@ function AppContent() {
             {/* Core Skills Track 메뉴 */}
             {isCore && (
               <>
-                <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-                  📈 PA 분석
-                </NavLink>
+                <DropdownMenu label="Daily Training" icon="🏋️">
+                  <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
+                    📅 오늘의 도전 (PA)
+                  </NavLink>
+                  <span
+                    className="nav-dropdown-item disabled"
+                    onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
+                  >
+                    📡 스트림 분석 <span className="badge-soon">준비중</span>
+                  </span>
+                </DropdownMenu>
+
                 <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-                  ♾️ 무한 연습
+                  ♾️ Practice Arena
                 </NavLink>
-                <span
-                  className="nav-disabled nav-hide-mobile"
-                  onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
-                >
-                  📴스트림 분석
-                </span>
+
+                <NavLink to="/stats" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🏆 Leaderboard
+                </NavLink>
+
+                <NavLink to="/datacenter" className={({ isActive }) => isActive ? 'active' : ''}>
+                  📊 Data Center <span className="badge-soon">준비중</span>
+                </NavLink>
               </>
             )}
 
@@ -117,15 +160,18 @@ function AppContent() {
                 <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
                   🤖 AI Workspace
                 </NavLink>
+                
                 <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
-                  🔍 Crisis Simulator
+                  🔍 RCA Simulator
                 </NavLink>
-                <span
-                  className="nav-disabled nav-hide-mobile"
-                  onClick={() => showToast('Adaptive Tutor는 준비 중입니다! 🎓', 'info')}
-                >
-                  🎓 Tutor
-                </span>
+
+                <NavLink to="/mcpsandbox" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🧪 MCP Sandbox <span className="badge-soon">준비중</span>
+                </NavLink>
+
+                <NavLink to="/tutor" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🎓 Adaptive Tutor <span className="badge-soon">준비중</span>
+                </NavLink>
               </>
             )}
           </nav>
@@ -182,8 +228,12 @@ function AppContent() {
               <Route path="/rca" element={<Workspace dataType="rca" />} />
               <Route path="/stream" element={<Workspace dataType="stream" />} />
               <Route path="/stats" element={<StatsPage />} />
+              <Route path="/datacenter" element={<DataCenterPage />} />
               <Route path="/practice" element={<Practice />} />
               <Route path="/ailab" element={<AILab />} />
+              <Route path="/rca" element={<Workspace dataType="rca" />} />
+              <Route path="/mcpsandbox" element={<MCPSandboxPage />} />
+              <Route path="/tutor" element={<AdaptiveTutorPage />} />
               <Route path="/future" element={<FutureLabDashboard />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/admin" element={<AdminPage />} />
@@ -290,6 +340,38 @@ function StatsPage() {
           <p className="empty">아직 제출 이력이 없습니다. 문제를 풀어보세요!</p>
         )}
       </div>
+    </div>
+  );
+}
+
+// --- Placeholder Pages for Future Services ---
+
+function DataCenterPage() {
+  return (
+    <div className="placeholder-page">
+      <h1>📊 Data Center</h1>
+      <p>전체 데이터 스키마 탐색 및 메타데이터 관리 서비스 준비 중입니다.</p>
+      <div className="coming-soon-art">🏗️</div>
+    </div>
+  );
+}
+
+function MCPSandboxPage() {
+  return (
+    <div className="placeholder-page">
+      <h1>🧪 MCP Sandbox</h1>
+      <p>Model Context Protocol(MCP) 기반의 AI 에이전트 도구 개발 환경 준비 중입니다.</p>
+      <div className="coming-soon-art">🧪</div>
+    </div>
+  );
+}
+
+function AdaptiveTutorPage() {
+  return (
+    <div className="placeholder-page">
+      <h1>🎓 Adaptive Tutor</h1>
+      <p>사용자 수준별 맞춤형 SQL/분석 학습 가이드 서비스 준비 중입니다.</p>
+      <div className="coming-soon-art">🤖</div>
     </div>
   );
 }

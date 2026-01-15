@@ -161,3 +161,102 @@ SELECT ...
     except Exception as e:
         logger.error(f"Failed to translate text to SQL: {e}")
         return "-- SQL 변환 중 오류가 발생했습니다."
+
+
+def get_ai_help(
+    problem_id: str, 
+    help_type: str, 
+    current_sql: str = "", 
+    attempt_count: int = 0,
+    data_type: str = "pa"
+) -> dict:
+    """
+    Daily 문제용 AI 도움 기능
+    
+    Args:
+        problem_id: 문제 ID
+        help_type: "hint" 또는 "solution"
+        current_sql: 사용자가 작성 중인 SQL
+        attempt_count: 현재까지 시도 횟수
+        data_type: 문제 타입
+        
+    Returns:
+        {"type": "hint"|"solution", "content": "..."}
+    """
+    problem = get_problem_by_id(problem_id, data_type)
+    if not problem:
+        return {"type": "error", "content": "문제를 찾을 수 없습니다."}
+    
+    schema = get_table_schema("stream_" if data_type == "stream" else "pa_")
+    
+    if help_type == "hint":
+        prompt = f"""
+당신은 SQL 튜터입니다. 학생이 문제를 풀고 있습니다.
+직접적인 정답을 알려주지 말고, **접근 방향**을 힌트로 제공하세요.
+
+**문제**:
+{problem.get('question', '')}
+
+**테이블 스키마**:
+{schema}
+
+**학생이 시도한 횟수**: {attempt_count}회
+**학생이 작성 중인 SQL**:
+```sql
+{current_sql if current_sql else '(아직 작성하지 않음)'}
+```
+
+**요구사항**:
+1. 정답 SQL을 직접 알려주지 마세요.
+2. 어떤 테이블을 사용해야 하는지, 어떤 함수가 필요한지 힌트를 주세요.
+3. 2-3문장으로 간결하게 작성하세요.
+4. 격려하는 톤으로 작성하세요.
+
+힌트:
+"""
+    else:  # solution
+        prompt = f"""
+당신은 SQL 전문가입니다. 학생이 문제를 푸는데 어려움을 겪고 있어 정답을 요청했습니다.
+
+**문제**:
+{problem.get('question', '')}
+
+**테이블 스키마**:
+{schema}
+
+**정답 SQL** (참고용):
+```sql
+{problem.get('expected_query', '')}
+```
+
+**요구사항**:
+1. 정답 SQL을 제공하세요.
+2. 왜 이렇게 작성해야 하는지 간단히 설명하세요.
+3. 핵심 포인트 1-2개를 알려주세요.
+
+형식:
+```sql
+(정답 쿼리)
+```
+
+**설명**: (간단한 설명)
+"""
+
+    try:
+        response = _call_gemini_with_retry(
+            model=GeminiModels.PROBLEM,
+            contents=prompt,
+            purpose="ai_help"
+        )
+        
+        return {
+            "type": help_type,
+            "content": response.text.strip()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get AI help: {e}")
+        return {
+            "type": "error",
+            "content": "AI 도움을 생성하는 중 오류가 발생했습니다."
+        }
+

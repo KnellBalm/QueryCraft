@@ -47,6 +47,7 @@ export type AnalyticsEvent =
     | 'Problem Submitted'
     | 'Problem Failed'    // 오답 시점
     | 'Hint Requested'
+    | 'AI Help Requested'  // AI 도움 요청 (문제당 1회)
     // SQL 관련
     | 'SQL Executed'      // 실행 시점
     | 'SQL Error Occurred' // 에러 발생 시점
@@ -95,6 +96,11 @@ export interface EventProperties {
     error_message?: string;
     db_engine?: string;          // postgres, duckdb 등
     used_hint_before?: boolean;  // 정답 제출 전 힌트 사용 여부
+    
+    // AI 도움 관련
+    help_type?: 'hint' | 'solution';
+    attempts_before?: number;    // AI 도움 요청 전 시도 횟수
+    time_before_help?: number;   // AI 도움 요청 전 소요 시간 (초)
 
     // 인증/프로필 관련
     auth_provider?: 'google' | 'kakao' | 'email';
@@ -400,6 +406,23 @@ class Analytics {
 
     schemaViewed(dataType: string) {
         this.track('Schema Viewed', { data_type: dataType });
+    }
+
+    /** AI Help Requested (문제당 1회) */
+    aiHelpRequested(
+        problemId: string, 
+        helpType: 'hint' | 'solution',
+        metadata: { difficulty?: any, dataType: string, attemptsBefore?: number }
+    ) {
+        const timeSpent = this.getProblemTimeSpent();
+        this.track('AI Help Requested', {
+            problem_id: problemId,
+            help_type: helpType,
+            difficulty_level: metadata.difficulty,
+            data_type: metadata.dataType,
+            attempts_before: metadata.attemptsBefore || this.getAttemptCount(problemId),
+            time_before_help: timeSpent
+        });
     }
 }
 

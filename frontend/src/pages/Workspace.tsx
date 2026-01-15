@@ -38,7 +38,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [hinting, setHinting] = useState(false);
     const [hint, setHint] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'problem' | 'schema'>('problem');
     const [leftWidth, setLeftWidth] = useState(45);
@@ -50,6 +49,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [insightLoading, setInsightLoading] = useState(false);
     const [translateQuery, setTranslateQuery] = useState('');
     const [translating, setTranslating] = useState(false);
+
+    // AI 도움 기능 (Daily 문제용)
+    const [aiHelpUsed, setAiHelpUsed] = useState<{[problemId: string]: boolean}>({});
+    const [aiHelpResult, setAiHelpResult] = useState<{type: string; content: string} | null>(null);
+    const [aiHelpLoading, setAiHelpLoading] = useState(false);
+    const [showAiHelpMenu, setShowAiHelpMenu] = useState(false);
 
     const resizerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -188,23 +193,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setSubmitting(false);
     }, [sql, selectedProblem, completedStatus, dataType, selectedIndex]);
 
-    // 힌트 요청
-    const handleHint = useCallback(async () => {
-        if (!sql.trim() || !selectedProblem) return;
-        setHinting(true);
-        setHint(null);
-
-        analytics.hintRequested(selectedProblem.problem_id, selectedProblem.difficulty, dataType);
-
-        try {
-            const res = await sqlApi.hint(selectedProblem.problem_id, sql, dataType);
-            setHint(res.data.hint);
-        } catch (error: any) {
-            setHint(`힌트 요청 실패: ${error.message}`);
-        }
-        setHinting(false);
-    }, [sql, selectedProblem, dataType]);
-
     // AI 인사이트
     const handleInsight = useCallback(async () => {
         if (!result?.data || !selectedProblem || !result.success) return;
@@ -242,6 +230,44 @@ export function Workspace({ dataType }: WorkspaceProps) {
         }
         setTranslating(false);
     }, [translateQuery, dataType]);
+
+    // AI 도움 요청 (문제당 1회)
+    const handleAiHelp = useCallback(async (helpType: 'hint' | 'solution') => {
+        if (!selectedProblem) return;
+        if (aiHelpUsed[selectedProblem.problem_id]) return; // 이미 사용됨
+
+        setAiHelpLoading(true);
+        setShowAiHelpMenu(false);
+        setAiHelpResult(null);
+
+        // 시도 횟수 계산
+        const attemptCount = completedStatus[selectedProblem.problem_id] ? 1 : 0;
+
+        try {
+            const res = await sqlApi.aiHelp(
+                selectedProblem.problem_id,
+                helpType,
+                sql,
+                attemptCount,
+                dataType
+            );
+            setAiHelpResult(res.data);
+
+            // 사용 기록 저장
+            const newUsed = { ...aiHelpUsed, [selectedProblem.problem_id]: true };
+            setAiHelpUsed(newUsed);
+            localStorage.setItem(`ai_help_used_${dataType}`, JSON.stringify(newUsed));
+
+            analytics.aiHelpRequested(selectedProblem.problem_id, helpType, {
+                difficulty: selectedProblem.difficulty,
+                dataType: dataType,
+                attemptsBefore: attemptCount
+            });
+        } catch (error: any) {
+            setAiHelpResult({ type: 'error', content: `AI 도움 요청 실패: ${error.message}` });
+        }
+        setAiHelpLoading(false);
+    }, [selectedProblem, aiHelpUsed, sql, completedStatus, dataType]);
 
     // 좌우 리사이저
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -486,9 +512,30 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             {loading ? '실행 중...' : '실행'}
                         </button>
                         <div className="spacer" />
-                        <button onClick={handleHint} disabled={hinting || !selectedProblem} className="btn-hint">
-                            {hinting ? '생각 중...' : '힌트'}
-                        </button>
+                        {/* AI 도움 버튼 (문제당 1회) */}
+                        <div className="ai-help-container" style={{ position: 'relative' }}>
+                            <button 
+                                onClick={() => setShowAiHelpMenu(!showAiHelpMenu)}
+                                disabled={aiHelpLoading || !selectedProblem || (selectedProblem && aiHelpUsed[selectedProblem.problem_id])}
+                                className="btn-ai-help"
+                                title={selectedProblem && aiHelpUsed[selectedProblem.problem_id] ? '이미 사용됨' : 'AI 도움 받기'}
+                            >
+                                {aiHelpLoading ? '⏳' : '🤖'} AI 도움
+                                {selectedProblem && !aiHelpUsed[selectedProblem.problem_id] && (
+                                    <span className="badge-count">1</span>
+                                )}
+                            </button>
+                            {showAiHelpMenu && selectedProblem && !aiHelpUsed[selectedProblem.problem_id] && (
+                                <div className="ai-help-menu">
+                                    <button onClick={() => handleAiHelp('hint')}>
+                                        💡 힌트 받기
+                                    </button>
+                                    <button onClick={() => handleAiHelp('solution')}>
+                                        📝 쿼리 작성해줘
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         <button onClick={handleSubmit} disabled={submitting || !selectedProblem} className="btn-submit">
                             {submitting ? '채점 중...' : '제출'}
                         </button>
@@ -515,20 +562,33 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
                     <div className="result-content">
                         {/* 로딩 상태 */}
-                        {(submitting || hinting) && (
+                        {(submitting || aiHelpLoading) && (
                             <div className="loading-state">
                                 <div className="loading-spinner" />
                                 <div className="loading-text">
-                                    {submitting ? '채점 중입니다...' : 'AI가 힌트를 생성하고 있습니다...'}
+                                    {submitting ? '채점 중입니다...' : 'AI가 도움을 준비 중입니다...'}
                                 </div>
                             </div>
                         )}
 
                         {/* 힌트 */}
-                        {hint && !submitting && !hinting && (
+                        {hint && !submitting && !aiHelpLoading && (
                             <div className="hint-result">
                                 <div className="hint-title">AI 힌트</div>
                                 <div className="hint-content">{hint}</div>
+                            </div>
+                        )}
+
+                        {/* AI 도움 결과 */}
+                        {aiHelpResult && !aiHelpLoading && (
+                            <div className={`ai-help-result ${aiHelpResult.type}`}>
+                                <div className="ai-help-header">
+                                    {aiHelpResult.type === 'hint' ? '💡 AI 힌트' : 
+                                     aiHelpResult.type === 'solution' ? '📝 AI 솔루션' : '⚠️ 오류'}
+                                </div>
+                                <div className="ai-help-content">
+                                    {renderMarkdown(aiHelpResult.content)}
+                                </div>
                             </div>
                         )}
 
@@ -545,15 +605,15 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         )}
 
                         {/* 쿼리 결과 */}
-                        {result && result.success && result.data && !submitting && !hinting && (
+                        {result && result.success && result.data && !submitting && !aiHelpLoading && (
                             <ResultTable columns={result.columns || []} data={result.data} />
                         )}
 
-                        {result && !result.success && !submitting && !hinting && (
+                        {result && !result.success && !submitting && !aiHelpLoading && (
                             <div className="error-result">오류: {result.error}</div>
                         )}
 
-                        {!result && !submitResult && !hint && !submitting && !hinting && (
+                        {!result && !submitResult && !hint && !submitting && !aiHelpLoading && (
                             <div className="empty-result">SQL을 작성하고 실행 버튼을 누르세요</div>
                         )}
                     </div>

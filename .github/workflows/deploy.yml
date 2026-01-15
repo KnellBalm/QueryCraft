@@ -124,12 +124,12 @@ jobs:
           gcloud scheduler jobs delete problem-generation-daily --location=$REGION --quiet || true
           gcloud scheduler jobs create http problem-generation-daily \
             --location=$REGION \
-            --schedule="0 16 * * 0-4" \
+            --schedule="0 16 * * *" \
             --uri="https://$REGION-$PROJECT_ID.cloudfunctions.net/problem-worker" \
             --http-method=POST \
             --time-zone="UTC" \
             --description="Daily problem generation (Mon-Fri KST 01:00)"
-          
+
           # Tip generation (daily KST 00:30)
           gcloud scheduler jobs delete tip-generation-daily --location=$REGION --quiet || true
           gcloud scheduler jobs create http tip-generation-daily \
