@@ -60,6 +60,9 @@ npm run lint
 
 # Gemini AI로 SQL 문제 생성 테스트
 /generate-problem
+
+# GCP 스케줄링 문제 디버그 (Cloud Scheduler, Functions, Logs)
+/check-scheduler
 ```
 
 ## Architecture
@@ -92,10 +95,20 @@ npm run lint
 - 채점용 정답 테이블: PostgreSQL `grading` 스키마에 저장 (e.g., `grading.pa_20260115_01`)
 
 ### Problem Generation Flow
-1. APScheduler triggers daily at 01:00 KST (or Cloud Scheduler in production)
-2. `backend/generator/` creates problems using Gemini 2.0 Flash
-3. Problems JSON saved to `problems/daily/`, answer tables to `grading` schema
-4. Five product profiles define industry-specific scenarios: commerce, saas, content, community, fintech
+
+**Production (GCP)**:
+1. Cloud Scheduler triggers at UTC 16:00 (일~목) = KST 01:00 (월~금)
+2. Cloud Function `problem-worker` receives trigger
+3. Function calls Backend API `/admin/trigger/daily-generation` with `X-Scheduler-Key`
+4. Backend creates problems using Gemini 2.0 Flash
+5. Problems saved to `problems/daily/`, answer tables to `grading` schema
+
+**Local Development**:
+1. Set `ENABLE_SCHEDULER=true` to use APScheduler
+2. APScheduler triggers at KST 01:00 (월~금)
+3. Directly runs problem generation
+
+**Important**: GCP Cloud Run은 stateless 환경이므로 APScheduler 사용 불가. Cloud Scheduler + Cloud Functions 조합 필수.
 
 ### Environment
 - All timestamps use KST (Asia/Seoul timezone)

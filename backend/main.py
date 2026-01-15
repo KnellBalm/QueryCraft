@@ -40,12 +40,11 @@ async def lifespan(app: FastAPI):
     
     threading.Thread(target=init_background, daemon=True).start()
     
-    # 스케줄러 시작 (ENV=production이거나 ENABLE_SCHEDULER=true일 때)
+    # 스케줄러 시작 (ENABLE_SCHEDULER=true일 때만)
+    # GCP Cloud Run에서는 APScheduler 대신 Cloud Scheduler 사용
+    # APScheduler는 로컬 환경 또는 stateful 서버에서만 사용
     scheduler_started = False
-    should_start_scheduler = (
-        os.getenv("ENV") == "production" or 
-        os.getenv("ENABLE_SCHEDULER", "false").lower() == "true"
-    )
+    should_start_scheduler = os.getenv("ENABLE_SCHEDULER", "false").lower() == "true"
     
     if should_start_scheduler:
         try:

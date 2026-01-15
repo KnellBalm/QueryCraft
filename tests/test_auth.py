@@ -58,6 +58,28 @@ class TestPasswordHashing:
         hashed = hash_password(password)
         assert verify_password(password, hashed) is True
 
+    def test_bcrypt_computational_cost(self):
+        """bcrypt는 계산 비용이 있어야 함 (SHA256보다 느림)"""
+        import time
+        password = "testpassword123"
+
+        # bcrypt 해싱 시간 측정
+        start = time.time()
+        hash_password(password)
+        elapsed = time.time() - start
+
+        # bcrypt는 최소 10ms 이상 걸려야 함 (rounds=12)
+        # 너무 빠르면 보안에 취약
+        assert elapsed > 0.01, "bcrypt 해싱이 너무 빠름 (보안 취약)"
+
+    def test_bcrypt_rounds_in_hash(self):
+        """bcrypt 해시에 rounds 정보 포함"""
+        result = hash_password("password")
+        # $2b$12$... 형식 (12 rounds)
+        parts = result.split("$")
+        assert len(parts) >= 4
+        assert parts[2] == "12", "bcrypt rounds should be 12"
+
 
 class TestAuthEndpoints:
     """Auth API 엔드포인트 테스트 (모킹 사용)"""

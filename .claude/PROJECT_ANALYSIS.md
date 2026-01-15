@@ -14,26 +14,29 @@
 
 ## Critical Issues (즉시 해결 필요)
 
-### 1. .env 파일에 API 키 노출
+### 1. .env 파일에 API 키 노출 ✅ (문제 없음)
 - **파일**: `.env`
-- **노출된 키**: `GEMINI_API_KEY`, `GOOGLE_CLIENT_SECRET`, `SMTP_PASSWORD`
-- **조치**: 즉시 키 재발급, `.env.example` 분리
+- **상태**: `.gitignore`에 포함되어 Git에 추적되지 않음
+- **조치 완료**: 문제 없음
 
-### 2. 취약한 비밀번호 해싱
-- **파일**: `backend/api/auth.py:162-176`
-- **문제**: SHA256 사용 (보안에 취약)
+### 2. 취약한 비밀번호 해싱 ✅ (완료)
+- **파일**: `backend/api/auth.py:162-175`
+- **해결**: SHA256 → bcrypt (rounds=12)로 변경 완료
 ```python
 def hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{hashed}"
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 ```
-- **조치**: `bcrypt` 또는 `argon2`로 변경
+- **테스트**: `tests/test_auth.py`에 bcrypt 관련 테스트 추가
 
-### 3. SQL Injection 방어 미흡
-- **파일**: `backend/services/sql_service.py:17-30`
-- **문제**: Blacklist 방식 (우회 가능)
-- **조치**: Allowlist 방식으로 변경 (SELECT만 허용)
+### 3. SQL Injection 방어 미흡 ✅ (완료)
+- **파일**: `backend/services/sql_service.py:10-48`
+- **해결**: Blacklist → Allowlist 방식으로 변경 완료
+  - 허용: SELECT, WITH, EXPLAIN만
+  - 차단: INSERT, UPDATE, DELETE, DROP, CREATE, ALTER 등
+  - 추가 차단: pg_sleep, COPY, lo_import 등 위험 함수
+- **테스트**: `tests/test_sql_security.py` 신규 작성 (27개 테스트)
 
 ---
 
@@ -140,10 +143,10 @@ response.set_cookie(
 
 ## 권장 작업 순서
 
-### Phase 1: 보안 (즉시)
-1. API 키 재발급 및 .env.example 분리
-2. bcrypt로 비밀번호 해싱 변경
-3. SQL allowlist 방식 변경
+### Phase 1: 보안 (즉시) ✅ (완료)
+1. ✅ API 키 노출 - 문제 없음 (.gitignore 포함)
+2. ✅ bcrypt로 비밀번호 해싱 변경 - `auth.py` 완료
+3. ✅ SQL allowlist 방식 변경 - `sql_service.py` 완료
 4. OAuth state 파라미터 검증 추가
 
 ### Phase 2: 품질 (단기) ✅ (일부 완료)
@@ -176,6 +179,6 @@ response.set_cookie(
 | 문제 서비스 | `backend/services/problem_service.py` |
 | 설정 | `backend/config/settings.py` |
 | Docker | `Dockerfile`, `docker-compose.yml`, `docker-compose.dev.yml` |
-| 테스트 | `tests/test_grader.py`, `tests/test_duckdb_engine.py`, `tests/test_auth.py` |
+| 테스트 | `tests/test_grader.py`, `tests/test_duckdb_engine.py`, `tests/test_auth.py`, `tests/test_sql_security.py` |
 | 프론트 에디터 | `frontend/src/components/SQLEditor.tsx` |
 | 환경변수 | `.env`, `.env.dev` |
