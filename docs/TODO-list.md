@@ -6,20 +6,20 @@
 
 ## 🆕 다음 작업 (2026-01-16 설계 완료)
 
-### 데이터 파이프라인 설계
-- [ ] `generators/` 디렉토리 구조 생성
-- [ ] `BaseGenerator` 추상 클래스 구현
-- [ ] `DataValidator` 데이터 품질 검증 클래스
+### 데이터 파이프라인 설계 ✅
+- [x] `generators/` 디렉토리 구조 생성
+- [x] `BaseGenerator` 추상 클래스 구현
+- [x] `DataValidator` 데이터 품질 검증 클래스
 
 ### Mixpanel 분석
 - [ ] 대시보드 설정 (Funnel, Retention, Flow)
 - [ ] AI 사용 임계치 이벤트 트래킹 추가
 
-### Daily 문제 AI 도움 기능
-- [ ] UI: AI 도움 버튼 (문제당 1회 제한)
-- [ ] 도움 유형: 💡 힌트 / 📝 쿼리 작성
-- [ ] `api/sql.py`: AI 도움 엔드포인트
-- [ ] `services/ai_helper.py`: Gemini API 호출
+### Daily 문제 AI 도움 기능 ✅
+- [x] UI: AI 도움 버튼 (문제당 1회 제한)
+- [x] 도움 유형: 💡 힌트 / 📝 쿼리 작성
+- [x] `api/sql.py`: AI 도움 엔드포인트
+- [x] `services/ai_service.py`: Gemini API 호출
 
 > 📎 상세 설계: `docs/IMPLEMENTATION_PLAN.md`
 
