@@ -13,7 +13,7 @@
 
 ### Mixpanel 분석
 - [ ] 대시보드 설정 (Funnel, Retention, Flow)
-- [ ] AI 사용 임계치 이벤트 트래킹 추가
+- [x] AI 사용 임계치 이벤트 트래킹 추가
 
 ### Daily 문제 AI 도움 기능 ✅
 - [x] UI: AI 도움 버튼 (문제당 1회 제한)
