@@ -258,11 +258,10 @@ export function Workspace({ dataType }: WorkspaceProps) {
             setAiHelpUsed(newUsed);
             localStorage.setItem(`ai_help_used_${dataType}`, JSON.stringify(newUsed));
 
-            analytics.track('AI Help Requested', {
-                problem_id: selectedProblem.problem_id,
-                help_type: helpType,
-                attempts_before: attemptCount,
-                data_type: dataType
+            analytics.aiHelpRequested(selectedProblem.problem_id, helpType, {
+                difficulty: selectedProblem.difficulty,
+                dataType: dataType,
+                attemptsBefore: attemptCount
             });
         } catch (error: any) {
             setAiHelpResult({ type: 'error', content: `AI 도움 요청 실패: ${error.message}` });
