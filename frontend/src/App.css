@@ -1,5 +1,70 @@
 /* frontend/src/App.css */
 
+/* Track Theme Variables */
+[data-track="core"] {
+  --track-primary: #3b82f6;
+  --track-primary-rgb: 59, 130, 246;
+  --track-secondary: #64748b;
+  --track-accent: #0ea5e9;
+  --track-gradient: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(100, 116, 139, 0.15));
+}
+
+[data-track="future"] {
+  --track-primary: #a855f7;
+  --track-primary-rgb: 168, 85, 247;
+  --track-secondary: #22d3ee;
+  --track-accent: #f472b6;
+  --track-gradient: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.15));
+}
+
+/* Track Switcher in Header */
+.track-switcher {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.track-switcher button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.track-switcher button:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.track-switcher button.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+[data-track="core"] .track-switcher button.active {
+  background: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+[data-track="future"] .track-switcher button.active {
+  background: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+/* Track-aware Header Gradient */
+.header {
+  background: var(--track-gradient, linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)));
+}
+
 .app {
   display: flex;
   flex-direction: column;

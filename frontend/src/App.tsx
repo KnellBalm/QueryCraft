@@ -5,6 +5,7 @@ import Practice from './pages/Practice';
 import { MainPage } from './pages/MainPage';
 import { AILab } from './pages/AILab';
 import { MyPage } from './pages/MyPage';
+import { FutureLabDashboard } from './pages/FutureLabDashboard';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
@@ -16,6 +17,7 @@ import { statsApi, adminApi } from './api/client';
 import { initAnalytics, analytics } from './services/analytics';
 import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
+import { TrackProvider, useTrack } from './contexts/TrackContext';
 import type { UserStats } from './types';
 import './App.css';
 
@@ -24,6 +26,7 @@ function AppContent() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
+  const { track, setTrack, isCore, isFuture } = useTrack();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -72,25 +75,59 @@ function AppContent() {
       <div className="app">
         <header className="header">
           <Link to="/" className="logo">📔QueryCraft</Link>
-          <nav className="nav">
-            <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-              📈 PA 분석
-            </NavLink>
-            <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-              ♾️ 무한 연습
-            </NavLink>
-            <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
-              🔍 RCA 분석
-            </NavLink>
-            <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
-              🤖 AI 연구소 <span className="badge-new-tiny">NEW</span>
-            </NavLink>
-            <span
-              className="nav-disabled nav-hide-mobile"
-              onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
+
+          {/* Track Switcher */}
+          <div className="track-switcher">
+            <button
+              className={isCore ? 'active' : ''}
+              onClick={() => setTrack('core')}
             >
-              📴스트림 분석
-            </span>
+              💼 Core Skills
+            </button>
+            <button
+              className={isFuture ? 'active' : ''}
+              onClick={() => setTrack('future')}
+            >
+              🚀 Future Lab
+            </button>
+          </div>
+
+          <nav className="nav">
+            {/* Core Skills Track 메뉴 */}
+            {isCore && (
+              <>
+                <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
+                  📈 PA 분석
+                </NavLink>
+                <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
+                  ♾️ 무한 연습
+                </NavLink>
+                <span
+                  className="nav-disabled nav-hide-mobile"
+                  onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
+                >
+                  📴스트림 분석
+                </span>
+              </>
+            )}
+
+            {/* Future Lab Track 메뉴 */}
+            {isFuture && (
+              <>
+                <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🤖 AI Workspace
+                </NavLink>
+                <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🔍 Crisis Simulator
+                </NavLink>
+                <span
+                  className="nav-disabled nav-hide-mobile"
+                  onClick={() => showToast('Adaptive Tutor는 준비 중입니다! 🎓', 'info')}
+                >
+                  🎓 Tutor
+                </span>
+              </>
+            )}
           </nav>
           <div className="user-stats">
             {user && stats && (
@@ -147,6 +184,7 @@ function AppContent() {
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/practice" element={<Practice />} />
               <Route path="/ailab" element={<AILab />} />
+              <Route path="/future" element={<FutureLabDashboard />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Routes>
@@ -398,7 +436,7 @@ function AdminPage() {
     setLoading(false);
   };
 
-   const generateRcaProblems = async () => {
+  const generateRcaProblems = async () => {
     setLoading(true);
     setMessage('');
     try {
@@ -959,9 +997,11 @@ function AdminPage() {
 
 const App: React.FC = () => {
   return (
-    <ToastProvider>
-      <AppContent />
-    </ToastProvider>
+    <TrackProvider>
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
+    </TrackProvider>
   );
 };
 
