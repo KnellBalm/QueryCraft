@@ -1,5 +1,5 @@
 // frontend/src/components/LoginModal.tsx
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginModal.css';
 
@@ -16,6 +16,20 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // ESC 키로 모달 닫기
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+    }, [onClose]);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+            return () => document.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [isOpen, handleKeyDown]);
 
     if (!isOpen) return null;
 
@@ -52,7 +66,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay">
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <button
                     className="modal-close"

@@ -60,6 +60,111 @@ async def require_admin(request: Request):
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+@router.get("/health-check")
+async def health_check_with_auto_recovery(request: Request):
+    """Health check with auto-recovery for missing problems.
+    
+    Cloud Scheduler should call this endpoint periodically (e.g., every hour).
+    If today's problems are missing, it will trigger generation automatically.
+    
+    This ensures data availability even if the main daily scheduler fails.
+    """
+    from backend.common.logging import get_logger
+    import time
+    logger = get_logger(__name__)
+    
+    # API 키 검증 (Cloud Scheduler 또는 내부 호출)
+    expected_key = os.environ.get("SCHEDULER_API_KEY", "")
+    provided_key = request.headers.get("X-Scheduler-Key", "")
+    
+    # 키가 설정되어 있으면 검증, 아니면 건너뜀 (dev 환경 호환)
+    if expected_key and provided_key != expected_key:
+        logger.warning("[HEALTH] Invalid API key for health check")
+        raise HTTPException(403, "Invalid API key")
+    
+    today = get_today_kst()
+    result = {
+        "status": "healthy",
+        "date": str(today),
+        "problems_exist": False,
+        "auto_generated": False,
+        "details": {}
+    }
+    
+    try:
+        with postgres_connection() as pg:
+            # 오늘 날짜 문제 확인
+            df = pg.fetch_df("""
+                SELECT data_type, COUNT(*) as cnt 
+                FROM public.problems 
+                WHERE problem_date = %s 
+                GROUP BY data_type
+            """, [today])
+            
+            pa_count = 0
+            for _, row in df.iterrows():
+                if row.get("data_type") == "pa":
+                    pa_count = int(row.get("cnt", 0))
+                result["details"][row.get("data_type", "unknown")] = int(row.get("cnt", 0))
+            
+            if pa_count > 0:
+                result["problems_exist"] = True
+                logger.info(f"[HEALTH] Problems exist for {today}: {result['details']}")
+                return result
+            
+            # 문제가 없으면 자동 생성 시도
+            logger.warning(f"[HEALTH] No problems found for {today}, triggering auto-generation")
+            db_log(LogCategory.SCHEDULER, f"Health check 자동 복구: {today} 문제 없음, 생성 시작", LogLevel.WARNING, "health_check")
+            
+            start_time = time.time()
+            
+            # 1. 데이터 생성
+            try:
+                from backend.generator.data_generator_advanced import generate_data
+                generate_data(modes=("pa",))
+                result["details"]["data_generated"] = True
+            except Exception as e:
+                logger.error(f"[HEALTH] Data generation failed: {e}")
+                result["details"]["data_error"] = str(e)
+            
+            # 2. PA 문제 생성
+            try:
+                from problems.generator import generate as gen_pa
+                gen_pa(today, pg)
+                
+                # 생성된 문제 수 확인
+                new_df = pg.fetch_df("""
+                    SELECT COUNT(*) as cnt FROM public.problems 
+                    WHERE problem_date = %s AND data_type = 'pa'
+                """, [today])
+                new_count = int(new_df.iloc[0]["cnt"]) if len(new_df) > 0 else 0
+                result["details"]["pa_generated"] = new_count
+                result["auto_generated"] = new_count > 0
+            except Exception as e:
+                logger.error(f"[HEALTH] PA generation failed: {e}")
+                result["details"]["pa_error"] = str(e)
+            
+            duration = time.time() - start_time
+            result["details"]["duration_sec"] = round(duration, 2)
+            
+            if result["auto_generated"]:
+                result["status"] = "recovered"
+                db_log(LogCategory.SCHEDULER, f"Health check 자동 복구 성공: {result['details']}", LogLevel.INFO, "health_check")
+            else:
+                result["status"] = "degraded"
+                db_log(LogCategory.SCHEDULER, f"Health check 자동 복구 실패: {result['details']}", LogLevel.ERROR, "health_check")
+            
+            return result
+            
+    except Exception as e:
+        logger.error(f"[HEALTH] Health check failed: {e}")
+        return {
+            "status": "error",
+            "date": str(today),
+            "error": str(e)
+        }
+
+
 @router.get("/status", response_model=SystemStatus)
 async def get_system_status(admin=Depends(require_admin)):
     """시스템 상태 조회"""

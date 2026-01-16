@@ -1,199 +1,105 @@
-# 데이터 파이프라인 설계
+# Phase 2: 서비스 오픈 안정화 및 기능 고도화 계획
 
-## 1. Generator 모듈화 (서비스 운영/안정화)
+> 📅 시작일: 2026-01-17
 
-### 현재 구조
-```
-backend/scheduler.py  # 모든 생성 로직이 하나의 파일에
-```
+## 현재 상황 분석
 
-### 개선 구조
-```
-backend/
-├── generators/
-│   ├── __init__.py
-│   ├── base.py           # BaseGenerator 추상 클래스
-│   ├── pa_generator.py   # PA 문제 생성
-│   ├── rca_generator.py  # RCA 장애 시뮬
-│   └── stream_generator.py
-├── scheduler.py          # 스케줄러 (Generator 호출만)
-└── services/
-    └── generation_service.py  # 생성 서비스 레이어
-```
+### 🔴 긴급 이슈 (P0)
 
-### BaseGenerator 인터페이스
-```python
-class BaseGenerator(ABC):
-    @abstractmethod
-    def generate(self, date: str) -> GenerationResult: ...
-    @abstractmethod
-    def validate(self) -> bool: ...
-    def log_result(self, result): ...
-```
-
-### 데이터 품질 검증 규칙
-
-> ⚠️ 실무 수준의 데이터 품질을 위해 **논리적 일관성** 검증 필수
-
-#### 이벤트 퍼널 규칙
-```python
-# 상위 이벤트 >= 하위 이벤트
-assert page_views >= downloads
-assert problem_viewed >= problem_attempted
-assert problem_attempted >= problem_submitted
-assert sessions >= unique_users
-```
-
-#### 시간 순서 규칙
-```python
-# 시작 < 종료
-assert session_start < session_end
-assert problem_started_at < problem_submitted_at
-```
-
-#### 수치 범위 규칙
-```python
-# 현실적인 범위
-assert 0 < session_duration_seconds < 86400  # 최대 24시간
-assert 0 < time_spent_minutes < 180  # 문제당 최대 3시간
-assert 0 <= accuracy_rate <= 100
-```
-
-#### datetime 포맷 규칙
-```python
-# 초 단위까지만 (마이크로초 제외)
-# ✅ 2026-01-16 00:30:45
-# ❌ 2026-01-16T00:30:45.123456Z
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-```
-
-#### DataValidator 클래스
-```python
-class DataValidator:
-    def validate_funnel(self, data: dict) -> ValidationResult:
-        """퍼널 순서 검증"""
-        ...
-    
-    def validate_time_sequence(self, data: dict) -> ValidationResult:
-        """시간 순서 검증"""
-        ...
-    
-    def validate_ranges(self, data: dict) -> ValidationResult:
-        """수치 범위 검증"""
-        ...
-```
-
-### 현재 테이블
-| 테이블 | 용도 |
-|--------|------|
-| `submissions` | 제출 기록 |
-| `users` | 사용자 정보 |
-| `system_logs` | 시스템 로그 |
-
-### 활용 방안
-
-#### A. 약점 분석 (이미 구현 시작됨)
-- `stats_service.py` → `get_weakness_analysis()`
-- 오답 패턴 → 맞춤 문제 추천
-
-#### B. 운영 대시보드 확장
-- 일별 활성 사용자(DAU)
-- 문제별 정답률
-- 평균 풀이 시간
+| 이슈 | 원인 분석 | 수정 방안 |
+|-----|---------|---------|
+| 로그인 모달 UX | 오버레이 클릭 시 모달 닫힘 (`LoginModal.tsx` line 55) | 오버레이 onClick 제거, X 버튼으로만 닫기 |
+| 로그인 401 에러 | 등록되지 않은 계정 또는 잘못된 비밀번호 | 테스트 계정 생성/확인, 로그 분석 |
+| 스케줄러 미동작 | Cloud Run scale-to-zero 시 APScheduler 중지 | Cloud Scheduler 설정 확인 및 재설정 |
+| 15/16일 데이터 누락 | 스케줄러 미동작으로 문제/데이터 미생성 | 수동 생성 또는 Cloud Scheduler 재설정 |
 
 ---
 
-## 3. Mixpanel 이벤트 분석
+## Proposed Changes
 
-> 기존 `docs/archive/EVENT_DESIGN_GUIDELINE.md` 참조
+### 1. 긴급 이슈 해결
 
-### 핵심 퍼널
-```
-Page Viewed → Problem Viewed → Problem Attempted → Problem Submitted → Problem Solved
-```
+#### [MODIFY] [LoginModal.tsx](file:///mnt/z/GitHub/QueryCraft/frontend/src/components/LoginModal.tsx)
+- 오버레이 클릭으로 모달 닫기 제거
+- X 버튼 또는 ESC 키로만 닫도록 수정
 
-### 서비스 운영용 주요 이벤트
+#### [VERIFY] 로그인 401 에러
+1. Supabase DB에서 테스트 사용자 확인
+2. 백엔드 로그 분석
+3. 테스트 계정 생성
 
-| 이벤트 | 속성 | 분석 목적 |
-|--------|------|----------|
-| `Problem Solved` | `difficulty`, `attempt_count`, `time_spent` | 문제 난이도 조정 |
-| `Problem Failed` | `error_type`, `sql_snippet` | 오류 패턴 분석 |
-| `Session Started` | `is_returning`, `last_visit_days` | 리텐션 분석 |
-| `Feature Used` | `feature_name`, `track` | 기능별 사용량 |
-
-### Mixpanel 대시보드 구성 (제안)
-
-1. **Funnel Report**: 문제 풀이 퍼널 전환율
-2. **Retention Report**: 주간/월간 재방문율
-3. **Flow Report**: 사용자 탐색 경로
-4. **Insights**: DAU, 문제 풀이 수, 정답률 추이
-
-### AI 사용 임계치 분석
-
-> 🎯 "사용자가 AI 도움 없이 얼마나 시도하는가?"
-
-#### 수집 이벤트
-| 이벤트 | 속성 | 설명 |
-|--------|------|------|
-| `Problem Started` | `problem_id`, `started_at` | 문제 시작 |
-| `SQL Executed` | `attempt_number`, `is_correct` | 시도마다 트래킹 |
-| `AI Help Requested` | `attempts_before`, `time_spent_before` | AI 도움 요청 시점 |
-| `Problem Solved` | `total_attempts`, `used_ai` | 최종 해결 |
-
-#### 분석 지표
-```
-1. 평균 시도 횟수 before AI:
-   AVG(attempts_before) WHERE event = 'AI Help Requested'
-
-2. 평균 체류 시간 before AI:
-   AVG(time_spent_before) WHERE event = 'AI Help Requested'
-
-3. AI 사용률 by 난이도:
-   COUNT(used_ai=true) / COUNT(*) GROUP BY difficulty
-
-4. 자력 해결 비율:
-   COUNT(used_ai=false AND is_correct=true) / COUNT(*)
-```
-
-#### 인사이트 예시
-- "사용자는 평균 3.2회 시도 후 AI 도움 요청"
-- "5분 이상 고민 시 AI 사용 확률 80%"
-- "Hard 문제는 1.5회만에 AI 요청, Easy는 5회"
+#### [VERIFY] Cloud Scheduler 상태
+1. GCP Console에서 Cloud Scheduler 작업 확인
+2. `/admin/schedule/run` 호출 이력 확인
+3. 실패 시 재시도/알림 설정
 
 ---
 
-## 4. Daily 문제 AI 도움 기능
+### 2. 문제 생성 안정화 (P1)
 
-### 요구사항
-- **횟수 제한**: 문제당 1회만 사용 가능
-- **도움 유형**: 사용자가 선택
-  - 💡 힌트 (접근 방향 제시)
-  - 📝 쿼리 작성 (정답 쿼리 제공)
+#### [MODIFY] SQL 검증 루프 강화
+- Gemini 생성 SQL을 DuckDB `EXPLAIN`으로 검증
+- 실패 시 최대 3회 재시도 (지수 백오프)
+- `dataset_versions` 테이블에 실패 기록
 
-### UI 구성
-```
-[AI 도움 받기 🤖] ← 1회 사용 가능
-    ├─ 💡 힌트 받기
-    └─ 📝 쿼리 작성해줘
-```
-
-### 이벤트 트래킹
-| 이벤트 | 속성 |
-|--------|------|
-| `AI Help Requested` | `help_type`, `attempts_before`, `time_spent` |
-| `AI Help Used` | `help_type`, `result_helpful` |
-
-### 구현 파일
-- `Workspace.tsx`: AI 도움 버튼 UI
-- `api/sql.py`: AI 도움 엔드포인트
-- `services/ai_helper.py`: Gemini API 호출
+#### [ADD] 데이터 롤백 기능
+- `POST /admin/rollback/{date}` 엔드포인트 추가
+- 특정 날짜 데이터 즉시 롤백 가능
 
 ---
 
-## 다음 단계
+### 3. 데이터 생성 엔진 고도화 (P1)
 
-1. [ ] `generators/` 디렉토리 구조 생성
-2. [ ] `BaseGenerator` 클래스 구현
-3. [ ] Mixpanel 대시보드 설정
-4. [ ] AI 사용 임계치 이벤트 트래킹 추가
-5. [ ] Daily 문제 AI 도움 기능 구현
+#### [ADD] 신규 분석 시나리오
+- 퍼널 분석: 회원가입 → 첫 구매 → 재구매
+- 잔존율: D1, D7, D30 Retention
+- LTV 예측: 사용자별 누적 결제 시계열
+
+#### [ADD] RCA용 이상치 데이터
+- 광고 채널 효율 급락 (CTR 50% 하락)
+- 결제 대기 시간 증가 (특정 지역 3배)
+- 리텐션 급락 (특정 코호트)
+
+---
+
+### 4. 추가 기능 설계 (P2)
+
+#### [DESIGN] 맞춤형 로드맵
+- 사용자 풀이 이력 분석 (정답률, 취약 토픽)
+- 추천 알고리즘 설계
+- API: `GET /api/recommend/roadmap`
+
+#### [DESIGN] 소셜 피드백 시스템
+- 쿼리 결과 공유: `POST /api/share`
+- 피드백 수집: `POST /api/feedback`
+
+---
+
+## Jules 위임 업무
+
+```bash
+# Jules-1: 백엔드 테스트 커버리지 80%
+jules new "backend/ 디렉토리의 테스트 커버리지를 80%까지 높이세요..."
+
+# Jules-2: API 및 프로젝트 문서화
+jules new "프로젝트 문서를 최신화하고 자동화하세요..."
+
+# Jules-3: 프론트엔드 코드 품질 개선
+jules new "frontend/src/의 TypeScript 타입 안정성을 강화하세요..."
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+pytest tests/ -v --cov=backend
+cd frontend && npm run build
+```
+
+### Manual Verification
+1. 로그인 모달 UX 확인 (오버레이 클릭 무시)
+2. 테스트 계정 로그인 성공 확인
+3. `/admin/schedule/run` 수동 호출 → 오늘 날짜 문제 생성 확인
+4. SQL 검증 재시도 로직 로그 확인
