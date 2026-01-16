@@ -99,7 +99,7 @@ function LandingHero({ track }: { track: 'core' | 'future' }) {
 }
 
 // 아케이드 모드 선택 (세로 배치)
-function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: string) => void }) {
+function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: 'success' | 'error' | 'info' | 'warning') => void }) {
     return (
         <div className="arcade-modes">
             <h2 className="modes-title">
@@ -151,7 +151,7 @@ function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: string)
     );
 }
 
-function ArcadeModesFuture({ showToast }: { showToast: (msg: string, type: string) => void }) {
+function ArcadeModesFuture({ showToast }: { showToast: (msg: string, type: 'success' | 'error' | 'info' | 'warning') => void }) {
     return (
         <div className="arcade-modes future-modes">
             <h2 className="modes-title">
