@@ -435,7 +435,7 @@ class Analytics {
         });
     }
 
-    // ============ AI Lab 이벤트 (TODO-list 5.1) ============
+    // ============ AI Lab 이벤트 ============
 
     /** Text to SQL Requested - 자연어→SQL 변환 요청 */
     textToSQLRequested(
