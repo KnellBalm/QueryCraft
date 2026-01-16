@@ -128,7 +128,7 @@ function AppContent() {
             {/* Core Skills Track 메뉴 */}
             {isCore && (
               <>
-                <DropdownMenu label="Daily Training" icon="🏋️">
+                <DropdownMenu label="오늘의 학습" icon="🏋️">
                   <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
                     📅 오늘의 도전 (PA)
                   </NavLink>
@@ -141,15 +141,15 @@ function AppContent() {
                 </DropdownMenu>
 
                 <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
-                  ♾️ Practice Arena
+                  ♾️ 연습장
                 </NavLink>
 
                 <NavLink to="/stats" className={({ isActive }) => isActive ? 'active' : ''}>
-                  🏆 Leaderboard
+                  🏆 리더보드
                 </NavLink>
 
                 <NavLink to="/datacenter" className={({ isActive }) => isActive ? 'active' : ''}>
-                  📊 Data Center <span className="badge-soon">준비중</span>
+                  📊 데이터 센터 <span className="badge-soon">준비중</span>
                 </NavLink>
               </>
             )}

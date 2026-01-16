@@ -47,14 +47,14 @@ function DailyBriefing({ user, stats, track }: { user: User, stats: UserStats | 
             <div className="briefing-container">
                 <div className="briefing-header">
                     <span className="greeting">
-                        {track === 'core' ? '👋 Welcome back,' : '🤖 System Online,'} <span className="highlight">{user.nickname || user.name}</span>
+                        {track === 'core' ? '👋 안녕하세요,' : '🤖 시스템 온라인,'} <span className="highlight">{user.nickname || user.name}</span>님
                     </span>
-                    <span className="level-badge">Lv.{stats?.level || '1 Beginner'}</span>
+                    <span className="level-badge">Lv.{stats?.level || '1 초보자'}</span>
                 </div>
 
                 <div className="xp-dashboard">
                     <div className="xp-info">
-                        <span>EXP Progress</span>
+                        <span>경험치 진행률</span>
                         <span>{currentXP} / {nextLevelXP} XP</span>
                     </div>
                     <div className="xp-bar-large">
@@ -66,19 +66,19 @@ function DailyBriefing({ user, stats, track }: { user: User, stats: UserStats | 
                     <div className="stat-box">
                         <span className="icon">🔥</span>
                         <div className="info">
-                            <strong>{stats?.streak || 0} Days</strong>
-                            <small>Current Streak</small>
+                            <strong>{stats?.streak || 0}일</strong>
+                            <small>연속 학습</small>
                         </div>
                     </div>
                     <div className="stat-box">
                         <span className="icon">✅</span>
                         <div className="info">
-                            <strong>{stats?.correct || 0} Solved</strong>
-                            <small>Total Success</small>
+                            <strong>{stats?.correct || 0}문제</strong>
+                            <small>총 정답</small>
                         </div>
                     </div>
                     <Link to={track === 'core' ? "/pa" : "/ailab"} className="continue-btn">
-                        {track === 'core' ? '▶ Resume Training' : '▶ Access Terminal'}
+                        {track === 'core' ? '▶ 학습 이어하기' : '▶ 터미널 접속'}
                     </Link>
                 </div>
             </div>
@@ -93,7 +93,7 @@ function LandingHero({ track }: { track: 'core' | 'future' }) {
             <div className="hero-grid" />
             <div className="hero-content">
                 <div className="hero-badge">
-                    {track === 'core' ? '🎮 SQL TRAINING ARENA' : '🦾 AI AGENT COMMAND CENTER'}
+                    {track === 'core' ? '🎮 SQL 훈련소' : '🦾 AI 에이전트 커맨드 센터'}
                 </div>
                 <h1>
                     {track === 'core' ? (
@@ -104,11 +104,11 @@ function LandingHero({ track }: { track: 'core' | 'future' }) {
                 </h1>
                 <p className="hero-sub">
                     {track === 'core'
-                        ? <>Level up your data skills<br /><small>(* PostgreSQL supported)</small></>
-                        : <>Build and simulate AI agents<br /><small>(* Experimental Features)</small></>
+                        ? <>데이터 역량을 레벨업하세요<br /><small>(* PostgreSQL 지원)</small></>
+                        : <>AI 에이전트를 빌드하고 시뮬레이션하세요<br /><small>(* 실험적 기능)</small></>
                     }
                 </p>
-                <p className="login-hint">Log in to start your journey</p>
+                <p className="login-hint">로그인하여 여정을 시작하세요</p>
             </div>
         </section>
     );
@@ -131,7 +131,7 @@ function ActivityHeatmap({ history }: { history: ActivityLog[] }) {
 
     return (
         <div className="activity-heatmap">
-            <h3>Recent Activity</h3>
+            <h3>최근 활동</h3>
             <div className="heatmap-grid">
                 {days.map((day) => (
                     <div
@@ -205,7 +205,7 @@ export function MainPage() {
             <section className="modes-section">
                 <h2 className="section-title">
                     <span className="title-icon">{isCore ? '🕹️' : '📡'}</span>
-                    SELECT MODE
+                    학습 모드 선택
                 </h2>
                 <div className="modes-grid">
                     {isCore ? (
@@ -213,22 +213,22 @@ export function MainPage() {
                             <Link to="/pa" className="mode-card mode-pa">
                                 <div className="mode-glow" />
                                 <span className="mode-icon">📈</span>
-                                <h3>PA Analysis</h3>
-                                <p>Product Analytics</p>
-                                <span className="mode-tag">DAILY</span>
+                                <h3>PA 분석</h3>
+                                <p>프로덕트 분석</p>
+                                <span className="mode-tag">일일</span>
                             </Link>
                             <div className="mode-card mode-stream mode-disabled" onClick={() => showToast('Stream analysis coming soon! 📡', 'info')}>
                                 <div className="mode-glow" />
                                 <span className="mode-icon">📡</span>
-                                <h3>Stream Data</h3>
-                                <p>Real-time Events</p>
-                                <span className="mode-tag">SOON</span>
+                                <h3>스트림 분석</h3>
+                                <p>실시간 이벤트</p>
+                                <span className="mode-tag">준비중</span>
                             </div>
                             <Link to="/practice" className="mode-card mode-practice">
                                 <div className="mode-glow" />
                                 <span className="mode-icon">♾️</span>
-                                <h3>Practice Arena</h3>
-                                <p>Unlimited Drill</p>
+                                <h3>연습장</h3>
+                                <p>무제한 훈련</p>
                                 <span className="mode-tag">∞</span>
                             </Link>
                         </>
@@ -265,7 +265,7 @@ export function MainPage() {
                 <div className="column recommendations">
                     <h2 className="section-title small">
                         <span className="title-icon">✨</span>
-                        FOR YOU
+                        추천 문제
                     </h2>
                     <div className="rec-list">
                          {recommendedProblems.length > 0 ? (
@@ -284,7 +284,7 @@ export function MainPage() {
                                 </Link>
                             ))
                         ) : (
-                            <div className="empty-msg">No recommendations available.</div>
+                            <div className="empty-msg">추천 문제가 없습니다.</div>
                         )}
                     </div>
                 </div>
@@ -292,17 +292,17 @@ export function MainPage() {
                 <div className="column leaderboard">
                     <h2 className="section-title small">
                         <span className="title-icon">🏆</span>
-                        TOP AGENTS
+                        상위 랭커
                     </h2>
                     <div className="leaderboard-list">
                         {leaderboard.slice(0, 5).map((entry, idx) => (
                             <div key={idx} className={`rank-row ${entry.nickname === user?.nickname ? 'me' : ''}`}>
                                 <span className="rank-num">#{entry.rank}</span>
                                 <span className="rank-user">{entry.nickname}</span>
-                                <span className="rank-xp">{entry.correct} Solved</span>
+                                <span className="rank-xp">{entry.correct}문제</span>
                             </div>
                         ))}
-                        {leaderboard.length === 0 && <div className="empty-msg">No data yet.</div>}
+                        {leaderboard.length === 0 && <div className="empty-msg">데이터가 없습니다.</div>}
                     </div>
                 </div>
             </section>
