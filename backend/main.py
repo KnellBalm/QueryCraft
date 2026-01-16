@@ -84,13 +84,15 @@ app = FastAPI(
 
 # CORS 설정 - 환경별 분리
 if os.getenv("ENV") == "production":
-    # 프로덕션: 특정 도메인만 허용
+    # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
             "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
+            "https://querycraft.run.app",  # 커스텀 도메인 예비
         ],
-        allow_origin_regex=r"https://.*\.run\.app",
+        # Cloud Run URL 형식 모두 허용 (project-id 또는 hash 기반)
+        allow_origin_regex=r"https://query-craft-frontend.*\.run\.app",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -109,6 +111,21 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+# 404 및 기타 에러 로깅 미들웨어
+@app.middleware("http")
+async def log_errors_middleware(request, call_next):
+    from fastapi import Request
+    from starlette.responses import Response
+    
+    response = await call_next(request)
+    
+    if response.status_code == 404:
+        from backend.common.logging import get_logger
+        logger = get_logger("backend.main.404")
+        logger.warning(f"404 Not Found: {request.method} {request.url.path} (Referer: {request.headers.get('referer', 'N/A')})")
+        
+    return response
 
 # 라우터 등록
 app.include_router(problems_router)
