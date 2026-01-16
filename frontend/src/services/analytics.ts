@@ -51,6 +51,10 @@ export type AnalyticsEvent =
     // SQL 관련
     | 'SQL Executed'      // 실행 시점
     | 'SQL Error Occurred' // 에러 발생 시점
+    // AI Lab 이벤트
+    | 'Text to SQL Requested'  // 자연어→SQL 변환 요청
+    | 'AI Insight Requested'   // 결과 인사이트 요청
+    | 'AI Suggestion Applied'  // AI 제안 적용
     // 온보딩
     | 'Onboarding Started'
     | 'Onboarding Completed'
@@ -101,6 +105,12 @@ export interface EventProperties {
     help_type?: 'hint' | 'solution';
     attempts_before?: number;    // AI 도움 요청 전 시도 횟수
     time_before_help?: number;   // AI 도움 요청 전 소요 시간 (초)
+
+    // AI Lab 관련
+    prompt_version?: string;     // Text-to-SQL 프롬프트 버전
+    experiment_group?: string;   // A/B 테스트 그룹
+    prompt_length?: number;      // 자연어 질문 길이
+    suggestion_type?: string;    // 적용한 제안 유형
 
     // 인증/프로필 관련
     auth_provider?: 'google' | 'kakao' | 'email';
@@ -410,7 +420,7 @@ class Analytics {
 
     /** AI Help Requested (문제당 1회) */
     aiHelpRequested(
-        problemId: string, 
+        problemId: string,
         helpType: 'hint' | 'solution',
         metadata: { difficulty?: any, dataType: string, attemptsBefore?: number }
     ) {
@@ -422,6 +432,46 @@ class Analytics {
             data_type: metadata.dataType,
             attempts_before: metadata.attemptsBefore || this.getAttemptCount(problemId),
             time_before_help: timeSpent
+        });
+    }
+
+    // ============ AI Lab 이벤트 (TODO-list 5.1) ============
+
+    /** Text to SQL Requested - 자연어→SQL 변환 요청 */
+    textToSQLRequested(
+        prompt: string,
+        metadata?: { problemId?: string, dataType?: string, experimentGroup?: string }
+    ) {
+        this.track('Text to SQL Requested', {
+            prompt_version: 'v1',
+            experiment_group: metadata?.experimentGroup,
+            prompt_length: prompt.length,
+            problem_id: metadata?.problemId,
+            data_type: metadata?.dataType || 'pa'
+        });
+    }
+
+    /** AI Insight Requested - SQL 결과 인사이트 요청 */
+    aiInsightRequested(
+        problemId: string,
+        metadata?: { dataType?: string, resultCount?: number }
+    ) {
+        this.track('AI Insight Requested', {
+            problem_id: problemId,
+            data_type: metadata?.dataType || 'pa',
+            result: metadata?.resultCount !== undefined ? (metadata.resultCount > 0 ? 'success' : 'fail') : undefined
+        });
+    }
+
+    /** AI Suggestion Applied - AI가 제안한 쿼리/인사이트 적용 */
+    aiSuggestionApplied(
+        suggestionType: 'query' | 'insight' | 'hint',
+        metadata?: { problemId?: string, dataType?: string }
+    ) {
+        this.track('AI Suggestion Applied', {
+            suggestion_type: suggestionType,
+            problem_id: metadata?.problemId,
+            data_type: metadata?.dataType || 'pa'
         });
     }
 }

@@ -234,6 +234,13 @@ def get_scheduler_status():
 
 def start_scheduler():
     """스케줄러 시작 (KST 기준)"""
+    # ENABLE_SCHEDULER 환경변수로 내부 스케줄러 비활성화 (Cloud Run 대응)
+    enable_scheduler = os.getenv("ENABLE_SCHEDULER", "false").lower()
+    if enable_scheduler not in ("true", "1", "yes"):
+        logger.info("[SCHEDULER] Internal scheduler disabled (ENABLE_SCHEDULER != true)")
+        logger.info("[SCHEDULER] Use Cloud Scheduler + /admin/schedule/run endpoint instead")
+        return
+
     if scheduler.running:
         return
 

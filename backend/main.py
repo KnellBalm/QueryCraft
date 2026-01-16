@@ -13,6 +13,7 @@ from backend.api.stats import router as stats_router
 from backend.api.admin import router as admin_router
 from backend.api.auth import router as auth_router
 from backend.api.practice import router as practice_router
+from backend.api.health import router as health_router
 
 # 초기화 상태 기록
 init_status = {"initialized": False, "error": None}
@@ -116,6 +117,7 @@ app.include_router(stats_router)
 app.include_router(admin_router)
 app.include_router(auth_router)
 app.include_router(practice_router)
+app.include_router(health_router)
 
 
 @app.get("/")

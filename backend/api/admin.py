@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from backend.schemas.admin import (
     SystemStatus, SchedulerStatus, DatabaseTable, TodayProblemsStatus,
     GenerateProblemsRequest, GenerateProblemsResponse,
-    RefreshDataRequest, RefreshDataResponse
+    RefreshDataRequest, RefreshDataResponse, ScheduleRunResponse
 )
 from backend.services.database import postgres_connection, duckdb_connection
 from backend.api.auth import get_session
@@ -920,10 +920,170 @@ async def trigger_daily_tip(request: Request):
     """오늘의 팁 생성 트리거 (독립 호출용)"""
     expected_key = os.environ.get("SCHEDULER_API_KEY", "")
     provided_key = request.headers.get("X-Scheduler-Key", "")
-    
+
     if not expected_key or provided_key != expected_key:
         raise HTTPException(403, "Invalid API key")
-    
+
     from backend.services.tip_service import generate_tip_of_the_day
     today = get_today_kst()
     return generate_tip_of_the_day(today)
+
+
+@router.post("/schedule/run", response_model=ScheduleRunResponse)
+async def run_scheduled_generation(request: Request):
+    """Cloud Scheduler용 간소화 엔드포인트 (TODO-list 스펙)
+
+    - X-Scheduler-Key 헤더 검증
+    - 데이터 + 문제 생성 수행
+    - 간소화된 응답 반환
+    """
+    import time
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+
+    start_time = time.time()
+
+    # API 키 검증
+    expected_key = os.environ.get("SCHEDULER_API_KEY", "")
+    provided_key = request.headers.get("X-Scheduler-Key", "")
+
+    if not expected_key:
+        logger.warning("[SCHEDULE/RUN] SCHEDULER_API_KEY not configured")
+        raise HTTPException(403, "Scheduler API key not configured")
+
+    if provided_key != expected_key:
+        logger.warning(f"[SCHEDULE/RUN] Invalid API key (length={len(provided_key)})")
+        raise HTTPException(403, "Invalid API key")
+
+    logger.info("[SCHEDULE/RUN] API key validated")
+
+    today = get_today_kst()
+
+    # 중복 실행 방지 확인
+    try:
+        with postgres_connection() as pg:
+            existing = pg.fetch_df("""
+                SELECT data_type, COUNT(*) as cnt
+                FROM public.problems
+                WHERE session_date = %s
+                GROUP BY data_type
+            """, [today])
+
+            pa_count = 0
+            stream_count = 0
+            for _, row in existing.iterrows():
+                if row.get("data_type") == "pa":
+                    pa_count = int(row.get("cnt", 0))
+                elif row.get("data_type") == "stream":
+                    stream_count = int(row.get("cnt", 0))
+
+            if pa_count > 0 and stream_count > 0:
+                duration = time.time() - start_time
+                logger.info(f"[SCHEDULE/RUN] Already generated for {today}")
+                return ScheduleRunResponse(
+                    status="already_generated",
+                    data_generated=True,
+                    problems_generated=pa_count + stream_count,
+                    duration_sec=round(duration, 2),
+                    date=str(today),
+                    details={"pa_count": pa_count, "stream_count": stream_count}
+                )
+    except Exception as e:
+        logger.warning(f"[SCHEDULE/RUN] Duplicate check failed: {e}")
+
+    # 데이터 및 문제 생성 실행
+    data_generated = False
+    problems_generated = 0
+    details = {"date": str(today), "pa_problems": 0, "stream_problems": 0}
+
+    try:
+        # 1. 데이터 생성
+        try:
+            from backend.generator.data_generator_advanced import generate_data
+            generate_data(modes=("pa", "stream"))
+            data_generated = True
+            logger.info("[SCHEDULE/RUN] Data generation completed")
+        except Exception as e:
+            logger.error(f"[SCHEDULE/RUN] Data generation failed: {e}")
+            details["data_error"] = str(e)
+
+        # 2. PA 문제 생성
+        try:
+            from problems.generator import generate as gen_pa
+            with postgres_connection() as pg:
+                gen_pa(today, pg)
+
+            # PA 문제 수 확인
+            with postgres_connection() as pg:
+                pa_df = pg.fetch_df("""
+                    SELECT COUNT(*) as cnt FROM public.problems
+                    WHERE session_date = %s AND data_type = 'pa'
+                """, [today])
+                pa_count = int(pa_df.iloc[0]["cnt"]) if len(pa_df) > 0 else 0
+                details["pa_problems"] = pa_count
+                problems_generated += pa_count
+
+            logger.info(f"[SCHEDULE/RUN] PA problems generated: {pa_count}")
+        except Exception as e:
+            logger.error(f"[SCHEDULE/RUN] PA problem generation failed: {e}")
+            details["pa_error"] = str(e)
+
+        # 3. Stream 문제 생성
+        try:
+            from problems.generator_stream import generate_stream_problems
+            with postgres_connection() as pg:
+                generate_stream_problems(today, pg)
+
+            # Stream 문제 수 확인
+            with postgres_connection() as pg:
+                stream_df = pg.fetch_df("""
+                    SELECT COUNT(*) as cnt FROM public.problems
+                    WHERE session_date = %s AND data_type = 'stream'
+                """, [today])
+                stream_count = int(stream_df.iloc[0]["cnt"]) if len(stream_df) > 0 else 0
+                details["stream_problems"] = stream_count
+                problems_generated += stream_count
+
+            logger.info(f"[SCHEDULE/RUN] Stream problems generated: {stream_count}")
+        except Exception as e:
+            logger.error(f"[SCHEDULE/RUN] Stream problem generation failed: {e}")
+            details["stream_error"] = str(e)
+
+        # 상태 결정
+        duration = time.time() - start_time
+
+        if problems_generated > 0 and not details.get("pa_error") and not details.get("stream_error"):
+            status = "success"
+        elif problems_generated > 0:
+            status = "partial_failure"
+        else:
+            status = "error"
+
+        db_log(
+            LogCategory.SCHEDULER,
+            f"Schedule run completed: {status} (problems={problems_generated}, duration={duration:.2f}s)",
+            LogLevel.INFO if status == "success" else LogLevel.WARNING,
+            "schedule_run"
+        )
+
+        return ScheduleRunResponse(
+            status=status,
+            data_generated=data_generated,
+            problems_generated=problems_generated,
+            duration_sec=round(duration, 2),
+            date=str(today),
+            details=details
+        )
+
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"[SCHEDULE/RUN] Fatal error: {e}")
+
+        return ScheduleRunResponse(
+            status="error",
+            data_generated=data_generated,
+            problems_generated=problems_generated,
+            duration_sec=round(duration, 2),
+            date=str(today),
+            details={"error": str(e)}
+        )

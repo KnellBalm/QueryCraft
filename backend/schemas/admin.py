@@ -61,3 +61,13 @@ class RefreshDataResponse(BaseModel):
     """데이터 갱신 응답"""
     success: bool
     message: str
+
+
+class ScheduleRunResponse(BaseModel):
+    """스케줄 실행 응답 (Cloud Scheduler용 간소화 버전)"""
+    status: str  # "success" | "already_generated" | "partial_failure" | "error"
+    data_generated: bool
+    problems_generated: int  # PA + Stream 문제 총 개수
+    duration_sec: float
+    date: Optional[str] = None  # YYYY-MM-DD
+    details: Optional[Dict] = None  # 상세 정보 (선택)
