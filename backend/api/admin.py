@@ -1036,13 +1036,13 @@ async def trigger_daily_tip(request: Request):
 
 @router.post("/schedule/run", response_model=ScheduleRunResponse)
 async def run_scheduled_generation(request: Request):
-    """Cloud Scheduler용 간소화 엔드포인트 (TODO-list 스펙)
+    """Cloud Scheduler용 엔드포인트 - Worker Job 트리거
 
-    - X-Scheduler-Key 헤더 검증
-    - 데이터 + 문제 생성 수행
-    - 간소화된 응답 반환
+    Cloud Run Job을 비동기로 실행하고 즉시 반환합니다.
+    실제 데이터/문제 생성은 Worker Job에서 수행됩니다.
     """
     import time
+    import subprocess
     from backend.common.logging import get_logger
     logger = get_logger(__name__)
 
@@ -1060,135 +1060,169 @@ async def run_scheduled_generation(request: Request):
         logger.warning(f"[SCHEDULE/RUN] Invalid API key (length={len(provided_key)})")
         raise HTTPException(403, "Invalid API key")
 
-    logger.info("[SCHEDULE/RUN] API key validated")
+    logger.info("[SCHEDULE/RUN] API key validated, triggering Worker Job")
 
     today = get_today_kst()
-
+    
     # 중복 실행 방지 확인
     try:
         with postgres_connection() as pg:
             existing = pg.fetch_df("""
                 SELECT data_type, COUNT(*) as cnt
                 FROM public.problems
-                WHERE session_date = %s
+                WHERE problem_date = %s
                 GROUP BY data_type
             """, [today])
 
             pa_count = 0
-            stream_count = 0
             for _, row in existing.iterrows():
                 if row.get("data_type") == "pa":
                     pa_count = int(row.get("cnt", 0))
-                elif row.get("data_type") == "stream":
-                    stream_count = int(row.get("cnt", 0))
 
-            if pa_count > 0 and stream_count > 0:
+            if pa_count > 0:
                 duration = time.time() - start_time
                 logger.info(f"[SCHEDULE/RUN] Already generated for {today}")
                 return ScheduleRunResponse(
                     status="already_generated",
                     data_generated=True,
-                    problems_generated=pa_count + stream_count,
+                    problems_generated=pa_count,
                     duration_sec=round(duration, 2),
                     date=str(today),
-                    details={"pa_count": pa_count, "stream_count": stream_count}
+                    details={"pa_count": pa_count, "message": "Problems already exist for today"}
                 )
     except Exception as e:
         logger.warning(f"[SCHEDULE/RUN] Duplicate check failed: {e}")
 
-    # 데이터 및 문제 생성 실행
-    data_generated = False
-    problems_generated = 0
-    details = {"date": str(today), "pa_problems": 0, "stream_problems": 0}
-
+    # Cloud Run Job 트리거 (비동기)
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "querycraft-483512")
+    region = os.environ.get("CLOUD_RUN_REGION", "us-central1")
+    job_name = "querycraft-worker"
+    
+    job_triggered = False
+    job_execution_id = None
+    
     try:
-        # 1. 데이터 생성
-        try:
-            from backend.generator.data_generator_advanced import generate_data
-            generate_data(modes=("pa", "stream"))
-            data_generated = True
-            logger.info("[SCHEDULE/RUN] Data generation completed")
-        except Exception as e:
-            logger.error(f"[SCHEDULE/RUN] Data generation failed: {e}")
-            details["data_error"] = str(e)
-
-        # 2. PA 문제 생성
-        try:
-            from problems.generator import generate as gen_pa
-            with postgres_connection() as pg:
-                gen_pa(today, pg)
-
-            # PA 문제 수 확인
-            with postgres_connection() as pg:
-                pa_df = pg.fetch_df("""
-                    SELECT COUNT(*) as cnt FROM public.problems
-                    WHERE session_date = %s AND data_type = 'pa'
-                """, [today])
-                pa_count = int(pa_df.iloc[0]["cnt"]) if len(pa_df) > 0 else 0
-                details["pa_problems"] = pa_count
-                problems_generated += pa_count
-
-            logger.info(f"[SCHEDULE/RUN] PA problems generated: {pa_count}")
-        except Exception as e:
-            logger.error(f"[SCHEDULE/RUN] PA problem generation failed: {e}")
-            details["pa_error"] = str(e)
-
-        # 3. Stream 문제 생성
-        try:
-            from problems.generator_stream import generate_stream_problems
-            with postgres_connection() as pg:
-                generate_stream_problems(today, pg)
-
-            # Stream 문제 수 확인
-            with postgres_connection() as pg:
-                stream_df = pg.fetch_df("""
-                    SELECT COUNT(*) as cnt FROM public.problems
-                    WHERE session_date = %s AND data_type = 'stream'
-                """, [today])
-                stream_count = int(stream_df.iloc[0]["cnt"]) if len(stream_df) > 0 else 0
-                details["stream_problems"] = stream_count
-                problems_generated += stream_count
-
-            logger.info(f"[SCHEDULE/RUN] Stream problems generated: {stream_count}")
-        except Exception as e:
-            logger.error(f"[SCHEDULE/RUN] Stream problem generation failed: {e}")
-            details["stream_error"] = str(e)
-
-        # 상태 결정
-        duration = time.time() - start_time
-
-        if problems_generated > 0 and not details.get("pa_error") and not details.get("stream_error"):
-            status = "success"
-        elif problems_generated > 0:
-            status = "partial_failure"
+        # gcloud로 Job 실행 (비동기)
+        cmd = [
+            "gcloud", "run", "jobs", "execute", job_name,
+            f"--region={region}",
+            f"--project={project_id}",
+            "--async",  # 비동기 실행
+            "--format=json"
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            job_triggered = True
+            # Job execution ID 추출 시도
+            try:
+                import json
+                output = json.loads(result.stdout)
+                job_execution_id = output.get("metadata", {}).get("name", "").split("/")[-1]
+            except:
+                job_execution_id = "triggered"
+            logger.info(f"[SCHEDULE/RUN] Worker Job triggered: {job_execution_id}")
         else:
-            status = "error"
+            logger.error(f"[SCHEDULE/RUN] Job trigger failed: {result.stderr}")
+            
+    except subprocess.TimeoutExpired:
+        logger.error("[SCHEDULE/RUN] Job trigger timeout")
+    except FileNotFoundError:
+        logger.warning("[SCHEDULE/RUN] gcloud not found, falling back to inline execution")
+        # gcloud 없으면 기존 방식으로 폴백
+        return await _run_generation_inline(today, start_time)
+    except Exception as e:
+        logger.error(f"[SCHEDULE/RUN] Job trigger error: {e}")
 
+    duration = time.time() - start_time
+    
+    if job_triggered:
         db_log(
             LogCategory.SCHEDULER,
-            f"Schedule run completed: {status} (problems={problems_generated}, duration={duration:.2f}s)",
-            LogLevel.INFO if status == "success" else LogLevel.WARNING,
+            f"Worker Job triggered for {today} (execution_id={job_execution_id})",
+            LogLevel.INFO,
             "schedule_run"
         )
-
+        
         return ScheduleRunResponse(
-            status=status,
-            data_generated=data_generated,
-            problems_generated=problems_generated,
+            status="job_triggered",
+            data_generated=False,  # Job이 처리할 예정
+            problems_generated=0,
             duration_sec=round(duration, 2),
             date=str(today),
-            details=details
+            details={
+                "job_name": job_name,
+                "execution_id": job_execution_id,
+                "message": "Worker Job triggered asynchronously. Check job logs for progress."
+            }
+        )
+    else:
+        return ScheduleRunResponse(
+            status="trigger_failed",
+            data_generated=False,
+            problems_generated=0,
+            duration_sec=round(duration, 2),
+            date=str(today),
+            details={"error": "Failed to trigger Worker Job"}
         )
 
+
+async def _run_generation_inline(today, start_time):
+    """폴백: 인라인 생성 (Worker Job 없을 때)"""
+    import time
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+    
+    data_generated = False
+    problems_generated = 0
+    details = {"date": str(today), "fallback": True}
+    
+    # 1. 데이터 생성 (PA만)
+    try:
+        from backend.generator.data_generator_advanced import generate_data
+        generate_data(modes=("pa",))
+        data_generated = True
+        logger.info("[SCHEDULE/RUN] Fallback: PA data generation completed")
     except Exception as e:
-        duration = time.time() - start_time
-        logger.error(f"[SCHEDULE/RUN] Fatal error: {e}")
+        logger.error(f"[SCHEDULE/RUN] Fallback: Data generation failed: {e}")
+        details["data_error"] = str(e)
 
-        return ScheduleRunResponse(
-            status="error",
-            data_generated=data_generated,
-            problems_generated=problems_generated,
-            duration_sec=round(duration, 2),
-            date=str(today),
-            details={"error": str(e)}
-        )
+    # 2. PA 문제 생성
+    try:
+        from problems.generator import generate as gen_pa
+        with postgres_connection() as pg:
+            gen_pa(today, pg)
+            
+            pa_df = pg.fetch_df("""
+                SELECT COUNT(*) as cnt FROM public.problems
+                WHERE problem_date = %s AND data_type = 'pa'
+            """, [today])
+            pa_count = int(pa_df.iloc[0]["cnt"]) if len(pa_df) > 0 else 0
+            details["pa_problems"] = pa_count
+            problems_generated += pa_count
+            
+        logger.info(f"[SCHEDULE/RUN] Fallback: PA problems generated: {pa_count}")
+    except Exception as e:
+        logger.error(f"[SCHEDULE/RUN] Fallback: PA problem generation failed: {e}")
+        details["pa_error"] = str(e)
+
+    duration = time.time() - start_time
+    status = "success" if problems_generated > 0 else "error"
+
+    db_log(
+        LogCategory.SCHEDULER,
+        f"Fallback generation completed: {status} (problems={problems_generated})",
+        LogLevel.INFO if status == "success" else LogLevel.WARNING,
+        "schedule_run"
+    )
+
+    return ScheduleRunResponse(
+        status=status,
+        data_generated=data_generated,
+        problems_generated=problems_generated,
+        duration_sec=round(duration, 2),
+        date=str(today),
+        details=details
+    )
+
