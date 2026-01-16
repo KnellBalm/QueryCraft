@@ -1,10 +1,11 @@
 // frontend/src/pages/MainPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTrack } from '../contexts/TrackContext';
 import { statsApi, problemsApi } from '../api/client';
 import { useToast } from '../components/Toast';
-import type { Problem } from '../types';
+import type { Problem, UserStats } from '../types';
 import './MainPage.css';
 
 interface LeaderboardEntry {
@@ -15,207 +16,293 @@ interface LeaderboardEntry {
     level: string;
 }
 
-export function MainPage() {
-    const { user } = useAuth();
-    const { showToast } = useToast();
-    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-    const [recommendedProblems, setRecommendedProblems] = useState<Problem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [recLoading, setRecLoading] = useState(true);
+interface ActivityLog {
+    session_date: string;
+    is_correct: boolean;
+}
 
-    useEffect(() => {
-        loadLeaderboard();
-        loadRecommendations();
-    }, []);
+// User definition matching AuthContext structure
+interface User {
+    id: string;
+    email: string;
+    name: string;
+    nickname?: string;
+    is_admin?: boolean;
+    xp?: number;
+    level?: number;
+    created_at?: string;
+}
 
-    const loadLeaderboard = async () => {
-        try {
-            const res = await statsApi.leaderboard();
-            setLeaderboard(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error('Failed to load leaderboard:', err);
-            setLeaderboard([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+function DailyBriefing({ user, stats, track }: { user: User, stats: UserStats | null, track: 'core' | 'future' }) {
+    if (!user) return <LandingHero track={track} />;
 
-    const loadRecommendations = async () => {
-        setRecLoading(true);
-        try {
-            const res = await problemsApi.recommend(3);
-            setRecommendedProblems(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error('Failed to load recommendations:', err);
-            setRecommendedProblems([]);
-        } finally {
-            setRecLoading(false);
-        }
-    };
+    const nextLevelXP = stats?.next_level_threshold || 100;
+    const currentXP = stats?.score || 0;
+    const progress = Math.min(100, (currentXP / nextLevelXP) * 100);
 
     return (
-        <div className="main-page">
-            {/* 게임 스타일 히어로 */}
-            <section className="hero-section">
-                <div className="hero-glow" />
-                <div className="hero-grid" />
-                <div className="hero-content">
-                    <div className="hero-badge">🎮 SQL TRAINING ARENA</div>
-                    <h1>QUERY<span className="neon">CRAFT</span></h1>
-                    <p className="hero-sub">레벨업하고 랭킹에 도전하세요<br /><small style={{ opacity: 0.8 }}>(* 현재 PostgreSQL 문법만 지원합니다)</small></p>
-                    {user ? (
-                        <Link to="/pa" className="play-button">
-                            <span className="play-icon">▶</span>
-                            PLAY NOW
-                        </Link>
-                    ) : (
-                        <p className="login-hint">로그인하고 게임을 시작하세요</p>
-                    )}
+        <section className="hero-section briefing-mode">
+            <div className="hero-glow" />
+            <div className="hero-grid" />
+            <div className="briefing-container">
+                <div className="briefing-header">
+                    <span className="greeting">
+                        {track === 'core' ? '👋 Welcome back,' : '🤖 System Online,'} <span className="highlight">{user.nickname || user.name}</span>
+                    </span>
+                    <span className="level-badge">Lv.{stats?.level || '1 Beginner'}</span>
                 </div>
-            </section>
 
-            {/* 게임 모드 선택 */}
+                <div className="xp-dashboard">
+                    <div className="xp-info">
+                        <span>EXP Progress</span>
+                        <span>{currentXP} / {nextLevelXP} XP</span>
+                    </div>
+                    <div className="xp-bar-large">
+                        <div className="xp-fill" style={{ width: `${progress}%` }} />
+                    </div>
+                </div>
+
+                <div className="briefing-stats">
+                    <div className="stat-box">
+                        <span className="icon">🔥</span>
+                        <div className="info">
+                            <strong>{stats?.streak || 0} Days</strong>
+                            <small>Current Streak</small>
+                        </div>
+                    </div>
+                    <div className="stat-box">
+                        <span className="icon">✅</span>
+                        <div className="info">
+                            <strong>{stats?.correct || 0} Solved</strong>
+                            <small>Total Success</small>
+                        </div>
+                    </div>
+                    <Link to={track === 'core' ? "/pa" : "/ailab"} className="continue-btn">
+                        {track === 'core' ? '▶ Resume Training' : '▶ Access Terminal'}
+                    </Link>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function LandingHero({ track }: { track: 'core' | 'future' }) {
+    return (
+        <section className="hero-section">
+            <div className="hero-glow" />
+            <div className="hero-grid" />
+            <div className="hero-content">
+                <div className="hero-badge">
+                    {track === 'core' ? '🎮 SQL TRAINING ARENA' : '🦾 AI AGENT COMMAND CENTER'}
+                </div>
+                <h1>
+                    {track === 'core' ? (
+                        <>QUERY<span className="neon">CRAFT</span></>
+                    ) : (
+                        <>FUTURE<span className="neon">LAB</span></>
+                    )}
+                </h1>
+                <p className="hero-sub">
+                    {track === 'core'
+                        ? <>Level up your data skills<br /><small>(* PostgreSQL supported)</small></>
+                        : <>Build and simulate AI agents<br /><small>(* Experimental Features)</small></>
+                    }
+                </p>
+                <p className="login-hint">Log in to start your journey</p>
+            </div>
+        </section>
+    );
+}
+
+function ActivityHeatmap({ history }: { history: ActivityLog[] }) {
+    // Generate last 14 days
+    const days = useMemo(() => {
+        const result = [];
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            // Find activity for this day
+            const activity = history.find(h => h.session_date === dateStr);
+            result.push({ date: dateStr, active: !!activity, correct: activity?.is_correct });
+        }
+        return result;
+    }, [history]);
+
+    return (
+        <div className="activity-heatmap">
+            <h3>Recent Activity</h3>
+            <div className="heatmap-grid">
+                {days.map((day) => (
+                    <div
+                        key={day.date}
+                        className={`heatmap-cell ${day.active ? (day.correct ? 'success' : 'fail') : 'empty'}`}
+                        title={`${day.date}: ${day.active ? (day.correct ? 'Solved' : 'Attempted') : 'No Activity'}`}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function MainPage() {
+    const { user } = useAuth();
+    const { track, isCore } = useTrack();
+    const { showToast } = useToast();
+
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [recommendedProblems, setRecommendedProblems] = useState<Problem[]>([]);
+    const [userStats, setUserStats] = useState<UserStats | null>(null);
+    const [history, setHistory] = useState<ActivityLog[]>([]);
+
+    // loading state removed as it was unused in render,
+    // or we can use it to show a spinner if we want.
+    // For now, I'll remove it to fix the lint error.
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                // Parallel data loading
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const promises: Promise<any>[] = [
+                    statsApi.leaderboard(),
+                    problemsApi.recommend(3)
+                ];
+
+                if (user) {
+                    promises.push(statsApi.me());
+                    promises.push(statsApi.history(30));
+                }
+
+                const results = await Promise.all(promises);
+
+                setLeaderboard(Array.isArray(results[0]?.data) ? results[0].data : []);
+                setRecommendedProblems(Array.isArray(results[1]?.data) ? results[1].data : []);
+
+                if (user) {
+                    setUserStats(results[2]?.data || null);
+                    setHistory(Array.isArray(results[3]?.data) ? results[3].data : []);
+                }
+            } catch (err) {
+                console.error('Failed to load main page data:', err);
+            }
+        }
+        loadData();
+    }, [user, track]); // Reload if track changes? Maybe recommendations change per track later.
+
+    return (
+        <div className="main-page" data-track={track}>
+            {user && <DailyBriefing user={user} stats={userStats} track={track} />}
+            {!user && <LandingHero track={track} />}
+
+            {user && history.length > 0 && (
+                <div className="heatmap-section">
+                     <ActivityHeatmap history={history} />
+                </div>
+            )}
+
+            {/* Modes Grid */}
             <section className="modes-section">
                 <h2 className="section-title">
-                    <span className="title-icon">🕹️</span>
+                    <span className="title-icon">{isCore ? '🕹️' : '📡'}</span>
                     SELECT MODE
                 </h2>
                 <div className="modes-grid">
-                    <Link to="/pa" className="mode-card mode-pa">
-                        <div className="mode-glow" />
-                        <span className="mode-icon">📈</span>
-                        <h3>PA 분석</h3>
-                        <p>Product Analytics</p>
-                        <span className="mode-tag">DAILY</span>
-                    </Link>
-                    <Link to="/rca" className="mode-card mode-rca">
-                        <div className="mode-glow" />
-                        <span className="mode-icon">🔍</span>
-                        <h3>RCA 분석</h3>
-                        <p>Root Cause Analysis</p>
-                        <span className="mode-tag">DAILY</span>
-                    </Link>
-                    <div
-                        className="mode-card mode-stream mode-disabled"
-                        onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
-                    >
-                        <div className="mode-glow" />
-                        <span className="mode-icon">📡</span>
-                        <h3>스트림 분석</h3>
-                        <p>Real-time Data</p>
-                        <span className="mode-tag">준비 중</span>
-                    </div>
-                    <Link to="/practice" className="mode-card mode-practice">
-                        <div className="mode-glow" />
-                        <span className="mode-icon">♾️</span>
-                        <h3>무한 연습</h3>
-                        <p>AI Generated</p>
-                        <span className="mode-tag">∞</span>
-                    </Link>
-                </div>
-            </section>
-
-            {/* 랭킹 & 팁 */}
-            <section className="dashboard-section">
-                <div className="panel ranking-panel">
-                    <h2 className="panel-title">
-                        <span>🏆</span> TOP PLAYERS
-                    </h2>
-                    {loading ? (
-                        <div className="panel-loading">Loading...</div>
-                    ) : leaderboard.length === 0 ? (
-                        <div className="panel-empty">
-                            <p>아직 플레이어가 없습니다</p>
-                            <span>첫 번째 랭커가 되어보세요!</span>
-                        </div>
-                    ) : (
-                        <ul className="ranking-list">
-                            {leaderboard.slice(0, 5).map((entry, idx) => (
-                                <li key={idx} className={`rank-item ${entry.nickname === user?.nickname ? 'is-me' : ''}`}>
-                                    <span className="rank-pos">
-                                        {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `#${entry.rank}`}
-                                    </span>
-                                    <span className="rank-name">{entry.nickname}</span>
-                                    <span className="rank-score">{entry.correct} <small>SOLVED</small></span>
-                                    <span className="rank-streak">🔥 {entry.streak}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-
-                <div className="panel tips-panel">
-                    <h2 className="panel-title">
-                        <span>💡</span> QUICK TIPS <small style={{ fontWeight: 'normal', fontSize: '0.8rem', marginLeft: '5px' }}>(PostgreSQL)</small>
-                    </h2>
-                    <div className="tip-box">
-                        <h4>Window Functions</h4>
-                        <p>ROW_NUMBER()로 순위 계산</p>
-                        <code>ROW_NUMBER() OVER (ORDER BY score DESC)</code>
-                    </div>
-                    <div className="tip-box">
-                        <h4>Date Aggregation</h4>
-                        <p>DATE_TRUNC으로 시계열 집계</p>
-                        <code>DATE_TRUNC('week', created_at)</code>
-                    </div>
-                </div>
-            </section>
-
-            {/* 추천 문제 섹션 */}
-            <section className="recommend-section">
-                <h2 className="section-title small">
-                    <span className="title-icon">✨</span>
-                    FOR YOU
-                    <small style={{ fontWeight: 'normal', fontSize: '0.9rem', marginLeft: '10px', color: 'var(--text-muted)' }}>
-                        맞춤 학습 추천 문제
-                    </small>
-                </h2>
-                <div className="rec-grid">
-                    {recLoading ? (
-                        [1, 2, 3].map(i => <div key={i} className="rec-skeleton" />)
-                    ) : recommendedProblems.length > 0 ? (
-                        recommendedProblems.map((p) => (
-                            <Link 
-                                to={`/${p.data_type || 'pa'}?problem_id=${p.problem_id}`} 
-                                key={p.problem_id} 
-                                className={`rec-card ${p.difficulty}`}
-                            >
-                                <div className="rec-difficulty-tag">{p.difficulty.toUpperCase()}</div>
-                                <h4>{p.title}</h4>
-                                <p>{p.question.substring(0, 60)}...</p>
-                                <div className="rec-footer">
-                                    <span className="rec-type"># {p.data_type?.toUpperCase() || 'PA'}</span>
-                                    <span className="rec-action">GO CHALLENGE →</span>
-                                </div>
+                    {isCore ? (
+                        <>
+                            <Link to="/pa" className="mode-card mode-pa">
+                                <div className="mode-glow" />
+                                <span className="mode-icon">📈</span>
+                                <h3>PA Analysis</h3>
+                                <p>Product Analytics</p>
+                                <span className="mode-tag">DAILY</span>
                             </Link>
-                        ))
+                            <div className="mode-card mode-stream mode-disabled" onClick={() => showToast('Stream analysis coming soon! 📡', 'info')}>
+                                <div className="mode-glow" />
+                                <span className="mode-icon">📡</span>
+                                <h3>Stream Data</h3>
+                                <p>Real-time Events</p>
+                                <span className="mode-tag">SOON</span>
+                            </div>
+                            <Link to="/practice" className="mode-card mode-practice">
+                                <div className="mode-glow" />
+                                <span className="mode-icon">♾️</span>
+                                <h3>Practice Arena</h3>
+                                <p>Unlimited Drill</p>
+                                <span className="mode-tag">∞</span>
+                            </Link>
+                        </>
                     ) : (
-                        <div className="rec-empty">추천할 문제가 없습니다.</div>
+                        <>
+                            <Link to="/ailab" className="mode-card mode-ai">
+                                <div className="mode-glow" />
+                                <span className="mode-icon">🤖</span>
+                                <h3>AI Workspace</h3>
+                                <p>Agent Simulation</p>
+                                <span className="mode-tag">NEW</span>
+                            </Link>
+                            <Link to="/rca" className="mode-card mode-rca">
+                                <div className="mode-glow" />
+                                <span className="mode-icon">🔍</span>
+                                <h3>RCA Simulator</h3>
+                                <p>Root Cause Analysis</p>
+                                <span className="mode-tag">BETA</span>
+                            </Link>
+                             <div className="mode-card mode-mcp mode-disabled" onClick={() => showToast('MCP Sandbox coming soon! 🧪', 'info')}>
+                                <div className="mode-glow" />
+                                <span className="mode-icon">🧪</span>
+                                <h3>MCP Sandbox</h3>
+                                <p>Tool Building</p>
+                                <span className="mode-tag">SOON</span>
+                            </div>
+                        </>
                     )}
                 </div>
             </section>
 
-            {/* 하단 스탯 */}
-            <section className="stats-bar">
-                <div className="stat-item">
-                    <span className="stat-icon">⏱</span>
-                    <div>
-                        <strong>Daily Quest</strong>
-                        <p>매일 새 문제</p>
+            {/* Content Columns: Recommendations & Leaderboard */}
+            <section className="dashboard-columns">
+                <div className="column recommendations">
+                    <h2 className="section-title small">
+                        <span className="title-icon">✨</span>
+                        FOR YOU
+                    </h2>
+                    <div className="rec-list">
+                         {recommendedProblems.length > 0 ? (
+                            recommendedProblems.map((p) => (
+                                <Link
+                                    to={`/${p.data_type || 'pa'}?problem_id=${p.problem_id}`}
+                                    key={p.problem_id}
+                                    className={`rec-item ${p.difficulty}`}
+                                >
+                                    <span className="rec-badge">{p.difficulty.toUpperCase()}</span>
+                                    <div className="rec-info">
+                                        <h4>{p.title}</h4>
+                                        <span className="rec-sub">{p.data_type?.toUpperCase() || 'SQL'}</span>
+                                    </div>
+                                    <span className="rec-arrow">→</span>
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="empty-msg">No recommendations available.</div>
+                        )}
                     </div>
                 </div>
-                <div className="stat-item">
-                    <span className="stat-icon">📈</span>
-                    <div>
-                        <strong>Progress</strong>
-                        <p>레벨 & 경험치</p>
-                    </div>
-                </div>
-                <div className="stat-item">
-                    <span className="stat-icon">🤖</span>
-                    <div>
-                        <strong>AI Hints</strong>
-                        <p>막히면 힌트</p>
+
+                <div className="column leaderboard">
+                    <h2 className="section-title small">
+                        <span className="title-icon">🏆</span>
+                        TOP AGENTS
+                    </h2>
+                    <div className="leaderboard-list">
+                        {leaderboard.slice(0, 5).map((entry, idx) => (
+                            <div key={idx} className={`rank-row ${entry.nickname === user?.nickname ? 'me' : ''}`}>
+                                <span className="rank-num">#{entry.rank}</span>
+                                <span className="rank-user">{entry.nickname}</span>
+                                <span className="rank-xp">{entry.correct} Solved</span>
+                            </div>
+                        ))}
+                        {leaderboard.length === 0 && <div className="empty-msg">No data yet.</div>}
                     </div>
                 </div>
             </section>

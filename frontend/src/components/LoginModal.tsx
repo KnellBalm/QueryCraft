@@ -54,48 +54,69 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
-                <button className="modal-close" onClick={onClose}>×</button>
+                <button
+                    className="modal-close"
+                    onClick={onClose}
+                    aria-label="닫기"
+                >
+                    ×
+                </button>
 
                 <h2>{mode === 'login' ? '로그인' : '회원가입'}</h2>
 
                 <form onSubmit={handleSubmit}>
                     {mode === 'register' && (
                         <div className="form-group">
-                            <label>이름</label>
+                            <label htmlFor="register-name">이름</label>
                             <input
+                                id="register-name"
                                 type="text"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="이름을 입력하세요"
                                 required
+                                autoComplete="name"
+                                aria-invalid={!!error}
                             />
                         </div>
                     )}
 
                     <div className="form-group">
-                        <label>이메일</label>
+                        <label htmlFor="login-email">이메일</label>
                         <input
+                            id="login-email"
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             placeholder="이메일을 입력하세요"
                             required
+                            autoComplete="email"
+                            aria-invalid={!!error}
+                            aria-describedby={error ? "login-error" : undefined}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label>비밀번호</label>
+                        <label htmlFor="login-password">비밀번호</label>
                         <input
+                            id="login-password"
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="비밀번호를 입력하세요"
                             required
                             minLength={4}
+                            autoComplete={mode === 'login' ? "current-password" : "new-password"}
+                            aria-invalid={!!error}
+                            aria-describedby={error ? "login-error" : undefined}
                         />
                     </div>
 
-                    {error && <div className="error-message">{error}</div>}
+                    {error && (
+                        <div id="login-error" className="error-message" aria-live="polite">
+                            {error}
+                        </div>
+                    )}
 
                     <button type="submit" className="btn-primary" disabled={loading}>
                         {loading ? '처리 중...' : (mode === 'login' ? '로그인' : '회원가입')}
@@ -107,19 +128,19 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 </div>
 
                 <div className="social-buttons">
-                    <button className="btn-google" onClick={() => handleSocialLogin('Google')}>
+                    <button type="button" className="btn-google" onClick={() => handleSocialLogin('Google')}>
                         🔵 Google로 계속하기
                     </button>
-                    <button className="btn-kakao" onClick={() => handleSocialLogin('Kakao')}>
+                    <button type="button" className="btn-kakao" onClick={() => handleSocialLogin('Kakao')}>
                         🟡 Kakao로 계속하기
                     </button>
                 </div>
 
                 <div className="mode-switch">
                     {mode === 'login' ? (
-                        <p>계정이 없으신가요? <button onClick={() => setMode('register')}>회원가입</button></p>
+                        <p>계정이 없으신가요? <button type="button" onClick={() => setMode('register')}>회원가입</button></p>
                     ) : (
-                        <p>이미 계정이 있으신가요? <button onClick={() => setMode('login')}>로그인</button></p>
+                        <p>이미 계정이 있으신가요? <button type="button" onClick={() => setMode('login')}>로그인</button></p>
                     )}
                 </div>
             </div>
