@@ -132,12 +132,9 @@ function AppContent() {
                   <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
                     📅 오늘의 도전 (PA)
                   </NavLink>
-                  <span
-                    className="nav-dropdown-item disabled"
-                    onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
-                  >
-                    📡 스트림 분석 <span className="badge-soon">준비중</span>
-                  </span>
+                  <NavLink to="/stream" className={({ isActive }) => isActive ? 'active' : ''}>
+                    📡 스트림 분석
+                  </NavLink>
                 </DropdownMenu>
 
                 <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>

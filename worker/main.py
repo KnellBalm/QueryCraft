@@ -45,16 +45,18 @@ def generate_data():
         logger.error(f"PA 데이터 생성 실패: {e}")
         raise
     
-    # Stream 데이터는 시간이 오래 걸려서 별도 처리
-    # try:
-    #     gen_data(modes=("stream",))
-    #     logger.info("Stream 데이터 생성 완료")
-    # except Exception as e:
-    #     logger.error(f"Stream 데이터 생성 실패: {e}")
+    # Stream 데이터 생성 활성화
+    try:
+        gen_data(modes=("stream",))
+        logger.info("Stream 데이터 생성 완료")
+    except Exception as e:
+        logger.error(f"Stream 데이터 생성 실패: {e}")
+        # Stream 실패가 PA에 영향을 주지 않도록 함
+        pass
 
 
 def generate_problems():
-    """PA 문제 생성"""
+    """PA 및 Stream 문제 생성"""
     logger.info("=== 문제 생성 시작 ===")
     
     today = get_today_kst()
@@ -64,17 +66,29 @@ def generate_problems():
         from backend.services.database import postgres_connection
         
         with postgres_connection() as pg:
+            # 1. PA 문제 생성
             from problems.generator import generate as gen_pa
             gen_pa(today, pg)
             logger.info(f"PA 문제 생성 완료: {today}")
             
+            # 2. Stream 문제 생성
+            try:
+                from problems.generator_stream import generate_stream_problems as gen_stream
+                gen_stream(today, pg)
+                logger.info(f"Stream 문제 생성 완료: {today}")
+            except Exception as e:
+                logger.error(f"Stream 문제 생성 실패: {e}")
+                # Stream 실패해도 PA는 유지
+            
             # 생성된 문제 수 확인
             df = pg.fetch_df("""
-                SELECT COUNT(*) as cnt FROM public.problems 
-                WHERE problem_date = %s AND data_type = 'pa'
+                SELECT data_type, COUNT(*) as cnt FROM public.problems 
+                WHERE problem_date = %s
+                GROUP BY data_type
             """, [today])
-            count = int(df.iloc[0]["cnt"]) if len(df) > 0 else 0
-            logger.info(f"생성된 문제 수: {count}")
+            
+            for _, row in df.iterrows():
+                logger.info(f"{row['data_type'].upper()} 생성된 문제 수: {row['cnt']}")
             
     except Exception as e:
         logger.error(f"문제 생성 실패: {e}")

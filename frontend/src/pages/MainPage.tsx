@@ -99,7 +99,7 @@ function LandingHero({ track }: { track: 'core' | 'future' }) {
 }
 
 // 아케이드 모드 선택 (세로 배치)
-function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: 'success' | 'error' | 'info' | 'warning') => void }) {
+function ArcadeModesCore() {
     return (
         <div className="arcade-modes">
             <h2 className="modes-title">
@@ -120,10 +120,7 @@ function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: 'succes
                     <span className="mode-arrow">▶</span>
                 </Link>
                 
-                <div 
-                    className="arcade-mode-card mode-stream disabled"
-                    onClick={() => showToast('스트림 분석은 준비 중입니다! 📡', 'info')}
-                >
+                <Link to="/stream" className="arcade-mode-card mode-stream">
                     <div className="mode-content">
                         <span className="mode-icon">📡</span>
                         <div className="mode-info">
@@ -131,8 +128,9 @@ function ArcadeModesCore({ showToast }: { showToast: (msg: string, type: 'succes
                             <p>실시간 이벤트 분석</p>
                         </div>
                     </div>
-                    <div className="mode-badge soon">SOON</div>
-                </div>
+                    <div className="mode-badge">NEW</div>
+                    <span className="mode-arrow">▶</span>
+                </Link>
                 
                 <Link to="/practice" className="arcade-mode-card mode-practice">
                     <div className="mode-glow" />
@@ -350,7 +348,7 @@ export function MainPage() {
                     {user && history.length > 0 && <ActivityStrip history={history} />}
                     
                     {isCore ? (
-                        <ArcadeModesCore showToast={showToast} />
+                        <ArcadeModesCore />
                     ) : (
                         <ArcadeModesFuture showToast={showToast} />
                     )}
