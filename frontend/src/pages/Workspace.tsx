@@ -198,6 +198,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
         if (!result?.data || !selectedProblem || !result.success) return;
         setInsightLoading(true);
         setInsightData(null);
+
+        analytics.aiInsightRequested(selectedProblem.problem_id, {
+            dataType: dataType,
+            resultCount: result.data.length
+        });
+
         try {
             const res = await sqlApi.insight(selectedProblem.problem_id, sql, result.data, dataType);
             setInsightData(res.data);
@@ -221,6 +227,12 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const handleTranslate = useCallback(async () => {
         if (!translateQuery.trim()) return;
         setTranslating(true);
+
+        analytics.textToSQLRequested(translateQuery, {
+            problemId: selectedProblem?.problem_id,
+            dataType: dataType
+        });
+
         try {
             const res = await sqlApi.translate(translateQuery, dataType);
             setSql(res.data.sql);
@@ -629,6 +641,11 @@ export function Workspace({ dataType }: WorkspaceProps) {
                     setSql(newSql);
                     setResult(null);
                     setSubmitResult(null);
+
+                    analytics.aiSuggestionApplied('query', {
+                        problemId: selectedProblem?.problem_id,
+                        dataType: dataType
+                    });
                 }}
             />
         </div>

@@ -99,15 +99,15 @@
 ## 5. MixPanel 이벤트 추가 및 개선
 
 ### 5.1 신규 이벤트 정의
-- [ ] AI Lab 이벤트 추가
-  - [ ] `Text to SQL Requested` (자연어→SQL 변환 요청)
-  - [ ] `AI Insight Requested` (결과 인사이트 요청)
-  - [ ] `AI Suggestion Applied` (AI 제안 적용)
-- [ ] 속성 정의: `prompt_version`, `experiment_group`
+- [x] AI Lab 이벤트 추가
+  - [x] `Text to SQL Requested` (자연어→SQL 변환 요청)
+  - [x] `AI Insight Requested` (결과 인사이트 요청)
+  - [x] `AI Suggestion Applied` (AI 제안 적용)
+- [x] 속성 정의: `prompt_version`, `experiment_group`
 
 ### 5.2 구현
-- [ ] `frontend/src/services/analytics.ts` 이벤트 메서드 추가
-- [ ] 해당 컴포넌트에서 이벤트 호출 연결
+- [x] `frontend/src/services/analytics.ts` 이벤트 메서드 추가
+- [x] 해당 컴포넌트에서 이벤트 호출 연결
 - [ ] 스테이징/프로덕션 토큰 분리 확인
 
 ### 5.3 검증 및 문서화
