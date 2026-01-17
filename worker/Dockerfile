@@ -15,10 +15,7 @@ COPY worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared modules
-COPY backend/common ./backend/common
-COPY backend/generator ./backend/generator
-COPY backend/services ./backend/services
-COPY backend/schemas ./backend/schemas
+COPY backend ./backend
 COPY problems ./problems
 
 # Copy worker code
