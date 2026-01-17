@@ -3,14 +3,13 @@ import { BrowserRouter, Routes, Route, NavLink, Link, Navigate } from 'react-rou
 import { Workspace } from './pages/Workspace';
 import Practice from './pages/Practice';
 import { MainPage } from './pages/MainPage';
-import { AILab } from './pages/AILab';
 import { MyPage } from './pages/MyPage';
 import { FutureLabDashboard } from './pages/FutureLabDashboard';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
-import { ToastProvider, useToast } from './components/Toast';
+import { ToastProvider } from './components/Toast';
 import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { statsApi, adminApi } from './api/client';
@@ -59,7 +58,6 @@ function AppContent() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isLoading } = useAuth();
   const { setTrack, isCore, isFuture } = useTrack();
-  const { showToast } = useToast();
 
   useEffect(() => {
     // Analytics 초기화
@@ -108,20 +106,22 @@ function AppContent() {
         <header className="header">
           <Link to="/" className="logo">📔QueryCraft</Link>
 
-          {/* Track Switcher */}
+          {/* Track Switcher - Categories */}
           <div className="track-switcher">
-            <button
-              className={isCore ? 'active' : ''}
+            <Link
+              to="/"
+              className={`track-btn ${isCore ? 'active' : ''}`}
               onClick={() => setTrack('core')}
             >
               💼 Core Skills
-            </button>
-            <button
-              className={isFuture ? 'active' : ''}
+            </Link>
+            <Link
+              to="/"
+              className={`track-btn ${isFuture ? 'active' : ''}`}
               onClick={() => setTrack('future')}
             >
               🚀 Future Lab
-            </button>
+            </Link>
           </div>
 
           <nav className="nav">
@@ -222,12 +222,10 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<MainPage />} />
               <Route path="/pa" element={<Workspace dataType="pa" />} />
-              <Route path="/rca" element={<Workspace dataType="rca" />} />
               <Route path="/stream" element={<Workspace dataType="stream" />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/datacenter" element={<DataCenterPage />} />
               <Route path="/practice" element={<Practice />} />
-              <Route path="/ailab" element={<AILab />} />
               <Route path="/rca" element={<Workspace dataType="rca" />} />
               <Route path="/mcpsandbox" element={<MCPSandboxPage />} />
               <Route path="/tutor" element={<AdaptiveTutorPage />} />

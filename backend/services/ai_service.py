@@ -98,19 +98,28 @@ def get_ai_insight(problem_id: str, sql: str, results: list[dict], data_type: st
         parsed = json.loads(json_text)
         
         # 마크다운 리포트 생성
+        findings_md = "\n".join(f"{i+1}. {finding}" for i, finding in enumerate(parsed.get('key_findings', [])))
+        insights_md = "\n".join(f"- {insight}" for insight in parsed.get('insights', []))
+        actions_md = "\n".join(f"{i+1}. {action}" for i, action in enumerate(parsed.get('action_items', [])))
+        
+        suggested_parts = []
+        for q in parsed.get('suggested_queries', []):
+            suggested_parts.append(f"### {q['title']}\n```sql\n{q['sql']}\n```")
+        suggested_md = "\n".join(suggested_parts)
+
         report_md = f"""# AI 인사이트 리포트
 
 ## 📌 핵심 발견 (Key Findings)
-{chr(10).join(f"{i+1}. {finding}" for i, finding in enumerate(parsed.get('key_findings', [])))}
+{findings_md}
 
 ## 💡 비즈니스 인사이트
-{chr(10).join(f"- {insight}" for insight in parsed.get('insights', []))}
+{insights_md}
 
 ## 🎯 추천 액션 (Action Items)
-{chr(10).join(f"{i+1}. {action}" for i, action in enumerate(parsed.get('action_items', [])))}
+{actions_md}
 
 ## 🔍 추가 분석 제안
-{chr(10).join(f"### {q['title']}\n```sql\n{q['sql']}\n```\n" for q in parsed.get('suggested_queries', []))}
+{suggested_md}
 """
         
         return {

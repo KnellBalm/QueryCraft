@@ -359,6 +359,54 @@ export function MainPage() {
                     <RecommendPanel problems={recommendedProblems} />
                 </aside>
             </div>
+
+            {/* AI Lab 소개 섹션 - 페이지 하단 */}
+            <LabIntroSection />
         </div>
+    );
+}
+
+// AI Lab 소개 섹션
+function LabIntroSection() {
+    return (
+        <section className="lab-intro-section">
+            <div className="lab-intro-header">
+                <span className="lab-badge">ALPHA BUILDS</span>
+                <h2>🤖 QueryCraft AI LAB</h2>
+                <p>AI와 함께 더 빠르고 효율적으로 SQL 지식을 마스터하세요.</p>
+            </div>
+            
+            <div className="lab-features-grid">
+                <div className="lab-feature-card">
+                    <div className="feature-icon">⌨️</div>
+                    <h4>Natural Language to SQL</h4>
+                    <p>복잡한 쿼리가 떠오르지 않을 땐 자연어로 질문하세요. AI가 즉시 PostgreSQL 쿼리로 변환해 줍니다.</p>
+                </div>
+                <div className="lab-feature-card">
+                    <div className="feature-icon">📊</div>
+                    <h4>AI Business Insight</h4>
+                    <p>단순한 데이터 결과에서 비즈니스 가치를 발견하세요. AI가 결과를 분석하여 최적의 액션 플랜을 제안합니다.</p>
+                </div>
+                <div className="lab-feature-card">
+                    <div className="feature-icon">🎯</div>
+                    <h4>Adaptive Learning</h4>
+                    <p>풀지 않은 문제와 틀렸던 유형을 분석하여 당신에게 가장 필요한 문제를 똑똑하게 추천합니다.</p>
+                </div>
+            </div>
+
+            <div className="lab-upcoming">
+                <h3>🚀 Upcoming Research</h3>
+                <div className="upcoming-items">
+                    <div className="upcoming-item">
+                        <span>📡</span>
+                        <span>Stream 분석 실시간 AI 보완</span>
+                    </div>
+                    <div className="upcoming-item">
+                        <span>💬</span>
+                        <span>SQL 코드 리뷰 및 성능 최적화 교정</span>
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 }

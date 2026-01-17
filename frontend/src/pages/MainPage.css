@@ -578,3 +578,113 @@
 [data-track="future"] .arcade-mode-card .mode-badge {
     background: linear-gradient(135deg, #a855f7, #f472b6);
 }
+/* =============================================
+   AI Lab Intro Section (Integrated)
+============================================= */
+.lab-intro-section {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 3rem 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.lab-intro-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.lab-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.4rem 0.8rem;
+    background: var(--track-primary);
+    color: #000;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.lab-intro-header h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.lab-intro-header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.lab-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.lab-feature-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: transform 0.3s;
+}
+
+.lab-feature-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--track-primary);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.lab-feature-card h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.lab-feature-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.lab-upcoming {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 16px;
+    border-left: 4px solid var(--track-primary);
+}
+
+.lab-upcoming h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--track-primary);
+}
+
+.upcoming-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+    .lab-intro-header h2 { font-size: 1.75rem; }
+    .lab-features-grid { grid-template-columns: 1fr; }
+}
