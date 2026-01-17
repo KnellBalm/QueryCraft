@@ -57,7 +57,7 @@ RCA_SCENARIOS = {
     ]
 }
 
-def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerce") -> str:
+def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerce", anomaly_metadata: dict | None = None) -> str:
     """
     RCA(원인 분석) 특화 문제 생성 프롬프트
     """
@@ -67,11 +67,25 @@ def build_rca_prompt(data_summary: str, n: int = 6, product_type: str = "commerc
     scenarios_str = "\n".join([f"- {s}" for s in scenarios])
     events_str = ", ".join(events)
     
+    # 실제 이상 패턴 메타데이터가 있으면 프롬프트에 강력하게 주입
+    anomaly_context = ""
+    if anomaly_metadata:
+        anomaly_context = f"""
+[CRITICAL: 실제 장애 상황 정보]
+현재 데이터에 실제로 주입된 이상 패턴 정보는 다음과 같다.
+- 장애 유형: {anomaly_metadata['type']}
+- 상세 설명: {anomaly_metadata['description']}
+- 근본 원인 (Root Cause): {anomaly_metadata['root_cause']}
+- 분석 힌트: {", ".join(anomaly_metadata['hints'])}
+
+위 상황을 해결하기 위한 문제를 반드시 포함하고, 유저가 제공된 '근본 원인'을 찾아낼 수 있도록 answer_sql을 설계하라.
+"""
+
     return f"""
 너는 {product_type.upper()} 프로덕트의 시니어 데이터 분석가다.
 현재 시스템에 **비즈니스 장애나 지표 이상 징후(Anomalies)**가 감지되었다.
 유저가 SQL을 통해 이 이상 현상의 **근본 원인(Root Cause)**을 찾아낼 수 있도록 실무적인 문제를 출제하라.
-
+{anomaly_context}
 [데이터 요약]
 {data_summary}
 

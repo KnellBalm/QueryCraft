@@ -26,4 +26,5 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # Run worker
-CMD ["python", "worker/main.py"]
+# Use module mode (-m) to ensure correct relative imports within /app
+CMD ["python3", "-m", "worker.main"]

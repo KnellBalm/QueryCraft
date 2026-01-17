@@ -439,11 +439,11 @@ def inject_retention_drop(
         ),
         "hint": ANOMALY_DESCRIPTIONS[AnomalyType.RETENTION_DROP]["hint"],
         "hints": [
-            "리텐션 지표가 비정상적입니다. 이번 주와 지난 주를 비교해보세요.",
-            f"{cohort_days_ago-7}~{cohort_days_ago+7}일 전에 가입한 유저들에게 무슨 일이 있었는지 확인하세요.",
-            "가입 코호트별로 재방문 세션 비율을 계산해보세요. 어느 코호트가 떨어졌나요?"
+            "가입 코호트별로 Day 7 리텐션을 계산하여 평소와 다른 코호트가 있는지 확인해보세요.",
+            "리텐션 공식: (Day N에 방문한 유저 수 / Day 0에 가입한 유저 수) * 100",
+            f"특히 {cohort_days_ago}일 전 가입자들의 재방문 패턴이 지난 주 동일 요일 가입자들과 어떻게 다른지 비교해보세요."
         ],
-        "root_cause": f"{cohort_days_ago}일 전 가입 코호트의 재방문 세션 급감",
+        "root_cause": f"{cohort_days_ago}일 전 가입 코호트의 D7 리텐션 급감 (재방문 세션 누락)",
     }
 
 
@@ -509,11 +509,11 @@ def inject_channel_efficiency_decline(
         ),
         "hint": ANOMALY_DESCRIPTIONS[AnomalyType.CHANNEL_EFFICIENCY_DECLINE]["hint"],
         "hints": [
-            "전체 트래픽은 정상으로 보이지만, 전환에 문제가 있는 것 같습니다.",
-            "유입 채널별로 전환율을 나누어 분석해보세요.",
-            f"{target_channel} 채널의 전환율을 다른 채널과 비교해보세요. 무엇이 다른가요?"
+            "유입 채널별로 트래픽(세션 수) 대비 전환(주문 수) 비율을 계산해보고 타 채널과 비교해보세요.",
+            "전체 주문 수는 줄었지만 특정 채널의 세션 수는 그대로라면 전환율(CVR) 하락이 원인일 수 있습니다.",
+            f"{target_channel} 채널로 유입된 유저들의 결제 퍼널과 타 채널 유저들의 퍼널을 단계별로 대조해보세요."
         ],
-        "root_cause": f"{target_channel} 채널의 전환 효율 저하 (트래픽 유지, 전환 감소)",
+        "root_cause": f"{target_channel} 채널의 마케팅 효율 저하 (트래픽은 유지되나 결제 전환만 급락)",
     }
 
 
@@ -582,11 +582,11 @@ def inject_signup_conversion_drop(
         ),
         "hint": ANOMALY_DESCRIPTIONS[AnomalyType.SIGNUP_CONVERSION_DROP]["hint"],
         "hints": [
-            "가입 수가 감소하고 있습니다. 퍼널 분석으로 병목 지점을 찾아보세요.",
-            "각 단계별 전환율을 비교해보세요. 유저가 어디서 이탈하나요?",
-            f"{funnel_step} 단계에서 비정상적인 이탈이 발생합니다. 시간대와 디바이스를 조사하세요."
+            "가입 퍼널의 각 단계(signup_start -> signup_email -> signup_verify -> signup_complete)별 전환율을 계산해보세요.",
+            "특정 단계에서 이탈률(Drop-off rate)이 전일 대비 급격히 높아진 구간이 있는지 확인하세요.",
+            f"{funnel_step} 단계의 성공 이벤트 수가 평소 대비 얼마나 줄었는지 시간대별 추이로 분석해보세요."
         ],
-        "root_cause": f"가입 퍼널 {funnel_step} 단계에서 전환율 급락",
+        "root_cause": f"가입 퍼널 중 {funnel_step} 단계의 기술적 결함 또는 UI 이슈로 인한 전환 차단",
     }
 
 

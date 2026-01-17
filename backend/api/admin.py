@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from backend.schemas.admin import (
     SystemStatus, SchedulerStatus, DatabaseTable, TodayProblemsStatus,
     GenerateProblemsRequest, GenerateProblemsResponse,
-    RefreshDataRequest, RefreshDataResponse, ScheduleRunResponse
+    RefreshDataRequest, RefreshDataResponse, ScheduleRunResponse,
+    TriggerRCARequest
 )
 from backend.services.database import postgres_connection, duckdb_connection
 from backend.api.auth import get_session
@@ -344,6 +345,59 @@ async def generate_problems(request: GenerateProblemsRequest, admin=Depends(requ
             success=False,
             message="지원하지 않는 data_type입니다."
         )
+
+
+@router.post("/trigger-rca", response_model=GenerateProblemsResponse)
+async def trigger_rca(request: TriggerRCARequest, admin=Depends(require_admin)):
+    """RCA 시나리오 수동 트리거 (이상 데이터 주입 + 문제 생성)"""
+    from backend.common.logging import get_logger
+    logger = get_logger(__name__)
+    today = get_today_kst()
+    
+    try:
+        from backend.generator.anomaly_injector import inject_random_anomaly, AnomalyType
+        from backend.generator.data_generator_advanced import PRODUCT_PROFILES
+        
+        # 1. 이상 패턴 주입
+        p_type = request.product_type or "commerce"
+        if p_type not in PRODUCT_PROFILES:
+            return GenerateProblemsResponse(success=False, message=f"지원하지 않는 product_type: {p_type}")
+        
+        a_type = None
+        if request.anomaly_type:
+            try:
+                a_type = AnomalyType(request.anomaly_type)
+            except ValueError:
+                return GenerateProblemsResponse(success=False, message=f"지원하지 않는 anomaly_type: {request.anomaly_type}")
+        
+        logger.info(f"[RCA] Triggering anomaly injection: product={p_type}, type={a_type}")
+        with postgres_connection() as pg:
+            anomaly_info = inject_random_anomaly(pg, p_type, force_type=a_type)
+            
+            if not anomaly_info:
+                return GenerateProblemsResponse(success=False, message="이상 패턴 주입 실패")
+            
+            # 2. RCA 문제 생성 (주입된 메타데이터를 프롬프트가 참조함)
+            from problems.generator import generate as gen_problems
+            path = gen_problems(today, pg, mode="rca", product_type=p_type)
+            
+            # 생성된 문제 수 확인
+            import json
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+                problems = data.get("problems", []) if isinstance(data, dict) else data
+                p_count = len(problems)
+            
+            return GenerateProblemsResponse(
+                success=True,
+                message=f"RCA 트리거 완료: {anomaly_info['type']} 주입 및 문제 {p_count}개 생성",
+                path=path,
+                problem_count=p_count
+            )
+            
+    except Exception as e:
+        logger.error(f"[RCA] Trigger failed: {e}")
+        return GenerateProblemsResponse(success=False, message=f"RCA 트리거 실패: {str(e)}")
 
 
 @router.post("/refresh-data", response_model=RefreshDataResponse)

@@ -125,8 +125,23 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
 
                     {selectedProblem.hint && (
                         <details className="hint-section">
-                            <summary>💬 힌트 보기</summary>
-                            <p>{selectedProblem.hint}</p>
+                            <summary>💬 분석 힌트</summary>
+                            <div className="hint-content">
+                                <p>{selectedProblem.hint}</p>
+                                {selectedProblem.hints && selectedProblem.hints.length > 0 && (
+                                    <div className="sequential-hints">
+                                        <div className="seq-hint-title">단계별 가이드</div>
+                                        {selectedProblem.hints.map((h, i) => (
+                                            <details key={i} className="seq-hint-item">
+                                                <summary>Step {i + 1} 가이드</summary>
+                                                <div className="seq-hint-body">
+                                                    {renderMarkdown(h)}
+                                                </div>
+                                            </details>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </details>
                     )}
                 </div>

@@ -6,15 +6,17 @@ import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
 import { DropdownMenu } from './components/DropdownMenu';
-import { DataCenterPage, MCPSandboxPage, AdaptiveTutorPage } from './components/PlaceholderPages';
+import { DataCenterPage, MCPSandboxPage } from './components/PlaceholderPages';
 
 // Code splitting: 각 페이지를 lazy load하여 초기 번들 크기 감소
 const Workspace = lazy(() => import('./pages/Workspace').then(m => ({ default: m.Workspace })));
 const Practice = lazy(() => import('./pages/Practice'));
-const DailyChallenge = lazy(() => import('./pages/DailyChallenge'));  // NEW
 const MainPage = lazy(() => import('./pages/MainPage').then(m => ({ default: m.MainPage })));
 const MyPage = lazy(() => import('./pages/MyPage').then(m => ({ default: m.MyPage })));
 const FutureLabDashboard = lazy(() => import('./pages/FutureLabDashboard').then(m => ({ default: m.FutureLabDashboard })));
+const DailyChallenge = lazy(() => import('./pages/DailyChallenge'));
+const AdaptiveTutorPage = lazy(() => import('./pages/AdaptiveTutorPage'));
+
 const StatsPage = lazy(() => import('./pages/StatsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 import { ToastProvider } from './components/Toast';
@@ -146,8 +148,9 @@ function AppContent() {
                 </NavLink>
 
                 <NavLink to="/tutor" className={({ isActive }) => isActive ? 'active' : ''}>
-                  🎓 Adaptive Tutor <span className="badge-soon">준비중</span>
+                  🎓 Adaptive Tutor
                 </NavLink>
+
               </>
             )}
           </nav>

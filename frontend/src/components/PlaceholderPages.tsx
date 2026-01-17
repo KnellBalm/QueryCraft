@@ -20,13 +20,3 @@ export function MCPSandboxPage() {
     </div>
   );
 }
-
-export function AdaptiveTutorPage() {
-  return (
-    <div className="placeholder-page">
-      <h1>🎓 Adaptive Tutor</h1>
-      <p>사용자 수준별 맞춤형 SQL/분석 학습 가이드 서비스 준비 중입니다.</p>
-      <div className="coming-soon-art">🤖</div>
-    </div>
-  );
-}

@@ -335,6 +335,54 @@
   color: var(--warning-color);
 }
 
+.sequential-hints {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.seq-hint-title {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.seq-hint-item {
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.seq-hint-item summary {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  cursor: pointer;
+  list-style: none;
+}
+
+.seq-hint-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.seq-hint-item[open] {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: var(--accent-color);
+}
+
+.seq-hint-body {
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  border-top: 1px solid var(--border-color);
+}
+
 .no-problems {
   display: flex;
   flex-direction: column;
@@ -641,6 +689,28 @@
   color: var(--text-muted);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+.btn-report-template {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-report-template:hover {
+  background: var(--accent-light);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* 상하 리사이저 */

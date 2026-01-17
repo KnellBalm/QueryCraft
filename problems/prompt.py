@@ -119,6 +119,37 @@ def get_current_product_type() -> str:
         pg.close()
 
 
+def get_latest_anomaly_metadata(product_type: str) -> dict | None:
+    """최신 RCA 이상 패턴 메타데이터 조회"""
+    pg = PostgresEngine(PostgresEnv().dsn())
+    try:
+        # 가장 최근에 주입된 해당 산업군의 이상 패턴 조회
+        df = pg.fetch_df("""
+            SELECT anomaly_type, anomaly_params, description, hints, root_cause
+            FROM public.rca_anomaly_metadata
+            WHERE product_type = %s
+            ORDER BY created_at DESC
+            LIMIT 1
+        """, (product_type,))
+        
+        if len(df) > 0:
+            row = df.iloc[0]
+            import json
+            return {
+                "type": row["anomaly_type"],
+                "params": row["anomaly_params"] if isinstance(row["anomaly_params"], dict) else json.loads(row["anomaly_params"]),
+                "description": row["description"],
+                "hints": row["hints"] if isinstance(row["hints"], list) else json.loads(row["hints"]),
+                "root_cause": row["root_cause"]
+            }
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to fetch anomaly metadata: {e}")
+        return None
+    finally:
+        pg.close()
+
+
 def build_prompt(mode: str = "pa", user_id: str | None = None) -> list[dict]:
     """
     generator.py에서 호출하는 메인 함수
@@ -139,7 +170,10 @@ def build_prompt(mode: str = "pa", user_id: str | None = None) -> list[dict]:
     # Mode에 따라 프롬프트 생성 함수 선택
     if mode == "rca":
         from problems.prompt_rca import build_rca_prompt
-        prompt = build_rca_prompt(data_summary, n=6, product_type=product_type)
+        anomaly_metadata = get_latest_anomaly_metadata(product_type)
+        if anomaly_metadata:
+            logger.info(f"Injecting anomaly metadata into RCA prompt: {anomaly_metadata['type']}")
+        prompt = build_rca_prompt(data_summary, n=6, product_type=product_type, anomaly_metadata=anomaly_metadata)
     else:
         prompt = build_pa_prompt(data_summary, n=6, product_type=product_type)
         

@@ -28,6 +28,7 @@ interface ResultPanelProps {
     tables: Schema[];
     insightData: any;
     onQuerySelect?: (sql: string) => void;
+    dataType?: 'pa' | 'stream' | 'rca';
 }
 
 export const ResultPanel = React.memo<ResultPanelProps>(({
@@ -39,7 +40,38 @@ export const ResultPanel = React.memo<ResultPanelProps>(({
     submitting,
     track,
     handleInsight,
+    dataType,
 }) => {
+    const handleCopyReportTemplate = () => {
+        const template = `
+# [RCA 분석 리포트] 현상 및 원인 규명
+- 분석 일시: ${new Date().toLocaleString()}
+- 분석 대상: 지표 이상 징후 (Anomaly Detection)
+
+## 1. 현상 파악
+- 어떤 지표가 어떻게 변했는가?
+- 이상 징후 발생 시점: 
+
+## 2. 가설 및 검증 로직
+- 가설: 
+- 검증 SQL:
+\`\`\`sql
+-- 작성한 SQL을 여기에 붙여넣으세요
+\`\`\`
+
+## 3. 원인 분석 결과 (Root Cause)
+- 최종 규명된 원인: 
+- 근거 데이터(Key findings): 
+
+## 4. 대응 방안 및 결론
+- 단기 대응: 
+- 근본 해결책: 
+        `.trim();
+        
+        navigator.clipboard.writeText(template);
+        alert('분석 리포트 템플릿이 클립보드에 복사되었습니다. 분석 내용을 정리해보세요!');
+    };
+
     return (
         <div className="result-section">
             <div className="result-header">
@@ -49,6 +81,11 @@ export const ResultPanel = React.memo<ResultPanelProps>(({
                     {track === 'future' && result?.success && result.data && result.data.length > 0 && (
                         <button className="btn-insight-trigger" onClick={handleInsight} disabled={insightLoading}>
                             {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}<span className="badge-new-tiny">NEW</span>
+                        </button>
+                    )}
+                    {dataType === 'rca' && (
+                        <button className="btn-report-template" onClick={handleCopyReportTemplate} title="분석 리포트 템플릿 복사">
+                            📋 리포트 템플릿
                         </button>
                     )}
                     {result?.execution_time_ms && (

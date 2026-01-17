@@ -24,6 +24,7 @@ export interface Problem {
     expected_columns?: string[];
     sort_keys?: string[];
     hint?: string;
+    hints?: string[];
     is_completed?: boolean;
     is_correct?: boolean;
 }

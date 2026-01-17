@@ -105,7 +105,7 @@ jobs:
             --region $REGION \
             --task-timeout=3600 \
             --max-retries=1 \
-            --memory=512Mi \
+            --memory=1Gi \
             --cpu=1 \
             --set-env-vars="POSTGRES_DSN=$CLEAN_POSTGRES_DSN,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
 

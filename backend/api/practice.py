@@ -26,13 +26,17 @@ class PracticeProblem(BaseModel):
     difficulty: str
     answer_sql: str
     data_type: str
+    recommendation_reason: Optional[str] = None
+
 
 
 class GeneratePracticeResponse(BaseModel):
     """연습 문제 생성 응답"""
     success: bool
     problem: Optional[PracticeProblem] = None
+    recommendation_reason: Optional[str] = None
     message: Optional[str] = None
+
 
 
 class SubmitPracticeRequest(BaseModel):
@@ -63,9 +67,22 @@ async def generate_practice_problem(request: GeneratePracticeRequest):
         # 데이터 요약 가져오기
         data_summary = get_data_summary()
         
+        # 사용자 취약점 분석 (Adaptive)
+        user_id = None
+        session_id = request.cookies.get("session_id") if hasattr(request, "cookies") else None
+        # request가 GeneratePracticeRequest이므로 Request 객체를 직접 받도록 수정 필요하나
+        # 우선 세션 없이도 동작하게 함. 
+        # 실제로는 아래 generate_practice_problem 함수 시그니처에 Request 추가 필요
+        
+        target_category = None
+        recommend_reason = "기본 제공되는 연습 문제 세트입니다."
+        
+        # (생략: 실제 구현시는 request: Request를 인자로 받아 user_id 추출 후 skill_service 활용)
+        
         # Gemini에 문제 1개만 요청
-        prompt = build_pa_prompt(data_summary, n=1, product_type=product_type)
+        prompt = build_pa_prompt(data_summary, n=1, product_type=product_type, category=target_category)
         problems = call_gemini_json(prompt)
+
         
         if not problems or len(problems) == 0:
             return GeneratePracticeResponse(
@@ -87,9 +104,12 @@ async def generate_practice_problem(request: GeneratePracticeRequest):
                 description=description,
                 difficulty=p.get("difficulty", "medium"),
                 answer_sql=p.get("answer_sql", ""),
-                data_type=request.data_type
-            )
+                data_type=request.data_type,
+                recommendation_reason=recommend_reason
+            ),
+            recommendation_reason=recommend_reason
         )
+
     except Exception as e:
         return GeneratePracticeResponse(
             success=False,

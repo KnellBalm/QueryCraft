@@ -1,24 +1,20 @@
 """
 QueryCraft Worker Job - Main Entry Point
-
-Cloud Run Job으로 실행되어 데이터 및 문제 생성을 백그라운드에서 처리합니다.
-API 서버와 독립적으로 실행되어 블로킹 문제가 없습니다.
-
-Usage:
-    python -m worker.main                    # 전체 생성 (데이터 + 문제)
-    python -m worker.main --task=data        # 데이터만 생성
-    python -m worker.main --task=problems    # 문제만 생성
-    python -m worker.main --task=cleanup     # 정리 작업
 """
 
 import os
 import sys
 import argparse
 import logging
+import traceback
+import json
 from datetime import datetime
 
-# 즉시 출력 확인을 위한 디버그 프린트
-print("DEBUG: worker.main module loading...", flush=True)
+# Ultra-early debug prints for Cloud Run
+print("INFO: Initializing QueryCraft Worker...", flush=True)
+print(f"INFO: Python version: {sys.version}", flush=True)
+print(f"INFO: Current working directory: {os.getcwd()}", flush=True)
+print(f"INFO: PYTHONPATH: {os.environ.get('PYTHONPATH', 'NOT SET')}", flush=True)
 
 # 로깅 설정
 logging.basicConfig(
@@ -27,6 +23,23 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("worker")
+
+def log_error_json(msg, exc=None):
+    """GCP Cloud Run 호환 JSON 에러 로그"""
+    log_data = {
+        "severity": "ERROR",
+        "message": msg,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "worker_task": "startup"
+    }
+    if exc:
+        log_data["stack_trace"] = traceback.format_exc()
+    print(json.dumps(log_data), flush=True)
+
+try:
+    print("DEBUG: worker.main module loading...", flush=True)
+except Exception as e:
+    log_error_json("Failed during initial print", e)
 
 
 def get_today_kst():
@@ -248,4 +261,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        print("INFO: STARTING WORKER MAIN EXECUTION", flush=True)
+        main()
+        print("INFO: WORKER MAIN EXECUTION COMPLETED SUCCESSFULLY", flush=True)
+    except Exception as e:
+        log_error_json("CRITICAL: Worker failed with unhandled exception", e)
+        sys.exit(1)
+    except SystemExit as e:
+        if e.code != 0:
+            log_error_json(f"Worker exited with code {e.code}")
+        sys.exit(e.code)

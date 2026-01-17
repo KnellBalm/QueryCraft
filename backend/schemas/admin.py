@@ -44,6 +44,12 @@ class GenerateProblemsRequest(BaseModel):
     force: bool = False
 
 
+class TriggerRCARequest(BaseModel):
+    """RCA 트리거 요청"""
+    anomaly_type: Optional[str] = None  # RETENTION_DROP, etc.
+    product_type: Optional[str] = None  # commerce, etc.
+
+
 class GenerateProblemsResponse(BaseModel):
     """문제 생성 응답"""
     success: bool

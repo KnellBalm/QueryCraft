@@ -82,7 +82,9 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
     // Analytics: 페이지 로드 및 문제 선택 추적
     useEffect(() => {
-        analytics.pageView(dataType === 'pa' ? '/pa-practice' : '/stream', { data_type: dataType });
+        const pagePath = dataType === 'pa' ? '/pa-practice' : 
+                         dataType === 'stream' ? '/stream-practice' : '/rca-practice';
+        analytics.pageView(pagePath, { data_type: dataType });
     }, [dataType]);
 
     useEffect(() => {
@@ -419,6 +421,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                             dataType: dataType
                         });
                     }}
+                    dataType={dataType}
                 />
             </div>
 

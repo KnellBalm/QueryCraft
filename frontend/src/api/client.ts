@@ -73,6 +73,7 @@ export const statsApi = {
     me: () => api.get('/stats/me'),
     history: (limit: number = 20, dataType?: string) =>
         api.get('/stats/history', { params: { limit, data_type: dataType } }),
+    skills: () => api.get('/stats/skills'),
     leaderboard: (limit: number = 20) =>
         api.get('/stats/leaderboard', { params: { limit } }),
     reset: () => api.delete('/stats/reset'),

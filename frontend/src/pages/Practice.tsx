@@ -29,7 +29,9 @@ interface InfiniteProblem {
     description: string;
     difficulty: string;
     answer_sql: string;
+    recommendation_reason?: string;
 }
+
 
 export default function Practice() {
     const [problem, setProblem] = useState<InfiniteProblem | null>(null);
