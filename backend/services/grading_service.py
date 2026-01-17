@@ -82,11 +82,19 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
             msg += f" 추가: {extra}"
         return False, msg
     
-    # 컬럼명 정규화 (소문자)
+    # 컬럼명 정규화 (소문자) 및 데이터 정규화 (문자열 strip)
     user_df = user_df.copy()
     expected_df = expected_df.copy()
     user_df.columns = [c.lower() for c in user_df.columns]
     expected_df.columns = [c.lower() for c in expected_df.columns]
+    
+    # 문자열 컬럼 strip (정렬 전 수행하여 공백에 의한 정렬 뒤바뀜 방지)
+    for col in user_df.columns:
+        if pd.api.types.is_object_dtype(user_df[col]):
+            user_df[col] = user_df[col].astype(str).str.strip()
+    for col in expected_df.columns:
+        if pd.api.types.is_object_dtype(expected_df[col]):
+            expected_df[col] = expected_df[col].astype(str).str.strip()
     
     # 정렬
     sort_cols = [k.lower() for k in (sort_keys or [])] if sort_keys else list(user_df.columns)
@@ -155,9 +163,9 @@ def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys:
                 return False, f"{idx+1}번째 행 '{col}' 값 불일치: 제출={u_col[idx]}, 정답={e_col[idx]}"
             continue
 
-        # 문자열 비교 (strip 후)
-        u_str = u_vals.astype(str).str.strip()
-        e_str = e_vals.astype(str).str.strip()
+        # 문자열 비교 (이미 위에서 strip됨)
+        u_str = u_vals.astype(str)
+        e_str = e_vals.astype(str)
         mismatch = u_str != e_str
         if mismatch.any():
             idx = mismatch[mismatch].index[0]
@@ -274,12 +282,16 @@ def grade_submission(
                 difficulty=problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
             )
         
-        # 5. 정답 시 XP 지급 (난이도 기반)
-        if is_correct and user_id:
-            diff = problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
-            xp_value = get_difficulty_xp(diff)
-            award_xp(user_id, xp_value)
-            feedback += f" (+{xp_value} XP)"
+        # 5. 사용자 스킬 및 XP 업데이트 (정답 시)
+        if user_id:
+            from backend.services.skill_service import update_user_skills
+            update_user_skills(user_id, problem_id, is_correct)
+            
+            if is_correct:
+                diff = problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
+                xp_value = get_difficulty_xp(diff)
+                award_xp(user_id, xp_value)
+                feedback += f" (+{xp_value} XP)"
         
         # 6. 로깅
         result_text = "정답" if is_correct else "오답"

@@ -39,6 +39,17 @@ async def get_history(request: Request, limit: int = 20, data_type: Optional[str
     return get_submission_history(limit, data_type, user_id)
 
 
+@router.get("/skills")
+async def get_my_skills(request: Request):
+    """내 스킬 프로필 조회 (레이더 차트용)"""
+    user_id = get_user_id_from_request(request)
+    if not user_id:
+        return []
+    from backend.services.skill_service import get_user_skill_profile
+    return get_user_skill_profile(user_id)
+
+
+
 
 @router.get("/leaderboard")
 async def get_leaderboard(limit: int = 20):
@@ -116,7 +127,10 @@ async def reset_my_stats(request: Request):
             # 2. 문제 세트 할당 삭제 (연속 출석 관련)
             pg.execute("DELETE FROM public.user_problem_sets WHERE user_id = %s", [user_id])
             
-            # 3. XP 및 레벨 초기화
+            # 3. 스킬 기록 삭제
+            pg.execute("DELETE FROM public.user_skills WHERE user_id = %s", [user_id])
+            
+            # 4. XP 및 레벨 초기화
             pg.execute("UPDATE public.users SET xp = 0 WHERE id = %s", [user_id])
         
         logger.info(f"User {user['email']} reset their stats completely")

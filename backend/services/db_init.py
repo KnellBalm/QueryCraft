@@ -152,7 +152,38 @@ def init_database():
 
             pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_date ON public.problems(problem_date DESC)")
             pg.execute("CREATE INDEX IF NOT EXISTS idx_problems_type ON public.problems(data_type)")
-            logger.info("✓ problems table ready")
+            
+            # problems 테이블 - topic, category 컬럼 추가 및 동기화
+            try:
+                cols = pg.fetch_df("SELECT column_name FROM information_schema.columns WHERE table_name = 'problems'")
+                existing_cols = set(cols['column_name'].tolist())
+                if 'topic' not in existing_cols:
+                    pg.execute("ALTER TABLE public.problems ADD COLUMN topic TEXT")
+                if 'category' not in existing_cols:
+                    pg.execute("ALTER TABLE public.problems ADD COLUMN category TEXT")
+                
+                # 기존 데이터 동기화 (description JSON에서 추출)
+                import json
+                df_sync = pg.fetch_df("SELECT id, description FROM public.problems WHERE topic IS NULL OR category IS NULL")
+                for _, row in df_sync.iterrows():
+                    try:
+                        desc = json.loads(row['description']) if isinstance(row['description'], str) else row['description']
+                        topic = desc.get('topic', 'N/A')
+                        # topic 기반 category 매핑 (예시 로직)
+                        category = 'BASIC'
+                        t_lower = topic.lower()
+                        if 'join' in t_lower: category = 'JOIN'
+                        elif 'agg' in t_lower or 'group' in t_lower: category = 'AGGREGATE'
+                        elif 'window' in t_lower or 'rank' in t_lower: category = 'WINDOW'
+                        elif 'funnel' in t_lower: category = 'FUNNEL'
+                        elif 'retention' in t_lower or 'cohort' in t_lower: category = 'RETENTION'
+                        
+                        pg.execute("UPDATE public.problems SET topic = %s, category = %s WHERE id = %s", (topic, category, row['id']))
+                    except: pass
+            except Exception as e:
+                logger.warning(f"Failed to sync topic/category to problems: {e}")
+
+            logger.info("✓ problems table and metadata ready")
             
             # 8. daily_tips 테이블
             pg.execute("""
@@ -194,6 +225,21 @@ def init_database():
             """)
             pg.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires ON public.persistent_sessions(expires_at)")
             logger.info("✓ persistent_sessions table ready")
+
+            # 11. user_skills 테이블 (Adaptive Tutor용)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.user_skills (
+                    user_id TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    score FLOAT DEFAULT 0.0,
+                    level INTEGER DEFAULT 1,
+                    correct_count INTEGER DEFAULT 0,
+                    total_count INTEGER DEFAULT 0,
+                    last_updated_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, category)
+                )
+            """)
+            logger.info("✓ user_skills table ready")
 
             # 11. [분석용] stream_events & stream_daily_metrics
             pg.execute("""
