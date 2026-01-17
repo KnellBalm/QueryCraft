@@ -63,7 +63,7 @@ export default function AdaptiveTutorPage() {
                     <h2>🎯 맞춤형 추천 문제</h2>
                     {loading ? (
                         <div className="skeleton-grid">
-                            {[1, 2, 3].map(i => <Skeleton key={i} height="150px" borderRadius="12px" />)}
+                            {[1, 2, 3].map(i => <Skeleton key={i} height="150px" />)}
                         </div>
                     ) : (
                         <div className="recommendation-grid">
