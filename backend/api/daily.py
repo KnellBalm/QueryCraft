@@ -15,6 +15,29 @@ from backend.generator.daily_challenge_writer import (
 router = APIRouter(prefix="/daily", tags=["Daily Challenge"])
 
 
+@router.get("/latest")
+async def get_latest_daily_challenge():
+    """
+    가장 최근 Daily Challenge 조회
+    
+    Returns:
+        {
+            "scenario": { ... },
+            "problems": [ ... ],
+            "metadata": { ... }
+        }
+    """
+    challenge = get_latest_challenge()
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail="No Daily Challenge found"
+        )
+    
+    return challenge
+
+
 @router.get("/{target_date}")
 async def get_daily_challenge(target_date: str):
     """
@@ -26,7 +49,7 @@ async def get_daily_challenge(target_date: str):
     Returns:
         {
             "scenario": { ... },
-            "problems": [ ... ],
+            "problems": { ... },
             "metadata": { ... }
         }
     """
@@ -46,29 +69,6 @@ async def get_daily_challenge(target_date: str):
         raise HTTPException(
             status_code=404,
             detail=f"Daily Challenge not found for date: {target_date}"
-        )
-    
-    return challenge
-
-
-@router.get("/latest")
-async def get_latest_daily_challenge():
-    """
-    가장 최근 Daily Challenge 조회
-    
-    Returns:
-        {
-            "scenario": { ... },
-            "problems": [ ... ],
-            "metadata": { ... }
-        }
-    """
-    challenge = get_latest_challenge()
-    
-    if not challenge:
-        raise HTTPException(
-            status_code=404,
-            detail="No Daily Challenge found"
         )
     
     return challenge
