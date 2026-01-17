@@ -1,7 +1,24 @@
 # TODO List
 
-> 📅 마지막 업데이트: 2026-01-17 (UI/UX 개선 완료 및 에이전트 역할 분담 적용)
+> 📅 마지막 업데이트: 2026-01-17 21:50 (Daily Challenge 완료 + 버그 수정)
 > 👥 **역할 분담**: [G] Gemini(Data/Infra), [C] Claude(UI/UX/Skills)
+
+---
+
+## 🎉 Daily Challenge 시스템 구현 완료 (95% MVP)
+
+- [x] **Phase 1-5 구현 완료**
+  - [x] Backend: scenario_generator, data_generator, problem_generator, file_writer
+  - [x] API: /api/daily/* 엔드포인트 5개
+  - [x] Frontend: ScenarioPanel, DailyChallenge 페이지
+  - [x] Worker: 통합 및 --legacy 플래그
+  - [x] Navigation: Daily Challenge 메뉴 추가
+  
+- [x] **버그 수정 (2026-01-17 21:42)**
+  - [x] /api/daily/latest 라우트 순서 문제 해결
+  - [x] FastAPI 경로 매칭 이슈 수정
+
+**상세**: [`completion_report.md`](../completion_report.md), [`daily_challenge_walkthrough.md`](../daily_challenge_walkthrough.md)
 
 ---
 
