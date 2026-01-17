@@ -90,6 +90,7 @@ if os.getenv("ENV") == "production":
         CORSMiddleware,
         allow_origins=[
             "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
+            "https://query-craft-frontend-758178119666.us-central1.run.app",
             "https://querycraft.run.app",  # 커스텀 도메인 예비
         ],
         # Cloud Run URL 형식 모두 허용 (project-id 또는 hash 기반)
