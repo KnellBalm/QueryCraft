@@ -54,9 +54,22 @@ async def list_problems(
     data_type: str,
     target_date: Optional[str] = Query(None, description="날짜 (YYYY-MM-DD)")
 ):
-    """문제 목록 조회 (사용자별 세트 할당)"""
+    """문제 목록 조회 (사용자별 세트 할당)
+    
+    ⚠️ DEPRECATED: PA와 Stream 개별 엔드포인트는 곧 제거될 예정입니다.
+    새로운 통합 Daily Challenge를 사용하세요: GET /api/daily/latest
+    """
     if data_type not in ("pa", "stream", "rca"):
         raise HTTPException(400, "data_type은 'pa', 'stream', 또는 'rca'이어야 합니다.")
+    
+    # Deprecation 경고 (PA, Stream만)
+    if data_type in ("pa", "stream"):
+        import warnings
+        warnings.warn(
+            f"/{data_type} endpoint is deprecated. Use /api/daily/latest instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
     
     if target_date:
         try:
@@ -88,7 +101,7 @@ async def list_problems(
                 key_metrics=guide.get("key_metrics")
             )
     
-    return ProblemListResponse(
+    response = ProblemListResponse(
         date=dt.isoformat(),
         data_type=data_type,
         problems=problems,
@@ -96,6 +109,21 @@ async def list_problems(
         completed=completed,
         metadata=metadata
     )
+    
+    # Deprecation 헤더 추가 (PA, Stream만)
+    if data_type in ("pa", "stream"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            content=response.model_dump(),
+            headers={
+                "Deprecation": "true",
+                "Link": '</api/daily/latest>; rel="alternate"',
+                "Sunset": "2026-06-01",  # 6개월 유예
+                "X-API-Warn": f"This endpoint is deprecated. Use /api/daily/latest for unified challenges."
+            }
+        )
+    
+    return response
 
 
 @router.get("/{data_type}/{problem_id}", response_model=ProblemDetailResponse)
