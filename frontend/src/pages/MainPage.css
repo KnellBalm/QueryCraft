@@ -349,6 +349,41 @@
     transition: width 0.5s ease;
 }
 
+/* Daily Challenge 카드 스타일 */
+.mode-daily .mode-glow {
+    background: radial-gradient(
+        circle at center,
+        rgba(139, 92, 246, 0.3) 0%,
+        transparent 70%
+    );
+}
+
+.mode-daily:hover .mode-glow {
+    background: radial-gradient(
+        circle at center,
+        rgba(139, 92, 246, 0.5) 0%,
+        transparent 70%
+    );
+}
+
+.mode-daily .mode-icon {
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+}
+
+.mode-daily:hover {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 
+        0 0 20px rgba(139, 92, 246, 0.3),
+        0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mode-daily .mode-badge {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #c4b5fd;
+}
+
+
 .player-xp .xp-text {
     font-size: var(--font-sm);
     color: var(--text-muted);
