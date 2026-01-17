@@ -139,7 +139,7 @@ CONTENT_ENGAGEMENT_FLOW = [
 # =====================================================
 # SaaS Events (13개)
 # =====================================================
-SAAS_EVENTS = [
+SaaS_EVENTS = [
     "login",
     "logout",
     "dashboard_view",
@@ -155,23 +155,23 @@ SAAS_EVENTS = [
     "onboarding_complete",
 ]
 
-SAAS_PROBABILITIES = {
+SaaS_PROBABILITIES = {
     "login": 1.0,
-    "logout": float(os.getenv("SAAS_PROB_LOGOUT", "0.90")),
-    "dashboard_view": float(os.getenv("SAAS_PROB_DASHBOARD_VIEW", "0.95")),
-    "feature_use": float(os.getenv("SAAS_PROB_FEATURE_USE", "0.75")),
-    "create_project": float(os.getenv("SAAS_PROB_CREATE_PROJECT", "0.20")),
-    "invite_member": float(os.getenv("SAAS_PROB_INVITE_MEMBER", "0.08")),
-    "export_data": float(os.getenv("SAAS_PROB_EXPORT_DATA", "0.15")),
-    "api_call": float(os.getenv("SAAS_PROB_API_CALL", "0.25")),
-    "upgrade_plan": float(os.getenv("SAAS_PROB_UPGRADE_PLAN", "0.03")),
-    "downgrade_plan": float(os.getenv("SAAS_PROB_DOWNGRADE_PLAN", "0.01")),
-    "cancel_subscription": float(os.getenv("SAAS_PROB_CANCEL_SUBSCRIPTION", "0.005")),
-    "support_ticket": float(os.getenv("SAAS_PROB_SUPPORT_TICKET", "0.05")),
-    "onboarding_complete": float(os.getenv("SAAS_PROB_ONBOARDING_COMPLETE", "0.40")),
+    "logout": float(os.getenv("SaaS_PROB_LOGOUT", "0.90")),
+    "dashboard_view": float(os.getenv("SaaS_PROB_DASHBOARD_VIEW", "0.95")),
+    "feature_use": float(os.getenv("SaaS_PROB_FEATURE_USE", "0.75")),
+    "create_project": float(os.getenv("SaaS_PROB_CREATE_PROJECT", "0.20")),
+    "invite_member": float(os.getenv("SaaS_PROB_INVITE_MEMBER", "0.08")),
+    "export_data": float(os.getenv("SaaS_PROB_EXPORT_DATA", "0.15")),
+    "api_call": float(os.getenv("SaaS_PROB_API_CALL", "0.25")),
+    "upgrade_plan": float(os.getenv("SaaS_PROB_UPGRADE_PLAN", "0.03")),
+    "downgrade_plan": float(os.getenv("SaaS_PROB_DOWNGRADE_PLAN", "0.01")),
+    "cancel_subscription": float(os.getenv("SaaS_PROB_CANCEL_SUBSCRIPTION", "0.005")),
+    "support_ticket": float(os.getenv("SaaS_PROB_SUPPORT_TICKET", "0.05")),
+    "onboarding_complete": float(os.getenv("SaaS_PROB_ONBOARDING_COMPLETE", "0.40")),
 }
 
-SAAS_ACTIVATION_FLOW = [
+SaaS_ACTIVATION_FLOW = [
     "login",
     "dashboard_view",
     "onboarding_complete",
@@ -387,7 +387,7 @@ def get_events_for_type(product_type: str) -> List[str]:
     event_map = {
         "commerce": COMMERCE_EVENTS,
         "content": CONTENT_EVENTS,
-        "saas": SAAS_EVENTS,
+        "saas": SaaS_EVENTS,
         "community": COMMUNITY_EVENTS,
         "fintech": FINTECH_EVENTS,
     }
@@ -399,7 +399,7 @@ def get_probabilities_for_type(product_type: str) -> Dict[str, float]:
     prob_map = {
         "commerce": COMMERCE_PROBABILITIES,
         "content": CONTENT_PROBABILITIES,
-        "saas": SAAS_PROBABILITIES,
+        "saas": SaaS_PROBABILITIES,
         "community": COMMUNITY_PROBABILITIES,
         "fintech": FINTECH_PROBABILITIES,
     }
@@ -411,7 +411,7 @@ def get_flow_for_type(product_type: str) -> List[str]:
     flow_map = {
         "commerce": COMMERCE_FUNNEL,
         "content": CONTENT_ENGAGEMENT_FLOW,
-        "saas": SAAS_ACTIVATION_FLOW,
+        "saas": SaaS_ACTIVATION_FLOW,
         "community": COMMUNITY_ENGAGEMENT_FLOW,
         "fintech": FINTECH_TRANSACTION_FLOW,
     }

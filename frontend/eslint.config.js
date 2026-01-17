@@ -19,5 +19,24 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // React Hooks
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // Console logs
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
+
+      // TypeScript
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      }],
+
+      // Code quality
+      'no-debugger': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error',
+    },
   },
 ])

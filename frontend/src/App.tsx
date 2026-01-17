@@ -1,5 +1,5 @@
 // frontend/src/App.tsx
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Link, Navigate } from 'react-router-dom';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';

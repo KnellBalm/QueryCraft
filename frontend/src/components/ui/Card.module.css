@@ -1,0 +1,158 @@
+/* Card Component - Arcade Gaming Style */
+
+.card {
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+/* Border */
+.border {
+  border: 1px solid var(--border-color);
+}
+
+/* Hover effect */
+.hover {
+  cursor: pointer;
+}
+
+.hover::before {
+  opacity: 0;
+}
+
+.hover:hover::before {
+  opacity: 1;
+}
+
+.hover:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(var(--track-primary-rgb), 0.2);
+}
+
+.hover:active {
+  transform: translateY(-2px);
+}
+
+/* Padding variants */
+.padding-none {
+  padding: 0;
+}
+
+.padding-sm {
+  padding: var(--space-4);
+}
+
+.padding-md {
+  padding: var(--space-5);
+}
+
+.padding-lg {
+  padding: var(--space-6);
+}
+
+/* Slots */
+.header {
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-wide);
+}
+
+.body {
+  padding: var(--space-5);
+  flex: 1;
+}
+
+.footer {
+  padding: var(--space-5);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+/* When using slots, override card padding */
+.card:has(.header),
+.card:has(.body),
+.card:has(.footer) {
+  padding: 0;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .card {
+  background: var(--bg-primary);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .border {
+  border-color: var(--border-color);
+}
+
+[data-theme="light"] .hover:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),
+              0 0 20px rgba(var(--track-primary-rgb), 0.15);
+}
+
+[data-theme="light"] .footer {
+  background: var(--bg-secondary);
+}
+
+/* Track-specific styling */
+[data-track="future"] .card {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(34, 211, 238, 0.03));
+}
+
+[data-track="future"] .border {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+[data-track="future"] .hover:hover {
+  border-color: #a855f7;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3),
+              0 0 25px rgba(168, 85, 247, 0.3);
+}
+
+[data-track="future"] .header {
+  border-bottom-color: rgba(168, 85, 247, 0.2);
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent);
+}
+
+[data-track="future"] .footer {
+  border-top-color: rgba(168, 85, 247, 0.2);
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.05));
+}
+
+/* Scanline effect for extra gaming vibe */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  opacity: 0.2;
+}
+
+.hover:hover::after {
+  opacity: 0;
+}

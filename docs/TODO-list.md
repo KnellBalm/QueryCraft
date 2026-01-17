@@ -17,27 +17,25 @@
 ## 1. 백엔드 API 에러 해결 마무리
 
 ### 1.1 API 동작 검증 (P0)
-- [ ] [G/C] Leaderboard API (500 에러) 해결 확인
-  - [ ] 에러 원인 파악 (로그 확인)
-  - [ ] 수정 후 로컬 테스트
-  - [ ] dev 서버 배포 후 검증
+- [x] [G/C] Leaderboard API (500 에러) 해결 확인
+- [x] [G/C] Recommend API (400 에러) 해결 확인
+- [x] [G/C] Translate API (404 에러) 해결 확인
+
+### 1.2 배포
+- [x] `main` 브랜치 소스 푸시 및 상용 배포 완료
 - [ ] [G/C] Recommend API (400 에러) 해결 확인
   - [ ] 요청 파라미터 검증 로직 확인
   - [ ] 수정 후 테스트
 - [ ] [G/C] Translate API (404 에러) 해결 확인
   - [ ] 라우트 등록 여부 확인
-  - [ ] 엔드포인트 경로 검증
-
-### 1.2 배포
-- [ ] `dev` 브랜치 소스 푸시 (검증 완료 후)
 
 ---
 
 ## 2. 스케줄러 개선 (Cloud Run 연동)
 
 ### 2.1 전용 스케줄 엔드포인트 설계
-- [ ] 엔드포인트 경로 결정: `/admin/schedule/run`
-- [ ] 요청/응답 스키마 정의
+- [x] 엔드포인트 경로 결정: `/admin/schedule/run`
+- [x] 요청/응답 스키마 정의
   ```json
   // 응답 예시
   {
@@ -49,51 +47,44 @@
   ```
 
 ### 2.2 엔드포인트 구현
-- [ ] `backend/api/admin.py`에 엔드포인트 추가
-- [ ] [G] 데이터 생성 + 문제 생성 로직 호출
-- [ ] 예외 처리 및 에러 응답 정의
+- [x] `backend/api/admin.py`에 엔드포인트 추가
+- [x] [G] 데이터 생성 + 문제 생성 로직 호출
+- [x] 예외 처리 및 에러 응답 정의
 
 ### 2.3 인증 및 보안
-- [ ] 인증 방식 결정 (OIDC 토큰 vs API 키)
+- [x] 인증 방식 결정 (OIDC 토큰)
 - [ ] [G] `X-Scheduler-Key` 헤더 검증 로직 구현
-- [ ] 서비스 계정 전용 Cloud Run Invoker 권한 설정
+- [x] 서비스 계정 전용 Cloud Run Invoker 권한 설정
 
 ### 2.4 내부 스케줄러 정리
-- [ ] `ENABLE_SCHEDULER` 환경변수로 내부 스케줄러 비활성화 옵션 추가
-- [ ] 중복 실행 방지 플래그 추가 (락 메커니즘)
+- [x] `ENABLE_SCHEDULER` 환경변수로 내부 스케줄러 비활성화 옵션 추가
+- [x] 중복 실행 방지 기능 추가
 
 ---
 
 ## 3. Cloud Scheduler 설정 (GCP)
 
 ### 3.1 Scheduler 생성
-- [ ] 이름: `querycraft-daily-generation`
+- [x] 이름: `querycraft-daily-generation`
 - [ ] Cron 표현식: `0 1 * * *`
 - [ ] 타임존: `Asia/Seoul`
-- [ ] 대상 URL: `https://[CLOUD_RUN_URL]/admin/schedule/run`
+- [x] 대상 URL: `https://[CLOUD_RUN_URL]/apis/run.googleapis.com/v1/.../jobs/querycraft-worker:run`
 
 ### 3.2 서비스 계정 설정
-- [ ] 서비스 계정 생성: `querycraft-scheduler-sa`
-- [ ] Cloud Run Invoker 역할 부여
-- [ ] Scheduler에 서비스 계정 연결
+- [x] 서비스 계정 권한 부여 (`roles/run.developer`)
+- [x] Scheduler에 서비스 계정 연결 (OIDC)
 
 ### 3.3 재시도 및 알림 설정
-- [ ] 재시도 정책: 최대 3회, 지수 백오프
-- [ ] 실패 알림 설정
+- [x] 재시도 정책 및 실패 알림 기반 마련
   - [ ] Cloud Logging 알림 규칙 생성
   - [ ] (선택) Slack/이메일 연동
 
 ---
 
 ## 4. 배포/운영 점검
-
-- [ ] 환경변수 정리
-  - [ ] `ENV=production` 설정 확인
-  - [ ] `ENABLE_SCHEDULER=false` (Cloud Scheduler 사용 시)
-- [ ] 스케줄러 중복 실행 모니터링 대시보드 구성
-- [ ] 생성 결과 검증 스크립트 작성
-  - [ ] `problems/daily/` 파일 존재 확인
-  - [ ] DB에 오늘 날짜 문제 데이터 확인
+- [x] 환경변수 정리 (`POSTGRES_DSN` 개행 제거 등)
+- [x] `ENV=production` 설정 확인
+- [x] 생성 결과 검증 및 백필 기능 (`worker/main.py --date`) 구현
 
 ---
 

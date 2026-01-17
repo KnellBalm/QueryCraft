@@ -1,0 +1,299 @@
+/* Modal Component - Arcade Gaming Style */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: var(--space-4);
+}
+
+.backdropOpen {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  opacity: 1;
+}
+
+.modal {
+  position: relative;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-3xl);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+              0 0 40px rgba(var(--track-primary-rgb), 0.2);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.9) translateY(20px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(var(--track-primary-rgb), 0.1), transparent 50%);
+  pointer-events: none;
+}
+
+.open {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* Sizes */
+.size-sm {
+  width: 100%;
+  max-width: 400px;
+}
+
+.size-md {
+  width: 100%;
+  max-width: 600px;
+}
+
+.size-lg {
+  width: 100%;
+  max-width: 800px;
+}
+
+.size-xl {
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* Close button */
+.closeButton {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.closeButton:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: rotate(90deg);
+  box-shadow: 0 0 15px rgba(var(--track-primary-rgb), 0.3);
+}
+
+.closeButton:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+.closeIcon {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: var(--font-bold);
+}
+
+/* Header */
+.header {
+  position: relative;
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  background: linear-gradient(90deg, rgba(var(--track-primary-rgb), 0.05), transparent);
+}
+
+/* Body */
+.body {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+  color: var(--text-primary);
+  line-height: var(--leading-relaxed);
+}
+
+.body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: var(--radius-sm);
+}
+
+.body::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* Footer */
+.footer {
+  padding: var(--space-5) var(--space-6);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* Content (when not using slots) */
+.content {
+  padding: var(--space-6);
+  overflow-y: auto;
+}
+
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: var(--radius-sm);
+}
+
+/* Scanline effect */
+.modal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .backdrop {
+  background: rgba(255, 255, 255, 0);
+}
+
+[data-theme="light"] .backdropOpen {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="light"] .modal {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2),
+              0 0 40px rgba(var(--track-primary-rgb), 0.1);
+}
+
+[data-theme="light"] .closeButton {
+  background: var(--bg-secondary);
+}
+
+[data-theme="light"] .closeButton:hover {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="light"] .footer {
+  background: var(--bg-secondary);
+}
+
+/* Track-specific styling */
+[data-track="future"] .modal {
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+              0 0 50px rgba(168, 85, 247, 0.3);
+}
+
+[data-track="future"] .modal::before {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.15), rgba(34, 211, 238, 0.05));
+}
+
+[data-track="future"] .closeButton:hover {
+  border-color: #a855f7;
+  color: #a855f7;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+[data-track="future"] .header {
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent);
+  border-bottom-color: rgba(168, 85, 247, 0.2);
+}
+
+[data-track="future"] .footer {
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.05));
+  border-top-color: rgba(168, 85, 247, 0.2);
+}
+
+/* Animation timing adjustments */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal,
+  .closeButton {
+    transition: none;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .backdrop {
+    padding: var(--space-2);
+  }
+
+  .modal {
+    border-radius: var(--radius-2xl);
+    max-height: 95vh;
+  }
+
+  .size-sm,
+  .size-md,
+  .size-lg,
+  .size-xl {
+    max-width: 100%;
+  }
+
+  .header {
+    padding: var(--space-5) var(--space-5) var(--space-4);
+    font-size: var(--font-xl);
+  }
+
+  .body,
+  .content {
+    padding: var(--space-5);
+  }
+
+  .footer {
+    padding: var(--space-4) var(--space-5);
+    flex-direction: column;
+  }
+
+  .closeButton {
+    width: 32px;
+    height: 32px;
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+}

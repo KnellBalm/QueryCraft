@@ -1,5 +1,5 @@
 // frontend/src/pages/MainPage.tsx
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTrack } from '../contexts/TrackContext';
@@ -33,13 +33,13 @@ interface User {
 }
 
 // 아케이드 대기실 스타일의 프로필 카드
-function PlayerCard({ user, stats }: { user: User, stats: UserStats | null }) {
+const PlayerCard = memo(({ user, stats }: { user: User, stats: UserStats | null }) => {
     if (!user) return null;
-    
+
     const nextLevelXP = stats?.next_level_threshold || 100;
     const currentXP = stats?.score || 0;
     const progress = Math.min(100, (currentXP / nextLevelXP) * 100);
-    
+
     return (
         <div className="player-card">
             <div className="player-avatar">
@@ -69,10 +69,10 @@ function PlayerCard({ user, stats }: { user: User, stats: UserStats | null }) {
             </div>
         </div>
     );
-}
+});
 
 // 히어로 섹션 (비로그인)
-function LandingHero({ track }: { track: 'core' | 'future' }) {
+const LandingHero = memo(({ track }: { track: 'core' | 'future' }) => {
     return (
         <section className="arcade-hero">
             <div className="hero-scanline" />
@@ -96,7 +96,7 @@ function LandingHero({ track }: { track: 'core' | 'future' }) {
             </div>
         </section>
     );
-}
+});
 
 // 아케이드 모드 선택 (세로 배치)
 function ArcadeModesCore() {
@@ -202,7 +202,7 @@ function ArcadeModesFuture({ showToast }: { showToast: (msg: string, type: 'succ
 }
 
 // 리더보드 패널
-function LeaderboardPanel({ leaderboard, currentUser }: { leaderboard: LeaderboardEntry[], currentUser?: User | null }) {
+const LeaderboardPanel = memo(({ leaderboard, currentUser }: { leaderboard: LeaderboardEntry[], currentUser?: User | null }) => {
     return (
         <div className="arcade-panel leaderboard-panel">
             <h2 className="panel-title">
@@ -211,8 +211,8 @@ function LeaderboardPanel({ leaderboard, currentUser }: { leaderboard: Leaderboa
             </h2>
             <div className="leaderboard-list">
                 {leaderboard.slice(0, 5).map((entry, idx) => (
-                    <div 
-                        key={idx} 
+                    <div
+                        key={idx}
                         className={`rank-row ${entry.nickname === currentUser?.nickname ? 'me' : ''} rank-${entry.rank}`}
                     >
                         <span className="rank-medal">
@@ -228,10 +228,10 @@ function LeaderboardPanel({ leaderboard, currentUser }: { leaderboard: Leaderboa
             </div>
         </div>
     );
-}
+});
 
 // 추천 문제 패널
-function RecommendPanel({ problems }: { problems: Problem[] }) {
+const RecommendPanel = memo(({ problems }: { problems: Problem[] }) => {
     return (
         <div className="arcade-panel recommend-panel">
             <h2 className="panel-title">
@@ -258,10 +258,10 @@ function RecommendPanel({ problems }: { problems: Problem[] }) {
             </div>
         </div>
     );
-}
+});
 
 // 활동 히트맵
-function ActivityStrip({ history }: { history: ActivityLog[] }) {
+const ActivityStrip = memo(({ history }: { history: ActivityLog[] }) => {
     const days = useMemo(() => {
         const result = [];
         for (let i = 13; i >= 0; i--) {
@@ -288,7 +288,7 @@ function ActivityStrip({ history }: { history: ActivityLog[] }) {
             </div>
         </div>
     );
-}
+});
 
 export function MainPage() {
     const { user } = useAuth();

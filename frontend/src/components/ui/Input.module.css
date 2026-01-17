@@ -1,0 +1,189 @@
+/* Input Component - Arcade Gaming Style */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.label {
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  margin-bottom: var(--space-1);
+}
+
+.inputContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.inputContainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(var(--track-primary-rgb), 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.inputContainer:hover::before {
+  opacity: 1;
+}
+
+.inputContainer:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 20px rgba(var(--track-primary-rgb), 0.2);
+}
+
+.inputContainer:focus-within::before {
+  opacity: 1;
+}
+
+.input {
+  flex: 1;
+  height: 44px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--font-base);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+  width: 100%;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Icon spacing */
+.hasPrefix .input {
+  padding-left: var(--space-2);
+}
+
+.hasSuffix .input {
+  padding-right: var(--space-2);
+}
+
+.prefixIcon,
+.suffixIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 44px;
+  color: var(--text-muted);
+  font-size: var(--font-lg);
+}
+
+/* Error state */
+.error {
+  border-color: var(--error-color);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+.error:focus-within {
+  border-color: var(--error-color);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.error .prefixIcon,
+.error .suffixIcon {
+  color: var(--error-color);
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-xs);
+  font-weight: var(--font-semibold);
+  color: var(--error-color);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  margin-top: var(--space-1);
+}
+
+.errorMessage::before {
+  content: '⚠';
+  font-size: var(--font-sm);
+}
+
+/* Disabled state */
+.disabled .inputContainer {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.disabled .label {
+  opacity: 0.4;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .inputContainer {
+  background: var(--bg-secondary);
+}
+
+[data-theme="light"] .inputContainer:focus-within {
+  box-shadow: 0 0 20px rgba(var(--track-primary-rgb), 0.15);
+}
+
+[data-theme="light"] .error {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+}
+
+/* Track-specific styling */
+[data-track="future"] .inputContainer:focus-within {
+  border-color: #a855f7;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+[data-track="future"] .inputContainer::before {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.1), transparent);
+}
+
+/* Number input arrows removal (for cleaner look) */
+.input[type="number"]::-webkit-inner-spin-button,
+.input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Autofill styling */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-tertiary) inset;
+  -webkit-text-fill-color: var(--text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+[data-theme="light"] .input:-webkit-autofill,
+[data-theme="light"] .input:-webkit-autofill:hover,
+[data-theme="light"] .input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-secondary) inset;
+}

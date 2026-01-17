@@ -1,0 +1,19 @@
+/* Responsive Breakpoints */
+
+:root {
+    /* Breakpoint values (for JS usage) */
+    --breakpoint-sm: 600px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1200px;
+    --breakpoint-2xl: 1400px;
+}
+
+/*
+ * Usage in CSS:
+ * @media (max-width: 600px) { ... }   // Mobile
+ * @media (max-width: 768px) { ... }   // Tablet
+ * @media (max-width: 1024px) { ... }  // Small desktop
+ * @media (max-width: 1200px) { ... }  // Desktop
+ * @media (max-width: 1400px) { ... }  // Large desktop
+ */

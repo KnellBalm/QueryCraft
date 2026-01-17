@@ -174,20 +174,101 @@ def task_diagnose(args):
         print("\n--- Database Status ---")
         count_res = pg.fetch_df("SELECT data_type, COUNT(*) as count FROM public.problems GROUP BY data_type")
         print(count_res)
-        
+
         today = date.today()
         today_df = pg.fetch_df(
-            "SELECT id, title, problem_date, data_type, set_index FROM public.problems WHERE problem_date = %s", 
+            "SELECT id, title, problem_date, data_type, set_index FROM public.problems WHERE problem_date = %s",
             [today]
         )
         print(f"\n--- Problems for today ({today}): {len(today_df)} ---")
         for _, p in today_df.iterrows():
             print(f"  - [{p['data_type']}] Set {p['set_index']}: {p['title']}")
-            
+
         latest = pg.fetch_df("SELECT MAX(problem_date) as max_date FROM public.problems")
         print(f"\nLatest problem date in DB: {latest.iloc[0]['max_date']}")
     finally:
         pg.close()
+
+@registry.register("deploy", "GCP 배포 (args: --env=staging/production, --service=backend/frontend)")
+def task_deploy(args):
+    import subprocess
+
+    env = args.env or "staging"
+    service = args.service or "backend"
+
+    if env not in ["staging", "production"]:
+        print("❌ --env는 'staging' 또는 'production'이어야 합니다.")
+        return
+
+    if service not in ["backend", "frontend"]:
+        print("❌ --service는 'backend' 또는 'frontend'이어야 합니다.")
+        return
+
+    # GCP 프로젝트 ID 읽기
+    gcp_project = os.getenv("GCP_PROJECT_ID")
+    if not gcp_project:
+        print("⚠️ GCP_PROJECT_ID 환경변수가 설정되지 않았습니다. 기본값 사용.")
+        gcp_project = "querycraft"
+
+    print(f"🚀 {service} 배포 시작 (환경: {env}, 프로젝트: {gcp_project})...")
+
+    try:
+        if service == "backend":
+            # Backend: Docker 이미지 빌드 & Cloud Run 배포
+            image_name = f"gcr.io/{gcp_project}/backend:{env}"
+
+            print(f"\n1. Docker 이미지 빌드 & 푸시...")
+            result = subprocess.run(
+                ["gcloud", "builds", "submit", "--tag", image_name, "."],
+                check=True
+            )
+
+            print(f"\n2. Cloud Run 배포...")
+            service_name = f"backend-{env}" if env == "staging" else "backend"
+            result = subprocess.run(
+                ["gcloud", "run", "deploy", service_name,
+                 "--image", image_name,
+                 "--platform", "managed",
+                 "--region", "us-central1",
+                 "--allow-unauthenticated"],
+                check=True
+            )
+
+            print(f"\n✅ Backend 배포 완료!")
+
+        elif service == "frontend":
+            # Frontend: 빌드 후 Cloud Storage 또는 Cloud Run 배포
+            print(f"\n1. Frontend 빌드...")
+            result = subprocess.run(
+                ["npm", "run", "build"],
+                cwd="frontend",
+                check=True
+            )
+
+            print(f"\n2. Cloud Run 배포 (정적 파일)...")
+            # 프론트엔드도 Cloud Run으로 배포하는 경우
+            # Dockerfile이 frontend/에 있어야 함
+            image_name = f"gcr.io/{gcp_project}/frontend:{env}"
+            result = subprocess.run(
+                ["gcloud", "builds", "submit", "--tag", image_name, "frontend/"],
+                check=True
+            )
+
+            service_name = f"frontend-{env}" if env == "staging" else "frontend"
+            result = subprocess.run(
+                ["gcloud", "run", "deploy", service_name,
+                 "--image", image_name,
+                 "--platform", "managed",
+                 "--region", "us-central1",
+                 "--allow-unauthenticated"],
+                check=True
+            )
+
+            print(f"\n✅ Frontend 배포 완료!")
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ 배포 실패: {e}")
+        sys.exit(1)
 
 # ---------------------------------------------------------
 # Main CLI
@@ -202,6 +283,8 @@ def main():
     parser.add_argument("--table", help="상세 정보를 확인할 테이블명")
     parser.add_argument("--email", help="대상 사용자 이메일")
     parser.add_argument("--limit", help="로그 출력 제한 (기본 50)", default="50")
+    parser.add_argument("--env", help="배포 환경 (staging/production)", default="staging")
+    parser.add_argument("--service", help="배포 대상 서비스 (backend/frontend)", default="backend")
     
     args = parser.parse_args()
 

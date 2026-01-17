@@ -1,0 +1,39 @@
+/* Typography Design Tokens */
+
+:root {
+    /* Font sizes */
+    --font-xs: 0.65rem;    /* 10.4px */
+    --font-sm: 0.75rem;    /* 12px */
+    --font-base: 0.85rem;  /* 13.6px */
+    --font-md: 0.9rem;     /* 14.4px */
+    --font-lg: 0.95rem;    /* 15.2px */
+    --font-xl: 1rem;       /* 16px */
+    --font-2xl: 1.1rem;    /* 17.6px */
+    --font-3xl: 1.2rem;    /* 19.2px */
+    --font-4xl: 1.3rem;    /* 20.8px */
+    --font-5xl: 2.5rem;    /* 40px */
+    --font-6xl: 4rem;      /* 64px */
+
+    /* Font weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+    --font-black: 900;
+
+    /* Line heights */
+    --leading-none: 1;
+    --leading-tight: 1.4;
+    --leading-normal: 1.6;
+    --leading-relaxed: 1.7;
+
+    /* Letter spacing */
+    --tracking-tighter: -0.02em;
+    --tracking-tight: -0.01em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.05em;
+    --tracking-wider: 0.08em;
+    --tracking-widest: 0.1em;
+    --tracking-ultra: 0.2em;
+}

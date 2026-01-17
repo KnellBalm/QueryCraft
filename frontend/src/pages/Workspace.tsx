@@ -2,9 +2,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
-import { ResultTable } from '../components/ResultTable';
 import { InsightModal } from '../components/InsightModal';
+import { ResultPanel } from './Workspace/components/ResultPanel';
 import { useTrack } from '../contexts/TrackContext';
+import { useProblemCompletion } from '../hooks/useProblemCompletion';
 import { problemsApi, sqlApi } from '../api/client';
 import { analytics } from '../services/analytics';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
@@ -24,10 +25,6 @@ interface WorkspaceProps {
     dataType: 'pa' | 'stream' | 'rca';
 }
 
-interface CompletedStatus {
-    [problemId: string]: { is_correct: boolean; submitted_at: string };
-}
-
 export function Workspace({ dataType }: WorkspaceProps) {
     const [problems, setProblems] = useState<Problem[]>([]);
     const [isFetching, setIsFetching] = useState(false);
@@ -42,7 +39,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [activeTab, setActiveTab] = useState<'problem' | 'schema'>('problem');
     const [leftWidth, setLeftWidth] = useState(45);
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
-    const [completedStatus, setCompletedStatus] = useState<CompletedStatus>({});
     const [metadata, setMetadata] = useState<any>(null); // DatasetMetadata
     const [insightData, setInsightData] = useState<any>(null); // 구조화된 인사이트 데이터
     const [showInsightModal, setShowInsightModal] = useState(false);
@@ -63,6 +59,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
     const selectedProblem = problems[selectedIndex] || null;
     const { track } = useTrack(); // Future Lab에서만 AI 기능 활성화
+    const { completedStatus, updateCompletion, getStatusIcon } = useProblemCompletion(dataType, problems);
 
     // 데이터 로드
     const loadData = useCallback(async () => {
@@ -82,24 +79,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             setHint(null);
             setSql('');
 
-            // 문제 ID 비교하여 새 문제 세트면 제출 기록 초기화
-            const savedKey = `completed_${dataType}`;
-            const savedProblemIdsKey = `problem_ids_${dataType}`;
-            const currentProblemIds = newProblems.map((p: any) => p.problem_id).join(',');
-            const savedProblemIds = localStorage.getItem(savedProblemIdsKey);
-
-            if (savedProblemIds !== currentProblemIds) {
-                // 새 문제 세트 - 기존 제출 기록 초기화
-                localStorage.removeItem(savedKey);
-                localStorage.setItem(savedProblemIdsKey, currentProblemIds);
-                setCompletedStatus({});
-            } else {
-                // 같은 문제 세트 - 저장된 기록 복원
-                const saved = localStorage.getItem(savedKey);
-                if (saved) {
-                    try { setCompletedStatus(JSON.parse(saved)); } catch { }
-                }
-            }
+            // Completion history loading is now handled by useProblemCompletion hook
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -172,15 +152,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
             const res = await sqlApi.submit(selectedProblem.problem_id, sql, dataType);
             setSubmitResult(res.data);
 
-            const newStatus = {
-                ...completedStatus,
-                [selectedProblem.problem_id]: {
-                    is_correct: res.data.is_correct,
-                    submitted_at: new Date().toISOString()
-                }
-            };
-            setCompletedStatus(newStatus);
-            localStorage.setItem(`completed_${dataType}`, JSON.stringify(newStatus));
+            // Update completion status via hook
+            updateCompletion(selectedProblem.problem_id, res.data.is_correct);
 
             analytics.problemSubmitted(selectedProblem.problem_id, {
                 isCorrect: res.data.is_correct,
@@ -191,7 +164,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
             setSubmitResult({ is_correct: false, feedback: error.message });
         }
         setSubmitting(false);
-    }, [sql, selectedProblem, completedStatus, dataType, selectedIndex]);
+    }, [sql, selectedProblem, updateCompletion, dataType]);
 
     // AI 인사이트
     const handleInsight = useCallback(async () => {
@@ -252,7 +225,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setShowAiHelpMenu(false);
         setAiHelpResult(null);
 
-        // 시도 횟수 계산
+        // 시도 횟수 계산 (completion status에서 확인)
         const attemptCount = completedStatus[selectedProblem.problem_id] ? 1 : 0;
 
         try {
@@ -322,12 +295,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
     }, []);
-
-    const getStatusIcon = (problemId: string) => {
-        const status = completedStatus[problemId];
-        if (!status) return dataType === 'rca' ? '🔍' : '⬜';
-        return status.is_correct ? '✅' : '❌';
-    };
 
     const difficultyIcon: Record<string, string> = {
         easy: '🟢', medium: '🟡', hard: '🔴',
@@ -556,80 +523,31 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
                 <div className="v-resizer" onMouseDown={handleMouseDownVertical} />
 
-                <div className="result-section">
-                    <div className="result-header">
-                        <span>실행 결과</span>
-                        <div className="result-meta">
-                            {/* Future Lab에서만 AI 인사이트 표시 */}
-                            {track === 'future' && result?.success && result.data && result.data.length > 0 && (
-                                <button className="btn-insight-trigger" onClick={handleInsight} disabled={insightLoading}>
-                                    {insightLoading ? '⚡ 분석 중...' : '✨ AI 인사이트'}<span className="badge-new-tiny">NEW</span>
-                                </button>
-                            )}
-                            {result?.execution_time_ms && (
-                                <span className="exec-time">{result.execution_time_ms.toFixed(0)}ms</span>
-                            )}
-                        </div>
-                    </div>
+                <ResultPanel
+                    result={result}
+                    submitResult={submitResult}
+                    aiHelpResult={aiHelpResult}
+                    insightLoading={insightLoading}
+                    aiHelpLoading={aiHelpLoading}
+                    submitting={submitting}
+                    showInsightModal={showInsightModal}
+                    setShowInsightModal={setShowInsightModal}
+                    selectedProblem={selectedProblem}
+                    track={track}
+                    handleInsight={handleInsight}
+                    tables={tables}
+                    insightData={insightData}
+                    onQuerySelect={(newSql) => {
+                        setSql(newSql);
+                        setResult(null);
+                        setSubmitResult(null);
 
-                    <div className="result-content">
-                        {/* 로딩 상태 */}
-                        {(submitting || aiHelpLoading) && (
-                            <div className="loading-state">
-                                <div className="loading-spinner" />
-                                <div className="loading-text">
-                                    {submitting ? '채점 중입니다...' : 'AI가 도움을 준비 중입니다...'}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 힌트 */}
-                        {hint && !submitting && !aiHelpLoading && (
-                            <div className="hint-result">
-                                <div className="hint-title">AI 힌트</div>
-                                <div className="hint-content">{hint}</div>
-                            </div>
-                        )}
-
-                        {/* AI 도움 결과 */}
-                        {aiHelpResult && !aiHelpLoading && (
-                            <div className={`ai-help-result ${aiHelpResult.type}`}>
-                                <div className="ai-help-header">
-                                    {aiHelpResult.type === 'hint' ? '💡 AI 힌트' : 
-                                     aiHelpResult.type === 'solution' ? '📝 AI 솔루션' : '⚠️ 오류'}
-                                </div>
-                                <div className="ai-help-content">
-                                    {renderMarkdown(aiHelpResult.content)}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* AI 인사이트 모달로 이동 */}
-
-                        {/* 제출 결과 */}
-                        {submitResult && !submitting && (
-                            <div className={`submit-result ${submitResult.is_correct ? 'correct' : 'wrong'}`}>
-                                <div className="result-icon">
-                                    {submitResult.is_correct ? '정답입니다!' : '오답입니다'}
-                                </div>
-                                <div className="feedback">{submitResult.feedback}</div>
-                            </div>
-                        )}
-
-                        {/* 쿼리 결과 */}
-                        {result && result.success && result.data && !submitting && !aiHelpLoading && (
-                            <ResultTable columns={result.columns || []} data={result.data} />
-                        )}
-
-                        {result && !result.success && !submitting && !aiHelpLoading && (
-                            <div className="error-result">오류: {result.error}</div>
-                        )}
-
-                        {!result && !submitResult && !hint && !submitting && !aiHelpLoading && (
-                            <div className="empty-result">SQL을 작성하고 실행 버튼을 누르세요</div>
-                        )}
-                    </div>
-                </div>
+                        analytics.aiSuggestionApplied('query', {
+                            problemId: selectedProblem?.problem_id,
+                            dataType: dataType
+                        });
+                    }}
+                />
             </div>
 
             {/* AI 인사이트 모달 */}
