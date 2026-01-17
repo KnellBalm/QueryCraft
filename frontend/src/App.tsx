@@ -9,6 +9,7 @@ import { Skeleton } from './components/Skeleton';
 // Code splitting: 각 페이지를 lazy load하여 초기 번들 크기 감소
 const Workspace = lazy(() => import('./pages/Workspace').then(m => ({ default: m.Workspace })));
 const Practice = lazy(() => import('./pages/Practice'));
+const DailyChallenge = lazy(() => import('./pages/DailyChallenge'));  // NEW
 const MainPage = lazy(() => import('./pages/MainPage').then(m => ({ default: m.MainPage })));
 const MyPage = lazy(() => import('./pages/MyPage').then(m => ({ default: m.MyPage })));
 const FutureLabDashboard = lazy(() => import('./pages/FutureLabDashboard').then(m => ({ default: m.FutureLabDashboard })));
@@ -224,6 +225,8 @@ function AppContent() {
           ) : (
             <Routes>
               <Route path="/" element={<MainPage />} />
+              <Route path="/daily" element={<DailyChallenge />} />
+              <Route path="/daily/:date" element={<DailyChallenge />} />
               <Route path="/pa" element={<Workspace dataType="pa" />} />
               <Route path="/stream" element={<Workspace dataType="stream" />} />
               <Route path="/stats" element={<StatsPage />} />
