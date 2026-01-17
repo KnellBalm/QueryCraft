@@ -26,4 +26,4 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # Run worker
-CMD ["python", "-m", "worker.main"]
+CMD ["python", "/app/worker/main.py"]
