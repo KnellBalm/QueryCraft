@@ -133,6 +133,9 @@ function AppContent() {
             {isCore && (
               <>
                 <DropdownMenu label="오늘의 학습" icon="🏋️">
+                  <NavLink to="/daily" className={({ isActive }) => isActive ? 'active' : ''}>
+                    🗓️ Daily Challenge
+                  </NavLink>
                   <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
                     📅 오늘의 도전 (PA)
                   </NavLink>
