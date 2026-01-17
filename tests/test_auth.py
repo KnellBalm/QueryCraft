@@ -100,9 +100,9 @@ class TestAuthEndpoints:
 
         with patch('backend.api.auth.postgres_connection'):
             client = TestClient(app)
-            response = client.post("/auth/register", json={
+            response = client.post("/api/auth/register", json={
                 "email": "",
-                "password": "password123",
+                "password": "password123!",
                 "name": "Test User"
             })
             assert response.status_code == 400
@@ -114,13 +114,52 @@ class TestAuthEndpoints:
 
         with patch('backend.api.auth.postgres_connection'):
             client = TestClient(app)
-            response = client.post("/auth/register", json={
+            response = client.post("/api/auth/register", json={
                 "email": "test@example.com",
-                "password": "123",  # 4자 미만
+                "password": "Short1!",  # 8자 미만
                 "name": "Test User"
             })
             assert response.status_code == 400
-            assert "4자 이상" in response.json().get("detail", "")
+            assert "8자 이상" in response.json().get("detail", "")
+
+    def test_register_validation_complexity_no_upper(self):
+        """회원가입 - 대문자 누락"""
+        from fastapi.testclient import TestClient
+        from backend.main import app
+        client = TestClient(app)
+        response = client.post("/api/auth/register", json={
+            "email": "test@example.com",
+            "password": "lowercase123!",
+            "name": "Test User"
+        })
+        assert response.status_code == 400
+        assert "대문자" in response.json().get("detail", "")
+
+    def test_register_validation_complexity_no_number(self):
+        """회원가입 - 숫자 누락"""
+        from fastapi.testclient import TestClient
+        from backend.main import app
+        client = TestClient(app)
+        response = client.post("/api/auth/register", json={
+            "email": "test@example.com",
+            "password": "NoNumberHere!",
+            "name": "Test User"
+        })
+        assert response.status_code == 400
+        assert "숫자" in response.json().get("detail", "")
+
+    def test_register_validation_complexity_no_special(self):
+        """회원가입 - 특수문자 누락"""
+        from fastapi.testclient import TestClient
+        from backend.main import app
+        client = TestClient(app)
+        response = client.post("/api/auth/register", json={
+            "email": "test@example.com",
+            "password": "NoSpecialChar123",
+            "name": "Test User"
+        })
+        assert response.status_code == 400
+        assert "특수문자" in response.json().get("detail", "")
 
     def test_login_validation_empty_credentials(self):
         """로그인 - 빈 입력값 검증"""
@@ -129,7 +168,7 @@ class TestAuthEndpoints:
 
         with patch('backend.api.auth.postgres_connection'):
             client = TestClient(app)
-            response = client.post("/auth/login", json={
+            response = client.post("/api/auth/login", json={
                 "email": "",
                 "password": ""
             })
@@ -141,7 +180,7 @@ class TestAuthEndpoints:
         from backend.main import app
 
         client = TestClient(app)
-        response = client.get("/auth/status")
+        response = client.get("/api/auth/status")
         assert response.status_code == 200
         data = response.json()
         assert "google_configured" in data
@@ -153,7 +192,7 @@ class TestAuthEndpoints:
         from backend.main import app
 
         client = TestClient(app)
-        response = client.get("/auth/me")
+        response = client.get("/api/auth/me")
         assert response.status_code == 200
         data = response.json()
         assert data["logged_in"] is False
@@ -165,7 +204,7 @@ class TestAuthEndpoints:
 
         with patch('backend.api.auth.delete_session'):
             client = TestClient(app)
-            response = client.post("/auth/logout")
+            response = client.post("/api/auth/logout")
             assert response.status_code == 200
             assert response.json()["success"] is True
 

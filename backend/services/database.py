@@ -17,8 +17,8 @@ def get_pool():
     global _pool
     if _pool is None:
         env = PostgresEnv()
-        # 최소 1개, 최대 20개 연결 유지 (프로덕션 환경 고려)
-        _pool = ThreadedConnectionPool(1, 20, env.dsn())
+        # 최소 1개, 최대 5개 연결 유지 (Supabase 무료 티어 최적화)
+        _pool = ThreadedConnectionPool(1, 5, env.dsn())
     return _pool
 
 def get_postgres() -> PostgresEngine:

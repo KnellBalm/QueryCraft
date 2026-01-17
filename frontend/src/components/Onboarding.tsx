@@ -340,7 +340,7 @@ export function Onboarding() {
             {/* 툴팁 */}
             <div className="onboarding-tooltip" style={tooltipStyle}>
                 {isNavigating ? (
-                    <div className="onboarding-loading">⏳ 로딩 중...</div>
+                    <div className="onboarding-loading">⏳ 준비 중...</div>
                 ) : (
                     <>
                         <div className="onboarding-header">

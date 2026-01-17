@@ -27,7 +27,7 @@ class TestConfigSettings:
         """config.db 모듈이 에러 없이 로드되어야 함"""
         from backend.config.db import PostgresEnv, get_duckdb_path
         env = PostgresEnv()
-        assert env.port > 0
+        assert env.dsn() is not None
         assert get_duckdb_path() is not None
 
 
@@ -79,8 +79,8 @@ class TestDashboardImports:
         """dashboard/app.py의 핵심 임포트가 작동해야 함"""
         # streamlit을 직접 임포트하면 앱이 실행되므로 모듈만 테스트
         from backend.engine.duckdb_engine import DuckDBEngine
-        from services.pa_submit import submit_pa
-        assert callable(submit_pa)
+        from backend.services.grading_service import grade_submission
+        assert callable(grade_submission)
 
 
 class TestGeneratorImports:

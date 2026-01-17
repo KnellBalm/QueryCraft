@@ -183,16 +183,19 @@ class DataValidator:
                 continue
             
             if isinstance(value, str):
-                # ISO 8601 형식 (T, Z, 마이크로초) 체크
-                if 'T' in value or 'Z' in value or '.' in value:
-                    self.warnings.append(
-                        f"datetime 포맷 권장사항: {key}='{value}' → "
-                        f"'{DATETIME_FORMAT}' 형식 권장"
-                    )
+                # ISO 8601 및 다양한 포맷 대응을 위해 정규화
+                clean_val = value.replace('T', ' ').replace('Z', '').split('.')[0]
                 
                 # 파싱 가능 여부 확인
                 try:
-                    datetime.strptime(value[:19], DATETIME_FORMAT)
+                    datetime.strptime(clean_val[:19], DATETIME_FORMAT)
+                    
+                    # 'T'나 'Z'가 포함되어 있으면 경고 (비즈니스 요구사항상 YYYY-MM-DD HH:MM:SS 권장)
+                    if 'T' in value or 'Z' in value or '.' in value:
+                        self.warnings.append(
+                            f"datetime 포맷 권장사항: {key}='{value}' → "
+                            f"'{DATETIME_FORMAT}' 형식 권장"
+                        )
                 except ValueError:
                     self.errors.append(
                         f"datetime 파싱 실패: {key}='{value}'"

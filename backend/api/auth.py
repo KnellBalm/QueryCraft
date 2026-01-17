@@ -26,6 +26,9 @@ KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", "")
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:15173")
 
+# 관리자 이메일 목록 (쉼표로 구분)
+ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+
 # 세션 만료 기간 (7일)
 SESSION_EXPIRE_DAYS = 7
 
@@ -123,8 +126,21 @@ def ensure_users_table():
             pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0")
             pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1")
             pg.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
-            # 관리자 설정
-            pg.execute("UPDATE public.users SET is_admin = TRUE WHERE email IN ('naca11@mobigen.com', 'naca11@naver.com')")
+            # 관리자 설정 (환경변수 ADMIN_EMAILS에서 읽음)
+            if ADMIN_EMAILS:
+                placeholders = ", ".join(["%s"] * len(ADMIN_EMAILS))
+                pg.execute(f"UPDATE public.users SET is_admin = TRUE WHERE email IN ({placeholders})", ADMIN_EMAILS)
+            
+            # 로그인 시도 기록 테이블 (Rate Limiting용)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.login_attempts (
+                    email TEXT NOT NULL,
+                    attempted_at TIMESTAMP DEFAULT NOW(),
+                    success BOOLEAN DEFAULT FALSE,
+                    ip_address TEXT
+                )
+            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_login_attempts_email_at ON public.login_attempts(email, attempted_at)")
             
             # 사용자별 문제 세트 할당 테이블
             pg.execute("""
@@ -181,8 +197,19 @@ async def register(req: RegisterRequest, response: Response):
     if not req.email or not req.password or not req.name:
         raise HTTPException(400, "이메일, 비밀번호, 이름을 모두 입력해주세요")
     
-    if len(req.password) < 4:
-        raise HTTPException(400, "비밀번호는 4자 이상이어야 합니다")
+    # 비밀번호 정책 검증 (최소 8자, 대소문자, 숫자, 특수문자 포함)
+    import re
+    if len(req.password) < 8:
+        raise HTTPException(400, "비밀번호는 8자 이상이어야 합니다")
+    
+    if not re.search(r"[a-z]", req.password):
+        raise HTTPException(400, "비밀번호에 소문자가 포함되어야 합니다")
+    if not re.search(r"[A-Z]", req.password):
+        raise HTTPException(400, "비밀번호에 대문자가 포함되어야 합니다")
+    if not re.search(r"\d", req.password):
+        raise HTTPException(400, "비밀번호에 숫자가 포함되어야 합니다")
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", req.password):
+        raise HTTPException(400, "비밀번호에 특수문자가 포함되어야 합니다")
     
     try:
         logger.info(f"Registration attempt for email: {req.email}")
@@ -231,11 +258,48 @@ async def register(req: RegisterRequest, response: Response):
         raise HTTPException(500, "회원가입에 실패했습니다")
 
 
+def check_login_rate_limit(email: str) -> bool:
+    """로그인 시도 제한 확인 (10분 내 5회 실패 시 차단)"""
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT count(*) as count 
+                FROM public.login_attempts 
+                WHERE email = %s 
+                AND attempted_at > NOW() - INTERVAL '10 minutes'
+                AND success = FALSE
+            """, [email])
+            count = int(df.iloc[0]['count'])
+            return count < 5
+    except Exception as e:
+        logger.error(f"Rate limit check failed: {e}")
+        return True # 에러 발생 시 로그인은 허용 (가용성 우선)
+
+
+def record_login_attempt(email: str, success: bool, ip_address: str = None):
+    """로그인 시도 기록"""
+    try:
+        with postgres_connection() as pg:
+            pg.execute("""
+                INSERT INTO public.login_attempts (email, success, ip_address)
+                VALUES (%s, %s, %s)
+            """, (email, success, ip_address))
+    except Exception as e:
+        logger.error(f"Failed to record login attempt: {e}")
+
+
 @router.post("/login")
-async def login(req: LoginRequest, response: Response):
+async def login(req: LoginRequest, request: Request, response: Response):
     """로그인"""
     if not req.email or not req.password:
         raise HTTPException(400, "이메일과 비밀번호를 입력해주세요")
+    
+    # Rate Limit 확인
+    if not check_login_rate_limit(req.email):
+        logger.warning(f"Login blocked due to rate limit: {req.email}")
+        raise HTTPException(429, "너무 많은 로그인 시도가 있었습니다. 10분 후에 다시 시도해주세요.")
+    
+    client_ip = request.client.host if request.client else None
     
     try:
         with postgres_connection() as pg:
@@ -245,6 +309,7 @@ async def login(req: LoginRequest, response: Response):
             """, [req.email])
             
             if len(df) == 0:
+                record_login_attempt(req.email, False, client_ip)
                 raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다")
             
             row = df.iloc[0]
@@ -257,12 +322,17 @@ async def login(req: LoginRequest, response: Response):
             
             # OAuth 사용자는 비밀번호 로그인 불가
             if provider != "local":
+                record_login_attempt(req.email, False, client_ip)
                 raise HTTPException(400, f"{provider}로 가입한 계정입니다. {provider} 로그인을 이용해주세요")
             
             if not pw_hash or not verify_password(req.password, pw_hash):
+                record_login_attempt(req.email, False, client_ip)
                 raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다")
         
-        # 세션 생성
+        # 로그인 성공 기록
+        record_login_attempt(req.email, True, client_ip)
+        
+        # 세션 생성 (이후 로직 동일)
         session_id = create_session({
             "id": user_id,
             "email": email,
@@ -589,8 +659,7 @@ async def delete_account(request: Request, response: Response):
             pg.execute("DELETE FROM public.users WHERE id = %s", [user_id])
         
         # 세션 삭제
-        if session_id in sessions:
-            del sessions[session_id]
+        delete_session(session_id)
         
         response.delete_cookie("session_id")
         
