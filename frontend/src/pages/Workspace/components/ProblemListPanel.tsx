@@ -1,7 +1,6 @@
 // frontend/src/pages/Workspace/components/ProblemListPanel.tsx
 import React from 'react';
 import type { Problem, DatasetMetadata } from '../../../types';
-import type { CompletedStatus } from '../../../hooks/useProblemCompletion';
 
 // 간단한 마크다운 변환 (볼드, 코드, 줄바꿈)
 function renderMarkdown(text: string | undefined | null) {
@@ -16,7 +15,6 @@ function renderMarkdown(text: string | undefined | null) {
 interface ProblemListPanelProps {
     problems: Problem[];
     selectedIndex: number;
-    completedStatus: CompletedStatus;
     metadata: DatasetMetadata | null;
     isFetching: boolean;
     dataType: 'pa' | 'stream' | 'rca';
@@ -28,7 +26,6 @@ interface ProblemListPanelProps {
 export const ProblemListPanel = React.memo(function ProblemListPanel({
     problems,
     selectedIndex,
-    completedStatus,
     metadata,
     isFetching,
     dataType,

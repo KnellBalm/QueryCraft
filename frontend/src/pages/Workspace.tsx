@@ -4,22 +4,13 @@ import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { InsightModal } from '../components/InsightModal';
 import { ResultPanel } from './Workspace/components/ResultPanel';
+import { ProblemListPanel } from './Workspace/components/ProblemListPanel';
 import { useTrack } from '../contexts/TrackContext';
 import { useProblemCompletion } from '../hooks/useProblemCompletion';
 import { problemsApi, sqlApi } from '../api/client';
 import { analytics } from '../services/analytics';
 import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse } from '../types';
 import './Workspace.css';
-
-// 간단한 마크다운 변환 (볼드, 코드, 줄바꿈)
-function renderMarkdown(text: string | undefined | null) {
-    if (!text) return null;
-    const html = text
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
-        .replace(/`(.+?)`/g, '<code>$1</code>')            // `code`
-        .replace(/\n/g, '<br/>');                          // 줄바꿈
-    return <span dangerouslySetInnerHTML={{ __html: html }} />;
-}
 
 interface WorkspaceProps {
     dataType: 'pa' | 'stream' | 'rca';
@@ -35,7 +26,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [hint, setHint] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'problem' | 'schema'>('problem');
     const [leftWidth, setLeftWidth] = useState(45);
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
@@ -76,7 +66,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
             setSelectedIndex(0);
             setSubmitResult(null);
             setResult(null);
-            setHint(null);
             setSql('');
 
             // Completion history loading is now handled by useProblemCompletion hook
@@ -112,7 +101,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
         if (!sql.trim()) return;
         setLoading(true);
         setSubmitResult(null);
-        setHint(null);
 
         // 첫 실행/타이핑 시 시도로 기록
         if (selectedProblem && lastAttemptedRef.current !== selectedProblem.problem_id) {
@@ -147,7 +135,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
         if (!sql.trim() || !selectedProblem) return;
         setSubmitting(true);
         setSubmitResult(null);
-        setHint(null);
         try {
             const res = await sqlApi.submit(selectedProblem.problem_id, sql, dataType);
             setSubmitResult(res.data);
@@ -254,6 +241,14 @@ export function Workspace({ dataType }: WorkspaceProps) {
         setAiHelpLoading(false);
     }, [selectedProblem, aiHelpUsed, sql, completedStatus, dataType]);
 
+    // 문제 선택 핸들러
+    const handleSelectProblem = useCallback((index: number) => {
+        setSelectedIndex(index);
+        setSql('');
+        setSubmitResult(null);
+        setResult(null);
+    }, []);
+
     // 좌우 리사이저
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -296,10 +291,6 @@ export function Workspace({ dataType }: WorkspaceProps) {
         document.addEventListener('mouseup', handleMouseUp);
     }, []);
 
-    const difficultyIcon: Record<string, string> = {
-        easy: '🟢', medium: '🟡', hard: '🔴',
-    };
-
     return (
         <div className="workspace" ref={containerRef}>
             {/* 좌측 패널 */}
@@ -314,135 +305,16 @@ export function Workspace({ dataType }: WorkspaceProps) {
                 </div>
 
                 {activeTab === 'problem' ? (
-                    <div className="problem-panel">
-                        <div className="problem-list">
-                            {Array.isArray(problems) && problems.map((p, idx) => (
-                                <button
-                                    key={p.problem_id}
-                                    className={`problem-item ${selectedIndex === idx ? 'active' : ''}`}
-                                    onClick={() => { setSelectedIndex(idx); setSql(''); setSubmitResult(null); setResult(null); setHint(null); }}
-                                >
-                                    <span className="status">{getStatusIcon(p.problem_id)}</span>
-                                    <span className="num">{idx + 1}번</span>
-                                    <span className="difficulty">{difficultyIcon[p.difficulty]}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {metadata && (
-                            <div className="dataset-context">
-                                <div className="context-header">
-                                    <span className={`company-badge ${dataType === 'rca' ? 'rca' : ''}`}>
-                                        {dataType === 'rca' ? '🚨 ANOMALY DETECTION' : 'BUSINESS CONTEXT'}
-                                    </span>
-                                    <span className="product-type-tag">{metadata.product_type}</span>
-                                    {dataType === 'rca' && <span className="rca-tag">Root Cause Analysis</span>}
-                                </div>
-                                <div className="company-name">{metadata.company_name}</div>
-                                <div className="company-desc">{metadata.company_description}</div>
-
-                                {metadata.north_star && (
-                                    <div className="kpi-row">
-                                        <div className="kpi-item">
-                                            <span className="kpi-label">North Star Metric</span>
-                                            <span className="kpi-value">✨ {metadata.north_star}</span>
-                                        </div>
-                                        {metadata.key_metrics && metadata.key_metrics.length > 0 && (
-                                            <div className="kpi-item">
-                                                <span className="kpi-label">Core KPIs</span>
-                                                <span className="kpi-value">📊 {metadata.key_metrics[0]} 등</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {selectedProblem && (
-                            <div className="problem-detail">
-                                <div className="problem-title">
-                                    <span className="problem-number">문제 {selectedIndex + 1}</span>
-                                    <span className="difficulty-badge">
-                                        {difficultyIcon[selectedProblem.difficulty]} {selectedProblem.difficulty}
-                                    </span>
-                                </div>
-
-                                {selectedProblem.requester && (
-                                    <div className={`slack-message ${dataType === 'rca' ? 'rca' : ''}`}>
-                                        <div className="slack-header">
-                                            <span className="slack-avatar">{dataType === 'rca' ? '🌩️' : '👤'}</span>
-                                            <span className="slack-sender">{selectedProblem.requester}</span>
-                                            <span className="slack-time">오늘 오전 10:30</span>
-                                            {dataType === 'rca' && <span className="anomaly-badge">ABNORMALITY DETECTED</span>}
-                                        </div>
-                                        <div className="slack-content">
-                                            {renderMarkdown(selectedProblem.question)}
-                                        </div>
-                                        {selectedProblem.context && (
-                                            <div className="slack-context">
-                                                ℹ️ {renderMarkdown(selectedProblem.context)}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {selectedProblem.expected_columns && (
-                                    <div className="section">
-                                        <div className="section-title">결과 컬럼</div>
-                                        <div className="columns-box">
-                                            {selectedProblem.expected_columns.map((col, i) => (
-                                                <code key={i}>{col}</code>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {selectedProblem.hint && (
-                                    <details className="hint-section">
-                                        <summary>💬 힌트 보기</summary>
-                                        <p>{selectedProblem.hint}</p>
-                                    </details>
-                                )}
-                            </div>
-                        )}
-
-                        {problems.length === 0 && (
-                            <div className="no-problems">
-                                {isFetching ? (
-                                    <div className="fetching-state-container">
-                                        <div className="fetching-status-badge">
-                                            <span className="pulse-dot"></span>
-                                            오늘의 문제 찾는 중...
-                                        </div>
-                                        <div className="fetching-state">
-                                            {/* <p>오늘의 {dataType.toUpperCase()} 문제를 찾는 중입니다...잠시만 기다려주세요</p> */}
-                                            <div className="loading-spinner" />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="empty-state">
-                                        <p>오늘 {dataType.toUpperCase()} 문제가 없습니다.</p>
-                                        <button
-                                            onClick={loadData}
-                                            className="btn-refresh"
-                                            style={{
-                                                marginTop: '1.5rem',
-                                                padding: '0.6rem 1.2rem',
-                                                background: 'var(--accent-color)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '6px',
-                                                cursor: 'pointer',
-                                                fontWeight: 600
-                                            }}
-                                        >
-                                            🔄 다시 검색하기
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <ProblemListPanel
+                        problems={problems}
+                        selectedIndex={selectedIndex}
+                        metadata={metadata}
+                        isFetching={isFetching}
+                        dataType={dataType}
+                        onSelectProblem={handleSelectProblem}
+                        onRefresh={loadData}
+                        getStatusIcon={getStatusIcon}
+                    />
                 ) : (
                     <TableSchema tables={tables} />
                 )}

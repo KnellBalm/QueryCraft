@@ -2,7 +2,7 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import type { Problem } from '../types';
 
-interface CompletedStatus {
+export interface CompletedStatus {
   [problemId: string]: {
     is_correct: boolean;
     submitted_at: string;
