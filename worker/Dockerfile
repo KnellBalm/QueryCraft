@@ -23,6 +23,7 @@ COPY worker ./worker
 
 # Set Python path
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 # Run worker
 CMD ["python", "-m", "worker.main"]

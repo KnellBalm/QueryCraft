@@ -17,6 +17,9 @@ import argparse
 import logging
 from datetime import datetime
 
+# 즉시 출력 확인을 위한 디버그 프린트
+print("DEBUG: worker.main module loading...", flush=True)
+
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -55,11 +58,14 @@ def generate_data():
         pass
 
 
-def generate_problems():
+def generate_problems(target_date=None):
     """PA 및 Stream 문제 생성"""
     logger.info("=== 문제 생성 시작 ===")
     
-    today = get_today_kst()
+    if target_date is None:
+        target_date = get_today_kst()
+    
+    logger.info(f"대상 날짜: {target_date}")
     
     try:
         # PostgreSQL 연결
@@ -68,14 +74,14 @@ def generate_problems():
         with postgres_connection() as pg:
             # 1. PA 문제 생성
             from problems.generator import generate as gen_pa
-            gen_pa(today, pg)
-            logger.info(f"PA 문제 생성 완료: {today}")
+            gen_pa(target_date, pg)
+            logger.info(f"PA 문제 생성 완료: {target_date}")
             
             # 2. Stream 문제 생성
             try:
                 from problems.generator_stream import generate_stream_problems as gen_stream
-                gen_stream(today, pg)
-                logger.info(f"Stream 문제 생성 완료: {today}")
+                gen_stream(target_date, pg)
+                logger.info(f"Stream 문제 생성 완료: {target_date}")
             except Exception as e:
                 logger.error(f"Stream 문제 생성 실패: {e}")
                 # Stream 실패해도 PA는 유지
@@ -85,7 +91,7 @@ def generate_problems():
                 SELECT data_type, COUNT(*) as cnt FROM public.problems 
                 WHERE problem_date = %s
                 GROUP BY data_type
-            """, [today])
+            """, [target_date])
             
             for _, row in df.iterrows():
                 logger.info(f"{row['data_type'].upper()} 생성된 문제 수: {row['cnt']}")
@@ -120,10 +126,12 @@ def cleanup_old_data():
         pass
 
 
-def run_full_pipeline():
+def run_full_pipeline(target_date=None):
     """전체 파이프라인 실행 (데이터 → 문제 → 정리)"""
     logger.info("========================================")
     logger.info("QueryCraft Worker Job 시작")
+    if target_date:
+        logger.info(f"대상 날짜: {target_date}")
     logger.info(f"실행 시간: {datetime.now()}")
     logger.info("========================================")
     
@@ -131,10 +139,13 @@ def run_full_pipeline():
     
     try:
         # 1. 데이터 생성
+        # 데이터 생성기는 현재 incremental=False일 때 전체 데이터셋을 재생성하므로 
+        # 특정 날짜에 대한 백필이 필요하면 generator의 로직을 확인해야 하지만,
+        # 기본적으로 generate_data(modes=("pa",))는 최신 상태를 유지하도록 설계됨.
         generate_data()
         
         # 2. 문제 생성
-        generate_problems()
+        generate_problems(target_date)
         
         # 3. 정리 작업
         cleanup_old_data()
@@ -157,7 +168,13 @@ def main():
         default="all",
         help="실행할 작업 (기본: all)"
     )
+    parser.add_argument(
+        "--date",
+        help="대상 날짜 (YYYY-MM-DD, 기본: 오늘)"
+    )
     args = parser.parse_args()
+    
+    print(f"DEBUG: main() started with args: {args}", flush=True)
     
     # 환경 변수 로드
     from dotenv import load_dotenv
@@ -170,13 +187,22 @@ def main():
         logger.error(f"필수 환경 변수 누락: {missing}")
         sys.exit(1)
     
+    target_date = None
+    if args.date:
+        from datetime import date
+        try:
+            target_date = date.fromisoformat(args.date)
+        except ValueError:
+            logger.error(f"잘못된 날짜 형식: {args.date} (YYYY-MM-DD 필요)")
+            sys.exit(1)
+
     # 작업 실행
     if args.task == "all":
-        run_full_pipeline()
+        run_full_pipeline(target_date)
     elif args.task == "data":
         generate_data()
     elif args.task == "problems":
-        generate_problems()
+        generate_problems(target_date)
     elif args.task == "cleanup":
         cleanup_old_data()
 
