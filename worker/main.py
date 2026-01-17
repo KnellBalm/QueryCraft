@@ -36,31 +36,70 @@ def get_today_kst():
     return datetime.now(kst).date()
 
 
-def generate_data():
-    """PA 및 Stream 데이터 생성"""
+def generate_data(use_scenario=True, target_date=None):
+    """데이터 생성 (Scenario 기반 또는 기존 방식)"""
     logger.info("=== 데이터 생성 시작 ===")
     
-    try:
-        from backend.generator.data_generator_advanced import generate_data as gen_data
-        gen_data(modes=("pa",))
-        logger.info("PA 데이터 생성 완료")
-    except Exception as e:
-        logger.error(f"PA 데이터 생성 실패: {e}")
-        raise
-    
-    # Stream 데이터 생성 활성화
-    try:
-        gen_data(modes=("stream",))
-        logger.info("Stream 데이터 생성 완료")
-    except Exception as e:
-        logger.error(f"Stream 데이터 생성 실패: {e}")
-        # Stream 실패가 PA에 영향을 주지 않도록 함
-        pass
+    if use_scenario:
+        # 새로운 시나리오 기반 데이터 생성
+        logger.info("Scenario 기반 통합 데이터 생성 사용")
+        
+        if target_date is None:
+            target_date = get_today_kst()
+        
+        try:
+            from backend.generator.scenario_generator import generate_scenario
+            from backend.generator.scenario_data_generator import generate_scenario_data
+            from backend.config import settings
+            import psycopg2
+            
+            # 시나리오 생성
+            scenario = generate_scenario(str(target_date))
+            logger.info(f"시나리오 생성: {scenario.company_name} - {scenario.product_type}")
+            
+            # PostgreSQL 연결
+            conn = psycopg2.connect(settings.POSTGRES_DSN)
+            
+            try:
+                # 동적 테이블 생성 및 데이터 삽입
+                generate_scenario_data(scenario, conn)
+                logger.info(f"✅ Scenario 데이터 생성 완료")
+                
+                for tbl in scenario.table_configs:
+                    logger.info(f"   - {tbl.full_name}: {tbl.row_count:,} rows")
+                    
+            finally:
+                conn.close()
+                
+        except Exception as e:
+            logger.error(f"Scenario 데이터 생성 실패: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
+    else:
+        # 기존 방식 (기본 PA/Stream 데이터)
+        logger.info("기존 방식 데이터 생성 사용")
+        try:
+            from backend.generator.data_generator_advanced import generate_data as gen_data
+            gen_data(modes=("pa",))
+            logger.info("PA 데이터 생성 완료")
+        except Exception as e:
+            logger.error(f"PA 데이터 생성 실패: {e}")
+            raise
+        
+        # Stream 데이터 생성 활성화
+        try:
+            gen_data(modes=("stream",))
+            logger.info("Stream 데이터 생성 완료")
+        except Exception as e:
+            logger.error(f"Stream 데이터 생성 실패: {e}")
+            # Stream 실패가 PA에 영향을 주지 않도록 함
+            pass
 
 
 def generate_problems(target_date=None):
-    """PA 및 Stream 문제 생성"""
-    logger.info("=== 문제 생성 시작 ===")
+    """Daily Challenge 생성 (통합: PA 3 + Stream 3)"""
+    logger.info("=== Daily Challenge 생성 시작 ===")
     
     if target_date is None:
         target_date = get_today_kst()
@@ -68,36 +107,32 @@ def generate_problems(target_date=None):
     logger.info(f"대상 날짜: {target_date}")
     
     try:
-        # PostgreSQL 연결
-        from backend.services.database import postgres_connection
+        # 새로운 통합 Daily Challenge 생성
+        from backend.generator.daily_challenge_writer import generate_and_save_daily_challenge
         
-        with postgres_connection() as pg:
-            # 1. PA 문제 생성
-            from problems.generator import generate as gen_pa
-            gen_pa(target_date, pg)
-            logger.info(f"PA 문제 생성 완료: {target_date}")
+        # 시나리오 생성 + 문제 생성 + 파일 저장
+        filepath = generate_and_save_daily_challenge(str(target_date))
+        
+        logger.info(f"✅ Daily Challenge 생성 완료: {filepath}")
+        logger.info(f"   - 6문제 생성 (PA: 3, Stream: 3)")
+        logger.info(f"   - 난이도: Easy 2, Medium 2, Hard 2")
+        
+        # 파일 검증
+        from backend.generator.daily_challenge_writer import load_daily_challenge
+        challenge = load_daily_challenge(str(target_date))
+        
+        if challenge:
+            logger.info(f"   - Company: {challenge['scenario']['company_name']}")
+            logger.info(f"   - Product Type: {challenge['scenario']['product_type']}")
+            logger.info(f"   - Situation: {challenge['scenario']['situation'][:50]}...")
             
-            # 2. Stream 문제 생성
-            try:
-                from problems.generator_stream import generate_stream_problems as gen_stream
-                gen_stream(target_date, pg)
-                logger.info(f"Stream 문제 생성 완료: {target_date}")
-            except Exception as e:
-                logger.error(f"Stream 문제 생성 실패: {e}")
-                # Stream 실패해도 PA는 유지
-            
-            # 생성된 문제 수 확인
-            df = pg.fetch_df("""
-                SELECT data_type, COUNT(*) as cnt FROM public.problems 
-                WHERE problem_date = %s
-                GROUP BY data_type
-            """, [target_date])
-            
-            for _, row in df.iterrows():
-                logger.info(f"{row['data_type'].upper()} 생성된 문제 수: {row['cnt']}")
-            
+            for tbl in challenge['scenario']['table_configs']:
+                logger.info(f"   - Table: {tbl['full_name']} ({tbl['row_count']:,} rows)")
+        
     except Exception as e:
-        logger.error(f"문제 생성 실패: {e}")
+        logger.error(f"Daily Challenge 생성 실패: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise
 
 
@@ -126,25 +161,23 @@ def cleanup_old_data():
         pass
 
 
-def run_full_pipeline(target_date=None):
+def run_full_pipeline(target_date=None, use_scenario=True):
     """전체 파이프라인 실행 (데이터 → 문제 → 정리)"""
     logger.info("========================================")
     logger.info("QueryCraft Worker Job 시작")
     if target_date:
         logger.info(f"대상 날짜: {target_date}")
     logger.info(f"실행 시간: {datetime.now()}")
+    logger.info(f"모드: {'Scenario 기반 (NEW)' if use_scenario else '기존 방식'}")
     logger.info("========================================")
     
     start_time = datetime.now()
     
     try:
-        # 1. 데이터 생성
-        # 데이터 생성기는 현재 incremental=False일 때 전체 데이터셋을 재생성하므로 
-        # 특정 날짜에 대한 백필이 필요하면 generator의 로직을 확인해야 하지만,
-        # 기본적으로 generate_data(modes=("pa",))는 최신 상태를 유지하도록 설계됨.
-        generate_data()
+        # 1. 데이터 생성 (Scenario 기반 동적 테이블)
+        generate_data(use_scenario=use_scenario, target_date=target_date)
         
-        # 2. 문제 생성
+        # 2. 문제 생성 (Daily Challenge: PA 3 + Stream 3)
         generate_problems(target_date)
         
         # 3. 정리 작업
@@ -172,6 +205,11 @@ def main():
         "--date",
         help="대상 날짜 (YYYY-MM-DD, 기본: 오늘)"
     )
+    parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="기존 방식 사용 (기본: 새로운 Scenario 기반)"
+    )
     args = parser.parse_args()
     
     print(f"DEBUG: main() started with args: {args}", flush=True)
@@ -196,11 +234,13 @@ def main():
             logger.error(f"잘못된 날짜 형식: {args.date} (YYYY-MM-DD 필요)")
             sys.exit(1)
 
+    use_scenario = not args.legacy  # --legacy 없으면 새 방식 사용
+    
     # 작업 실행
     if args.task == "all":
-        run_full_pipeline(target_date)
+        run_full_pipeline(target_date, use_scenario=use_scenario)
     elif args.task == "data":
-        generate_data()
+        generate_data(use_scenario=use_scenario, target_date=target_date)
     elif args.task == "problems":
         generate_problems(target_date)
     elif args.task == "cleanup":
