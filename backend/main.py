@@ -14,6 +14,7 @@ from backend.api.admin import router as admin_router
 from backend.api.auth import router as auth_router
 from backend.api.practice import router as practice_router
 from backend.api.health import router as health_router
+from backend.api.daily import router as daily_router  # Daily Challenge (NEW)
 
 # 초기화 상태 기록
 init_status = {"initialized": False, "error": None}
@@ -127,15 +128,15 @@ async def log_errors_middleware(request, call_next):
         
     return response
 
-# 라우터 등록
-app.include_router(problems_router)
-app.include_router(sql_router)
-app.include_router(stats_router)
-app.include_router(admin_router)
-app.include_router(auth_router)
-app.include_router(practice_router)
+# 라우터 등록 (순서 중요: /problems/recommend 보다 먼저 등록)
 app.include_router(health_router)
-
+app.include_router(auth_router, prefix="/api")
+app.include_router(daily_router, prefix="/api")  # Daily Challenge (NEW)
+app.include_router(sql_router, prefix="/api")
+app.include_router(problems_router, prefix="/api")
+app.include_router(stats_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(practice_router, prefix="/api")
 
 @app.get("/")
 async def root():

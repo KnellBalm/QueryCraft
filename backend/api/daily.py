@@ -1,0 +1,150 @@
+# backend/api/daily.py
+"""
+Daily Challenge API
+통합 Daily Challenge (PA + Stream) 엔드포인트
+"""
+from fastapi import APIRouter, HTTPException
+from datetime import date, datetime
+from typing import Optional, List, Dict, Any
+
+from backend.generator.daily_challenge_writer import (
+    load_daily_challenge,
+    get_latest_challenge
+)
+
+router = APIRouter(prefix="/daily", tags=["Daily Challenge"])
+
+
+@router.get("/{target_date}")
+async def get_daily_challenge(target_date: str):
+    """
+    특정 날짜의 Daily Challenge 조회
+    
+    Args:
+        target_date: YYYY-MM-DD 형식
+    
+    Returns:
+        {
+            "scenario": { ... },
+            "problems": [ ... ],
+            "metadata": { ... }
+        }
+    """
+    # 날짜 형식 검증
+    try:
+        date.fromisoformat(target_date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid date format: {target_date}. Expected YYYY-MM-DD"
+        )
+    
+    # Daily Challenge 로드
+    challenge = load_daily_challenge(target_date)
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Daily Challenge not found for date: {target_date}"
+        )
+    
+    return challenge
+
+
+@router.get("/latest")
+async def get_latest_daily_challenge():
+    """
+    가장 최근 Daily Challenge 조회
+    
+    Returns:
+        {
+            "scenario": { ... },
+            "problems": [ ... ],
+            "metadata": { ... }
+        }
+    """
+    challenge = get_latest_challenge()
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail="No Daily Challenge found"
+        )
+    
+    return challenge
+
+
+@router.get("/{target_date}/problems")
+async def get_daily_problems_only(target_date: str):
+    """
+    특정 날짜의 문제만 조회 (scenario 제외)
+    
+    Args:
+        target_date: YYYY-MM-DD
+    
+    Returns:
+        List of problems
+    """
+    challenge = load_daily_challenge(target_date)
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Daily Challenge not found for date: {target_date}"
+        )
+    
+    return {
+        "date": target_date,
+        "problems": challenge["problems"],
+        "metadata": challenge["metadata"]
+    }
+
+
+@router.get("/{target_date}/scenario")
+async def get_daily_scenario(target_date: str):
+    """
+    특정 날짜의 시나리오만 조회 (문제 제외)
+    
+    Args:
+        target_date: YYYY-MM-DD
+    
+    Returns:
+        Scenario object
+    """
+    challenge = load_daily_challenge(target_date)
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Daily Challenge not found for date: {target_date}"
+        )
+    
+    return {
+        "date": target_date,
+        "scenario": challenge["scenario"]
+    }
+
+
+@router.get("/{target_date}/tables")
+async def get_daily_tables(target_date: str):
+    """
+    특정 날짜의 테이블 스키마 정보 조회
+    
+    Args:
+        target_date: YYYY-MM-DD
+    
+    Returns:
+        Table configs
+    """
+    challenge = load_daily_challenge(target_date)
+    
+    if not challenge:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Daily Challenge not found for date: {target_date}"
+        )
+    
+    return {
+        "date": target_date,
+        "tables": challenge["scenario"]["table_configs"]
+    }
