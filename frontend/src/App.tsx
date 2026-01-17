@@ -1,14 +1,17 @@
 // frontend/src/App.tsx
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Link, Navigate } from 'react-router-dom';
-import { Workspace } from './pages/Workspace';
-import Practice from './pages/Practice';
-import { MainPage } from './pages/MainPage';
-import { MyPage } from './pages/MyPage';
-import { FutureLabDashboard } from './pages/FutureLabDashboard';
 import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
+
+// Code splitting: 각 페이지를 lazy load하여 초기 번들 크기 감소
+const Workspace = lazy(() => import('./pages/Workspace').then(m => ({ default: m.Workspace })));
+const Practice = lazy(() => import('./pages/Practice'));
+const MainPage = lazy(() => import('./pages/MainPage').then(m => ({ default: m.MainPage })));
+const MyPage = lazy(() => import('./pages/MyPage').then(m => ({ default: m.MyPage })));
+const FutureLabDashboard = lazy(() => import('./pages/FutureLabDashboard').then(m => ({ default: m.FutureLabDashboard })));
 import { ToastProvider } from './components/Toast';
 import WeekendClosed from './components/WeekendClosed';
 import { useEffect, useState, useMemo, useRef } from 'react';
