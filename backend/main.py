@@ -84,23 +84,27 @@ app = FastAPI(
 )
 
 # CORS 설정 - 환경별 분리
+# Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
+cloud_origins = [
+    "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
+    "https://query-craft-frontend-758178119666.us-central1.run.app",
+    "https://querycraft.run.app",  # 커스텀 도메인 예비
+]
+cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
+
 if os.getenv("ENV") == "production":
     # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
-            "https://query-craft-frontend-758178119666.us-central1.run.app",
-            "https://querycraft.run.app",  # 커스텀 도메인 예비
-        ],
+        allow_origins=cloud_origins,
         # Cloud Run URL 형식 모두 허용 (project-id 또는 hash 기반)
-        allow_origin_regex=r"https://query-craft-frontend.*\.run\.app",
+        allow_origin_regex=cloud_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 else:
-    # 개발: localhost 및 개발서버 IP 허용
+    # 개발: localhost 및 개발서버 IP 허용 + Cloud Run 도메인 (설정 실수 대비)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -108,7 +112,8 @@ else:
             "http://127.0.0.1:15173", 
             "http://localhost:3000",
             "http://192.168.101.224:15173",  # 개발서버 IP
-        ],
+        ] + cloud_origins,
+        allow_origin_regex=cloud_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
