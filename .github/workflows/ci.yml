@@ -3,6 +3,10 @@ name: CI - Backend and Frontend Verification
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - ".agent/**"
   workflow_dispatch:
 
 jobs:
