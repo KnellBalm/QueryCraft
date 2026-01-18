@@ -97,25 +97,31 @@
 
 ---
 
-## 3. Cloud Scheduler 설정 (GCP)
+## 3. Cloud Scheduler 설정 (GCP) ✅ 완료
 
 ### 3.1 Scheduler 생성
 
 - [x] 이름: `querycraft-daily-generation`
-- [ ] Cron 표현식: `0 1 * * *`
-- [ ] 타임존: `Asia/Seoul`
-- [x] 대상 URL: `https://[CLOUD_RUN_URL]/apis/run.googleapis.com/v1/.../jobs/querycraft-worker:run`
+- [x] Cron 표현식: `0 1 * * *`
+- [x] 타임존: `Asia/Seoul`
+- [x] 대상 URL: Cloud Run Job `querycraft-worker` (us-central1)
+- [x] 다음 실행: 2026-01-19 01:00 KST
 
 ### 3.2 서비스 계정 설정
 
 - [x] 서비스 계정 권한 부여 (`roles/run.developer`)
 - [x] Scheduler에 서비스 계정 연결 (OIDC)
+- [x] OAuth 토큰 인증 구성
 
-### 3.3 재시도 및 알림 설정
+### 3.3 재시도 정책
 
-- [x] 재시도 정책 및 실패 알림 기반 마련
-  - [ ] Cloud Logging 알림 규칙 생성
-  - [ ] (선택) Slack/이메일 연동
+- [x] 재시도 정책 자동 구성 완료
+  - Max retry duration: 0s (즉시 실패)
+  - Max backoff: 3600s
+  - Max doublings: 5
+  - Min backoff: 5s
+- [ ] Cloud Logging 알림 규칙 생성 (선택)
+- [ ] Slack/이메일 연동 (선택)
 
 ---
 

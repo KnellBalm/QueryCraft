@@ -1,55 +1,341 @@
-# QueryCraft Phase 2: Security, Reliability, and Refactoring Plan
+# Cloud Scheduler Cron 설정 Implementation Plan
 
-## 🎯 Goal
+## 🎯 목표
 
-QueryCraft의 상용 출시를 위해 보안을 강화하고, 테스트 자동화를 통해 신뢰성을 확보하며, 유지보수가 용이하도록 코드를 리팩토링합니다.
+기존에 생성된 Cloud Scheduler `querycraft-daily-generation`에 Cron 표현식과 타임존을 설정하여 매일 정해진 시간에 자동 실행되도록 구성합니다.
 
-## ✅ Completed Tasks (Antigravity)
+---
 
-### 1. 보안 강화 (Security Hardening)
+## 📋 현재 상태
 
-- **비밀번호 정책**: 최소 8자, 대소문자, 숫자, 특수문자 포함 필수 조건 적용
-- **Rate Limiting**: 로그인 시도 제한 (10분 내 5회 실패 시 차단) 기능을 DB(`login_attempts`) 기반으로 구현
-- **Admin 관리**: 하드코딩된 이메일을 환경 변수(`ADMIN_EMAILS`)로 전환
+### 완료된 작업 ✅
+- Scheduler 생성: `querycraft-daily-generation`
+- 대상 URL 설정: Cloud Run Worker Job
+- 서비스 계정 권한 부여 (OIDC)
 
-### 2. 테스트 수정 및 신뢰성 확보
+### 미완료 작업 ❌
+- Cron 표현식 설정
+- 타임존 설정 (`Asia/Seoul`)
+- Cloud Logging 알림 규칙
+- (선택) Slack/이메일 알림
 
-- **101개 테스트 통과**: 실패하던 11개 테스트를 전수 조사하여 수정 완료
-- **API 경로 수정**: `/auth` 등 레거시 경로를 `/api/auth`로 통일
-- **데이터 검증**: `ISO 8601` 날짜 포맷팅 및 공백 포함 문자열 비교 로직 개선
-- **CI 연동**: `ci.yml`을 업데이트하여 모든 백엔드 테스트(`pytest tests/`)가 자동 실행되도록 설정
+---
 
-### 3. 인프라 및 기타 최적화
+## 🔧 Proposed Changes
 
-- **DB 풀 최적화**: Supabase Free Tier 환경을 고려하여 `maxconn`을 5로 조정
-- **UX 개선**: 주말 접속 제한 화면에 '연습 모드' 링크 추가 및 CSS 스타일링 반영
-- **Adaptive Tutor (P1)**: `user_skills` 및 `problems` 스키마 고도화, 역량 분석 알고리즘 및 취약점 기반 추천 엔진 구현 완료
+### 1. Cron 표현식 및 타임존 설정
 
-### 4. 프론트엔드 리팩토링 및 UI 완성 (Claude)
+#### 1-1. GCP Console 접속
 
-- **App.tsx 분리**: 1,100줄의 `App.tsx`를 `Workspace`, `Practice`, `StatsPage`, `AdminPage` 등 페이지 단위로 모듈화하여 유지보수성 향상
-- **GNB 고도화**: Glassmorphism 디자인 및 'Core Skills', 'Future Lab' 2트랙 시스템 구현
-- **Adaptive Tutor UI 연동**: 레이더 차트 시각화, 취약점 기반 맞춤형 추천 배지, 전용 튜터링 가이드 페이지 구현 완료
+```
+https://console.cloud.google.com/cloudscheduler
+```
 
-### 5. RCA 시나리오 고도화 (Antigravity & Claude)
+#### 1-2. Scheduler 편집
 
-- **이상 데이터 주입**: 리텐션 급락, 가입 전환 하락 등 실무형 장애 시나리오 3종 추가 (`anomaly_injector.py`)
-- **AI 힌트 고도화**: 분석 단계를 안내하는 단계별(Staged) 힌트 시스템 및 AI 프롬프트 연동 (`prompt_rca.py`)
-- **RCA 전용 UI**: 이상 현상 브리핑 섹션 및 단계별 힌트 아코디언, 분석 리포트 마크다운 템플릿 복사 기능 구현
-- **관리자 도구**: 특정 장애 시나리오를 즉시 트리거하여 연습 문제를 생성할 수 있는 관리자 API 추가
+1. **Scheduler 선택**: `querycraft-daily-generation` 클릭
+2. **편집 버튼** 클릭 (상단 또는 "⋮" 메뉴)
 
-41: ### 6. Cloud Run Worker 안정화 (Antigravity)
-42: - **의존성 동기화**: `worker/requirements.txt`를 루트와 동기화하여 임포트 에러 방지
-43: - **로깅 및 예외 처리**: 컨테이너 시작 시 상세 로깅 및 `main` 함수 try-except 래핑으로 장애 원인 파악 용이성 확보
-44: - **인프라 최적화**: 워커 메모리 상향(1Gi) 및 Docker 실행 방식을 모듈 모드(`-m`)로 변경하여 안정성 강화
+#### 1-3. 설정 값 입력
 
-### 🚀 Upcoming Tasks
+| 항목 | 설정 값 | 설명 |
+|------|---------|------|
+| **Frequency** (빈도) | `0 1 * * *` | 매일 오전 1시 |
+| **Timezone** (타임존) | `Asia/Seoul` | 한국 표준시(KST) |
 
-- [ ] **AI 인사이트 리포트**: SQL 실행 결과에 대한 자동 분석 및 요약 리포트 생성 기능
-- [ ] **MCP 연동**: Cursor/Claude Desktop 등 외부 IDE에서 QueryCraft 데이터 및 문제에 접근 가능한 MCP 서버 구축
-- [ ] **Data Pipeline**: DuckDB 기반의 대용량 이벤트 분석 파이프라인 고도화
+> **💡 Cron 표현식 설명**
+> - `0 1 * * *` = 매일 오전 1시 0분
+> - KST 오전 1시 = UTC 16:00 (전날)
+
+> [!WARNING]
+> **타임존 주의사항**
+> - Cloud Scheduler의 기본 타임존은 UTC입니다
+> - 반드시 `Asia/Seoul`로 설정해야 한국 시간 기준으로 작동합니다
+> - UTC로 설정 시 `0 16 * * *` (UTC 16:00 = KST 01:00)로 입력해야 합니다
+
+---
+
+### 2. 재시도 정책 (Retry Configuration)
+
+#### 2-1. 재시도 설정
+
+Cloud Scheduler 편집 화면에서 "Retry configuration" 섹션:
+
+| 항목 | 권장 값 | 설명 |
+|------|---------|------|
+| **Max retry attempts** | `3` | 최대 3회 재시도 |
+| **Max retry duration** | `1800s` (30분) | 재시도 최대 기간 |
+| **Min backoff duration** | `5s` | 최소 대기 시간 |
+| **Max backoff duration** | `3600s` (1시간) | 최대 대기 시간 |
+| **Max doublings** | `5` | 백오프 2배 증가 최대 횟수 |
+
+> **재시도 전략**
+> - 실패 시 5초 후 첫 재시도
+> - 이후 지수적으로 증가 (10s, 20s, 40s, ...)
+> - 최대 1시간까지 대기
+> - 30분 내 3회 재시도 후 최종 실패
+
+---
+
+### 3. Cloud Logging 알림 규칙
+
+#### 3-1. Logging 쿼리
+
+Cloud Run Worker 실패 로그를 감지하는 쿼리:
+
+```
+resource.type="cloud_run_job"
+resource.labels.job_name="querycraft-worker"
+severity>=ERROR
+```
+
+#### 3-2. 알림 채널 생성
+
+**GCP Console → Monitoring → Alerting → Notification Channels**
+
+1. **이메일 채널**
+   - Channel Type: Email
+   - Display Name: `QueryCraft Admin Email`
+   - Email Address: 관리자 이메일
+
+2. **(선택) Slack 채널**
+   - Channel Type: Slack
+   - Display Name: `QueryCraft Alerts`
+   - Slack Webhook URL: `https://hooks.slack.com/services/...`
+
+#### 3-3. 알림 정책 생성
+
+**GCP Console → Monitoring → Alerting → Create Policy**
+
+```yaml
+Display Name: "QueryCraft Worker Failure Alert"
+
+Conditions:
+  - Log match:
+      Filter: |
+        resource.type="cloud_run_job"
+        resource.labels.job_name="querycraft-worker"
+        severity>=ERROR
+      
+      Duration: 1 minute
+      Alignment: Count
+      Threshold: count > 0
+
+Notifications:
+  - Channels: 
+      - QueryCraft Admin Email
+      - (Optional) QueryCraft Alerts Slack
+
+Documentation:
+  "QueryCraft Worker job failed during scheduled execution.
+   Check Cloud Run logs for details: 
+   https://console.cloud.google.com/run/jobs/details/asia-northeast1/querycraft-worker/logs"
+```
+
+---
+
+### 4. (선택) Slack 알림 고급 설정
+
+#### 4-1. Slack Webhook 생성
+
+1. Slack 워크스페이스 → Apps → Incoming Webhooks
+2. Add to Channel → `#querycraft-alerts` 채널 선택
+3. Webhook URL 복사
+
+#### 4-2. Cloud Function으로 커스텀 알림
+
+**목적**: 더 상세한 정보와 포맷팅된 메시지 전송
+
+```python
+# functions/slack_alert.py
+import json
+import requests
+from flask import Request
+
+SLACK_WEBHOOK = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+def send_alert(request: Request):
+    """Cloud Logging에서 트리거된 알림을 Slack으로 전송"""
+    
+    log_entry = request.get_json()
+    
+    message = {
+        "text": "⚠️ *QueryCraft Worker 실패 알림*",
+        "blocks": [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "⚠️ QueryCraft Worker Job Failed"
+                }
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Time:*\n{log_entry.get('timestamp')}"
+                    },
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Severity:*\n{log_entry.get('severity')}"
+                    }
+                ]
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Error:*\n```{log_entry.get('textPayload', 'N/A')}```"
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View Logs"
+                        },
+                        "url": "https://console.cloud.google.com/run/jobs/details/asia-northeast1/querycraft-worker/logs"
+                    }
+                ]
+            }
+        ]
+    }
+    
+    response = requests.post(SLACK_WEBHOOK, json=message)
+    return f"Slack notification sent: {response.status_code}"
+```
+
+배포:
+```bash
+gcloud functions deploy querycraft-slack-alert \
+  --runtime python312 \
+  --trigger-topic querycraft-worker-errors \
+  --entry-point send_alert \
+  --region asia-northeast1
+```
+
+---
 
 ## 🧪 Verification Plan
 
-- **Automated**: GitHub Actions를 통한 `pytest` 전수 검사
-- **Manual**: 다크모드 및 모바일 반응형 디자인 최종 확인
+### 1. 수동 테스트
+
+#### 1-1. Scheduler 즉시 실행
+
+```bash
+gcloud scheduler jobs run querycraft-daily-generation --location=asia-northeast1
+```
+
+**기대 결과**:
+- Cloud Run Worker Job 실행됨
+- 데이터 및 문제 생성 완료
+- 성공 로그 확인
+
+#### 1-2. 실패 시나리오 테스트
+
+Worker에 일부러 에러 발생시켜 재시도 및 알림 작동 확인:
+
+```python
+# worker/main.py (임시 수정)
+def main():
+    raise Exception("Test failure for alert testing")
+```
+
+**기대 결과**:
+- 3회 재시도됨
+- 30분 후 최종 실패
+- 이메일/Slack 알림 수신
+
+### 2. 로그 확인
+
+```bash
+# Scheduler 실행 로그
+gcloud scheduler jobs describe querycraft-daily-generation --location=asia-northeast1
+
+# Worker 실행 로그
+gcloud logging read "resource.type=cloud_run_job 
+  AND resource.labels.job_name=querycraft-worker" \
+  --limit 50 --format json
+```
+
+### 3. 다음날 자동 실행 확인
+
+- 다음날 오전 1시 이후 확인
+- Supabase `problems` 테이블에 새 문제 생성 확인
+- DuckDB 데이터 업데이트 확인
+
+---
+
+## 📊 gcloud CLI 명령어 참조
+
+### Scheduler 상태 확인
+```bash
+gcloud scheduler jobs describe querycraft-daily-generation \
+  --location=asia-northeast1
+```
+
+### Scheduler 업데이트 (CLI 방식)
+```bash
+gcloud scheduler jobs update http querycraft-daily-generation \
+  --location=asia-northeast1 \
+  --schedule="0 1 * * *" \
+  --time-zone="Asia/Seoul"
+```
+
+### 다음 실행 시간 확인
+```bash
+gcloud scheduler jobs describe querycraft-daily-generation \
+  --location=asia-northeast1 \
+  --format="value(schedule, timeZone, status.nextRun)"
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### 문제: Scheduler가 실행되지 않음
+
+**원인 체크리스트**:
+1. Cron 표현식 오류 → [crontab.guru](https://crontab.guru/) 에서 검증
+2. 타임존 불일치 → `Asia/Seoul` 확인
+3. 서비스 계정 권한 → `roles/run.developer` 확인
+4. Worker Job 상태 → Cloud Run Job이 활성화되어 있는지 확인
+
+### 문제: 재시도가 작동하지 않음
+
+**해결 방법**:
+- Cloud Scheduler의 "Retry configuration" 재확인
+- Worker의 Exit Code 확인 (0이 아닌 값이어야 재시도됨)
+
+### 문제: 알림이 오지 않음
+
+**해결 방법**:
+1. Notification Channel 활성화 확인
+2. Alert Policy 조건 재확인
+3. Test 버튼으로 알림 채널 테스트
+
+---
+
+## 📝 완료 체크리스트
+
+- [ ] GCP Console에서 Cron 표현식 `0 1 * * *` 설정
+- [ ] 타임존 `Asia/Seoul` 설정
+- [ ] 재시도 정책 구성 (3회, 30분, 지수 백오프)
+- [ ] 알림 채널 생성 (이메일 필수, Slack 선택)
+- [ ] 알림 정책 생성 및 활성화
+- [ ] 수동 테스트 실행 및 로그 확인
+- [ ] 실패 시나리오 테스트
+- [ ] 다음날 자동 실행 확인
+
+---
+
+## 🔗 참고 자료
+
+- [Cloud Scheduler 문서](https://cloud.google.com/scheduler/docs)
+- [Cron 표현식 가이드](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules)
+- [Cloud Run Job 트리거](https://cloud.google.com/run/docs/execute/jobs-on-schedule)
+- [Cloud Monitoring 알림](https://cloud.google.com/monitoring/alerts)
