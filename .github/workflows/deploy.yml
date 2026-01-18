@@ -58,7 +58,7 @@ jobs:
             --max-instances 2 \
             --memory 512Mi \
             --timeout 300 \
-            --set-env-vars "ENV=production,POSTGRES_DSN=$CLEAN_POSTGRES_DSN,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }}"
+            --set-env-vars "ENV=production,POSTGRES_DSN=$CLEAN_POSTGRES_DSN,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},USE_GEMINI=1,SCHEDULER_API_KEY=${{ secrets.SCHEDULER_API_KEY }},FRONTEND_URL=${{ secrets.FRONTEND_URL }},ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}"
 
       # 3. Backend URL 가져오기
       - name: Get Backend URL

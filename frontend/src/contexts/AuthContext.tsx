@@ -11,7 +11,9 @@ interface User {
     xp?: number;
     level?: number;
     created_at?: string;
+    provider?: string;
 }
+
 
 import { analytics } from '../services/analytics';
 

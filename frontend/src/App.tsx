@@ -5,7 +5,6 @@ import { FloatingContact } from './components/FloatingContact';
 import { LoginModal } from './components/LoginModal';
 import { Onboarding, resetOnboarding } from './components/Onboarding';
 import { Skeleton } from './components/Skeleton';
-import { DropdownMenu } from './components/DropdownMenu';
 import { DataCenterPage, MCPSandboxPage } from './components/PlaceholderPages';
 
 // Code splitting: 각 페이지를 lazy load하여 초기 번들 크기 감소
@@ -106,17 +105,9 @@ function AppContent() {
             {/* Core Skills Track 메뉴 */}
             {isCore && (
               <>
-                <DropdownMenu label="오늘의 학습" icon="🏋️">
-                  <NavLink to="/daily" className={({ isActive }) => isActive ? 'active' : ''}>
-                    🗓️ Daily Challenge
-                  </NavLink>
-                  <NavLink to="/pa" className={({ isActive }) => isActive ? 'active' : ''}>
-                    📅 오늘의 도전 (PA)
-                  </NavLink>
-                  <NavLink to="/stream" className={({ isActive }) => isActive ? 'active' : ''}>
-                    📡 스트림 분석
-                  </NavLink>
-                </DropdownMenu>
+                <NavLink to="/daily" className={({ isActive }) => isActive ? 'active' : ''}>
+                  🗓️ Daily Challenge
+                </NavLink>
 
                 <NavLink to="/practice" className={({ isActive }) => isActive ? 'active' : ''}>
                   ♾️ 연습장

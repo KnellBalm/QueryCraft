@@ -214,6 +214,18 @@ def init_database():
             """)
             logger.info("✓ worker_logs table ready")
 
+            # 9-1. login_attempts 테이블 (Rate Limiting용)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.login_attempts (
+                    email TEXT NOT NULL,
+                    attempted_at TIMESTAMP DEFAULT NOW(),
+                    success BOOLEAN DEFAULT FALSE,
+                    ip_address TEXT
+                )
+            """)
+            pg.execute("CREATE INDEX IF NOT EXISTS idx_login_attempts_email_at ON public.login_attempts(email, attempted_at)")
+            logger.info("✓ login_attempts table ready")
+
             # 10. persistent_sessions 테이블 (다중 인스턴스 세션 공유)
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.persistent_sessions (
@@ -365,10 +377,14 @@ def init_database():
             logger.info("✓ rca_anomaly_metadata table ready")
 
             # 관리자 설정
-            pg.execute("""
-                UPDATE public.users SET is_admin = TRUE 
-                WHERE email IN ('naca11@mobigen.com', 'naca11@naver.com')
-            """)
+            import os
+            admin_emails_str = os.getenv("ADMIN_EMAILS", "naca11@mobigen.com,naca11@naver.com,admin@querycraft.kr")
+            admin_emails = [e.strip() for e in admin_emails_str.split(",") if e.strip()]
+            if admin_emails:
+                placeholders = ", ".join(["%s"] * len(admin_emails))
+                pg.execute(f"UPDATE public.users SET is_admin = TRUE WHERE email IN ({placeholders})", admin_emails)
+            
+            logger.info(f"✓ admin privileges updated for: {', '.join(admin_emails)}")
             
             logger.info("✅ Database initialization completed successfully!")
             return True, None

@@ -14,11 +14,10 @@ class PostgresEnv:
     def dsn(self) -> str:
         env = os.getenv("ENV", "development")
         
-        if env == "production":
-            # 프로덕션: 반드시 POSTGRES_DSN 사용 (Supabase)
-            dsn = os.getenv("POSTGRES_DSN", "").strip()
-            if not dsn:
-                raise ValueError("POSTGRES_DSN is required in production environment")
+        # POSTGRES_DSN이 설정되어 있으면 환경 관계없이 우선 사용
+        postgres_dsn = os.getenv("POSTGRES_DSN", "").strip()
+        if postgres_dsn:
+            dsn = postgres_dsn
             if "@@" in dsn:
                 dsn = dsn.replace("@@", "@")
             
@@ -28,6 +27,10 @@ class PostgresEnv:
                 dsn += f"{separator}sslmode=require"
                 
             return dsn
+        
+        # POSTGRES_DSN이 없으면 환경별로 분기
+        if env == "production":
+            raise ValueError("POSTGRES_DSN is required in production environment")
         else:
             # 개발 환경: 로컬 PostgreSQL 환경변수 사용
             return (
@@ -37,6 +40,7 @@ class PostgresEnv:
                 f"password={os.getenv('PG_PASSWORD', '').strip()} "
                 f"dbname={os.getenv('PG_DB', 'postgres').strip()}"
             )
+
     
     def masked_dsn(self) -> str:
         """비밀번호가 마스킹된 DSN 반환 (로깅용)"""

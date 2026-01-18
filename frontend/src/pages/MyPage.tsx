@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { authApi, statsApi } from '../api/client';
+import { PasswordChange } from '../components/PasswordChange';
 import './MyPage.css';
 
 interface UserStats {
@@ -111,6 +112,17 @@ export function MyPage() {
                     {message && <div className={`message ${message.includes('✓') ? 'success' : 'error'}`}>{message}</div>}
                 </div>
             </section>
+
+            {/* 비밀번호 변경 섹션 (로컬 사용자 전용) */}
+            {user.provider === 'local' && (
+                <section className="profile-section">
+                    <h2>비밀번호 변경</h2>
+                    <PasswordChange 
+                        onSuccess={(msg: string) => setMessage(msg)}
+                        onError={(msg: string) => setMessage(msg)}
+                    />
+                </section>
+            )}
 
             {/* 성적 섹션 */}
             {stats && (

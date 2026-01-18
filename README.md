@@ -106,19 +106,22 @@ QueryCraft가 제공하는 5가지 가상 기업을 통해 각 분야의 핵심 
 
 ## 📂 프로젝트 구조 (Structure)
 
+프로젝트를 핵심 기능 단위로 분리하여 효율적으로 관리하며, 상세 문서는 `docs/` 내의 **Wiki 시스템**을 참조합니다.
+
 ```text
 QueryCraft/
-├── 📂 backend/       # FastAPI 서버 및 비즈니스 로직
-│   ├── 📂 api/       # REST API 엔드포인트
-│   ├── 📂 engine/    # DB 최적화 실행 엔진 (PG/DuckDB)
-│   └── 📂 services/  # 채점, AI 피드백, 세션 관리 서비스
-├── 📂 frontend/      # React SPA (Vite, TS)
-│   ├── 📂 src/components # UI 컴포넌트 (Editor, Results)
-│   └── 📂 src/services   # API 및 Analytics 연동
-├── 📂 problems/      # AI 문제 생성 프롬프트 엔지니어링 및 템플릿
+├── 📂 backend/       # FastAPI 서버 (API, AI 채점, 세션 관리)
+├── 📂 frontend/      # React/TS 웹 애플리케이션 및 디자인 시스템
+├── 📂 problems/      # AI 문제 생성 프롬프트 및 데이터 템플릿
+├── 📂 docs/          # 통합 Wiki 및 서비스 가이드 (가장 먼저 확인!)
+├── 📂 scripts/       # DB 마이그레이션 및 관리용 유틸리티 스케줄러
 ├── 📂 shared/        # 백엔드/서비스 간 공용 코드
-└── 📂 docker/        # 배포 및 환경 설정
+└── 📂 tests/         # 유닛 및 통합 테스트 스케줄러
 ```
+
+> [!TIP]
+> **상세 가이드를 찾으시나요?**
+> 모든 서비스 기획 및 기술 명세는 [**docs/README.md**](./docs/README.md)에서 테마별 위키로 확인하실 수 있습니다.
 
 ---
 

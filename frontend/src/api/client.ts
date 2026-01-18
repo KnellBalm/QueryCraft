@@ -3,11 +3,12 @@ import axios from 'axios';
 
 // 브라우저가 접속한 호스트를 기반으로 백엔드 URL 자동 설정
 const getApiBase = () => {
-    if (import.meta.env.VITE_API_URL) {
-        return import.meta.env.VITE_API_URL;
+    const url = import.meta.env.VITE_API_URL;
+    if (url) {
+        // 끝에 /api가 없으면 자동으로 추가 (Cloud Run 배포 시 유연성 확보)
+        return url.endsWith('/api') ? url : (url.endsWith('/') ? `${url}api` : `${url}/api`);
     }
     // 개발 모드: Nginx 프록시(/api)를 사용하도록 상대 경로 반환
-    // 운영 모드(Cloud Run): VITE_API_URL이 주입되므로 위에서 걸러짐
     if (typeof window !== 'undefined') {
         return '/api';
     }
@@ -114,6 +115,8 @@ export const authApi = {
     googleLogin: () => `${API_BASE}/auth/google/login`,
     kakaoLogin: () => `${API_BASE}/auth/kakao/login`,
     deleteAccount: () => api.delete('/auth/account'),
+    changePassword: (currentPassword: string, newPassword: string) => 
+        api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
 };
 
 // 무한 연습 모드 API

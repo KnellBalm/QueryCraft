@@ -604,6 +604,68 @@ class UpdateNicknameRequest(BaseModel):
     nickname: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+async def change_password(req: ChangePasswordRequest, request: Request):
+    """비밀번호 변경"""
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        raise HTTPException(401, "로그인이 필요합니다")
+    
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(401, "로그인이 필요합니다")
+    
+    user_id = session["user"]["id"]
+    email = session["user"]["email"]
+    
+    # 1. 기존 비밀번호 확인
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("SELECT password_hash, provider FROM public.users WHERE id = %s", [user_id])
+            if len(df) == 0:
+                raise HTTPException(404, "사용자를 찾을 수 없습니다")
+            
+            row = df.iloc[0]
+            if row["provider"] != "local":
+                raise HTTPException(400, f"{row['provider']} 계정은 비밀번호를 변경할 수 없습니다")
+            
+            if not verify_password(req.current_password, row["password_hash"]):
+                raise HTTPException(401, "기존 비밀번호가 일치하지 않습니다")
+            
+            # 2. 새 비밀번호 정책 검증
+            import re
+            if len(req.new_password) < 8:
+                raise HTTPException(400, "새 비밀번호는 8자 이상이어야 합니다")
+            if not re.search(r"[a-z]", req.new_password) or not re.search(r"[A-Z]", req.new_password) or \
+               not re.search(r"\d", req.new_password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", req.new_password):
+                raise HTTPException(400, "새 비밀번호가 보안 정책을 충족하지 않습니다 (대소문자, 숫자, 특수문자 포함)")
+            
+            # 3. 비밀번호 업데이트
+            new_hash = hash_password(req.new_password)
+            pg.execute("UPDATE public.users SET password_hash = %s WHERE id = %s", (new_hash, user_id))
+            
+            from backend.services.db_logger import db_log, LogCategory, LogLevel
+            db_log(
+                category=LogCategory.USER_ACTION,
+                message=f"비밀번호 변경 성공: {email}",
+                level=LogLevel.INFO,
+                source="auth"
+            )
+            
+            return {"success": True, "message": "비밀번호가 성공적으로 변경되었습니다"}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to change password: {e}")
+        raise HTTPException(500, "비밀번호 변경 중 오류가 발생했습니다")
+
+
 @router.patch("/nickname")
 async def update_nickname(req: UpdateNicknameRequest, request: Request):
     """닉네임 변경"""
