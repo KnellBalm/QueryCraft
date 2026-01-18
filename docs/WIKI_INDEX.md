@@ -4,6 +4,10 @@ QueryCraft 프로젝트의 지식 베이스입니다. 산재되어 있던 문서
 
 ---
 
+## 🚀 시작하기
+
+프로젝트를 로컬 환경에서 실행하고 개발하는 방법은 [**DEVELOPMENT_GUIDE.md**](./DEVELOPMENT_GUIDE.md)를 참조하세요.
+
 ## 🏛️ 1. Service Management (Active Communication)
 
 *에이전트(AI)와 대화하며 실시간으로 프로젝트를 리빙하고 진행 상황을 관리하는 공간입니다.*
@@ -34,6 +38,7 @@ QueryCraft 프로젝트의 지식 베이스입니다. 산재되어 있던 문서
   - Mixpanel/GA4 분석 트래킹 설계 및 구현 가이드
   - [**GENERATOR_GUIDE.md**](./GENERATOR_GUIDE.md): 데이터 및 문제 생성 엔진 상세 가이드.
   - [**UI_COMPONENTS_GUIDE.md**](./UI_COMPONENTS_GUIDE.md): Arcade UI 컴포넌트 라이브러리 명세.
+  - [**DEVELOPMENT_GUIDE.md**](./DEVELOPMENT_GUIDE.md): 로컬 개발 및 환경 설정 가이드.
   - 기술 의사결정 기록(Architecture Decision Records) 아카이브
 
 ---
@@ -46,6 +51,7 @@ QueryCraft 프로젝트의 지식 베이스입니다. 산재되어 있던 문서
 ---
 
 ## 📁 Archive
+
 - [**archive/**](./archive/): 더 이상 사용되지 않거나 과거의 역사적 이력이 담긴 폴더.
 
 ---

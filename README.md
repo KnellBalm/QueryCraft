@@ -1,142 +1,95 @@
-<!-- <p align="center">
-  <img src="https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claude-sisyphus/refs/heads/main/logo.png" alt="QueryCraft Logo" width="120" />
-</p> -->
-
-<h1 align="center">QueryCraft (쿼리크래프트)</h1>
+<h1 align="center">QueryCraft: The Frontier of Data Analysis & AI</h1>
 
 <p align="center">
-  <strong>"AI와 공존하며 의사결정의 심장부로 도약하는 데이터 분석가의 훈련소"</strong><br />
-  SQL 문법을 넘어, AI라는 강력한 무기를 제어하고 비즈니스 임팩트를 설계하는<br />
-  <strong>Analyst 2.0 & Decision Scientist</strong>로의 여정을 시작하세요.
+  <strong>"오퍼레이터를 넘어 아키텍트로. AI 시대 데이터 분석가를 위한 최고의 훈련소"</strong><br />
+  QueryCraft는 단순한 플랫폼을 넘어, 비즈니스 영향력을 설계하고 AI와 협업하는<br />
+  <strong>차세대 분석가(Analyst 2.0 & Decision Scientist)</strong>를 위한 완벽한 시뮬레이션 환경을 제공합니다.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/React-18.2-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Gemini-2.0--Flash-4285F4?style=flat-square&logo=google-gemini&logoColor=white" alt="Gemini" />
-  <img src="https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Service-Active-success?style=for-the-badge&logo=statuspage" alt="Status" />
+  <img src="https://img.shields.io/badge/Powered%20By-Gemini%202.0%20Flash-4285F4?style=for-the-badge&logo=google-gemini" alt="Gemini" />
+  <img src="https://img.shields.io/badge/Architecture-Cloud%20Native-blue?style=for-the-badge" alt="Cloud Native" />
 </p>
 
 ---
 
-## 🧐 AI 시대, 왜 QueryCraft인가?
+## 🏛️ Comprehensive Solutions
 
-단순히 쿼리를 짤 줄 아는 '오퍼레이터(Operator)'는 AI로 대체됩니다. 하지만 비즈니스 로직을 설계하고 AI의 결과물을 검증하며 전략적 제안을 던지는 **'아키텍트(Architect)'**는 대체 불가능합니다.
+QueryCraft는 분석가의 실질적인 성장에 집중한 두 가지 트랙과 지능형 분석 시스템을 제공합니다.
 
-QueryCraft는 분석가가 AI 시대를 정복할 수 있도록 돕는 유일한 시뮬레이션 환경입니다.
+### 💎 The Academy (Core Skills)
 
-- **Logic over Syntax**: 쿼리 작성은 AI에게 맡기고(Text-to-SQL), 분석가는 문제 정의와 로직 설계에 집중합니다.
-- **Critical QA (The Guardian)**: AI가 범할 수 있는 논리적 오류를 찾아내고 데이터 품질을 수호하는 실전 디버깅 훈련을 제공합니다.
-- **RCA & Decision Science**: 매일 발생하는 가상의 비즈니스 장애 상황(RCA)을 해결하며, 의사결정의 과학적 근거를 만드는 법을 배웁니다.
+**현업에서 즉시 성과를 내는 분석가로 진화합니다.**
 
----
+* **Daily Challenge**: 이커머스, SaaS 등 실제 비즈니스 도메인의 로그 데이터를 기반으로 매일 새로운 과제가 주어집니다. 단순 문법 문제가 아닌, "지난달 대비 매출 하락 요인을 세그먼트별로 분석하라"와 같은 실무형 과제를 SQL로 해결합니다.
+* **Strategic KPI Discovery**: 비즈니스의 핵심 지표(NSM, Retention, Funnel)를 직접 정의하고 SQL로 도출하는 과정을 반복하여, 데이터 문해력을 근본적으로 향상시킵니다.
+* **AI-Guided Mastery (Code Review)**: 문제를 풀 때마다 시니어 분석가 수준의 AI가 쿼리 작성 능력뿐만 아니라 분석 로직의 정합성, 쿼리 최적화 여부를 실시간으로 평가하고 상세한 피드백을 제공합니다.
 
-## 🌟 핵심 기능 (Key Features)
+### 🧪 The Lab (Future Lab)
 
-### 2-Track 실무 가이드
+**AI와 협업하며 의사결정을 설계하는 미래 분석 환경을 탐험합니다.**
 
-- **Track A: Core Skills**: 필수적인 SQL 기술과 데이터 도메인에 대한 깊은 이해도를 쌓습니다.
-- **Track B: Future Lab**: AI 에이전트 협업, MCP 연동, 자동 인사이트 추출 등 최신 AI 분석 기술을 실험합니다.
-
-| Feature | Description |
-| :--- | :--- |
-| **🤖 Problem Engine** | Gemini 2.0 Flash가 매일 각기 다른 비즈니스 상황을 설정하고 6개의 도전을 출제합니다. |
-| **🏬 KPI Simulation** | 커머스, SaaS, 핀테크 등 각 산업별 북스타 메트릭(NSM)을 반영한 가상 도메인을 제공합니다. |
-| **💡 AI Deep Feedback** | 시니어 분석가의 관점에서 당신의 분석 로직이 비즈니스적으로 어떤 임팩트를 미치는지 평가합니다. |
-| **⚡ Real-time Analytics** | **DuckDB**를 활용하여 초고속 로그 분석 환경을 시뮬레이션합니다. |
-| **🔌 MCP Integration** | AI가 실제 데이터 스키마를 인지하고 실시간 가이드를 제공하는 차세대 프로토콜을 탑재했습니다. |
+* **Root Cause Analysis (RCA) Simulator**: 매출 급감이나 이탈율 급증과 같은 비즈니스 장애 상황을 시뮬레이션합니다. 기간별/지역별/채널별 비교 분석을 통해 문제의 근본 원인(Root Cause)을 SQL로 추적하고 논리적인 보고서를 작성합니다.
+* **AI Analytics Lab (Advanced AI)**: 자연어 질문만으로 복잡한 SQL을 생성하는 **Text-to-SQL**, 쿼리 결과에서 유의미한 비즈니스 액션 아이템을 도출하는 **AI Insight** 등 최신 AI 분석 도구를 직접 도구로서 활용해 봅니다.
+* **Adaptive Learning Engine**: 사용자의 오답 패턴을 정밀하게 분석하여 취약한 영역(JOIN, Window Function 등)을 파악하고, 이를 보강하기 위한 맞춤형 학습 경로와 연습 문제를 생성형 AI가 즉석에서 설계합니다.
+* **Enterprise connectivity (MCP)**: Cursor, Claude Desktop 등 외부 IDE에서 QueryCraft의 데이터 엔진에 직접 접근하는 차세대 협업 프로토콜을 탑재하여, IDE 환경에서의 분석 경험을 극대화합니다.
 
 ---
 
-## 🏗️ 시스템 아키텍처
+## 📖 Get Started: The Analyst Journey (User Guide)
 
-```mermaid
-graph TD
-    subgraph "Frontend Layer (React/TS)"
-        Web["Web App (Arcade UI)"]
-        Monaco["SQL Editor"]
-    end
+QueryCraft에서는 다음과 같은 단계로 분석 역량을 강화할 수 있습니다.
 
-    subgraph "Intelligence Layer (FastAPI)"
-        ProblemGen["AI Problem Generator"]
-        AIService["Gemini 2.0 Flash"]
-        Grader["AI Logic Grader"]
-    end
+### 1단계: 트랙 선택 (Choose Your Track)
 
-    subgraph "Data Layer"
-        PG[(PostgreSQL - Metadata)]
-        Duck[(DuckDB - Event Logs)]
-        Storage[(Daily JSON Store)]
-    end
+* **Academy**: 정교하게 설계된 비즈니스 시나리오 안에서 정해진 정답(KPI)을 찾아가는 훈련을 원할 때 선택합니다.
+* **Lab**: 자유로운 데이터 탐색과 AI 도구 활용, 복합적인 원인 분석(RCA) 등 고도화된 실험을 원할 때 선택합니다.
 
-    Web <--> ProblemGen
-    Monaco <--> Grader
-    ProblemGen & Grader <--> AIService
-    Grader <--> Duck & PG
-    ProblemGen --> Storage
-```
+### 2단계: 실전 분석 사이클 (The Learning Loop)
+
+1. **Context Reading**: AI가 브리핑하는 오늘의 비즈니스 상황과 도메인 데이터 구조를 파악합니다.
+2. **SQL Crafting**: 고급 Monaco Editor 환경에서 SQL을 작성합니다. 막힐 때는 AI에게 논리적인 힌트를 요청할 수 있습니다.
+3. **Cross-Validation**: 작성한 쿼리를 실행하여 실제 데이터 분포를 확인하고 가설을 검증합니다.
+4. **Grading & Review**: 제출 버튼을 눌러 AI의 상세한 코드 리뷰와 분석 관점 피드백을 확인합니다.
+
+### 3단계: 성과 측정 및 성장 (Growth & Analytics)
+
+* 모든 학습 기록은 **Skill Matrix**로 변환되어 대시보드에 기록됩니다.
+* 나의 분석 속도, 논리적 정합성, 도메인 이해도를 데이터로 확인하고 다음 학습 경로를 추천받습니다.
 
 ---
 
-## 📂 프로젝트 구조
+## 🧐 Why QueryCraft?
 
-프로젝트 관리는 전문화된 **Wiki 시스템**을 통해 이루어집니다.
+AI가 코드를 짜는 시대, 분석가의 가치는 **'어떻게 짜는가'**에서 **'무엇을 해결하는가'**로 이동합니다.
 
-```text
-QueryCraft/
-├── 📂 backend/       # FastAPI 서버 및 AI 생성기 엔진
-├── 📂 frontend/      # React/TS 웹 애플리케이션 (Arcade Style)
-├── 📂 docs/          # 통합 Wiki 및 서비스 마스터 플랜 (가장 중요!)
-├── 📂 shared/        # 도메인 모델 및 유틸리티 공용 코드
-└── 📂 tests/         # 품질 보증을 위한 통합 테스트 슈트
-```
-
-> [!IMPORTANT]
-> **상세 문서는 Wiki를 확인하세요!**
-> - 비즈니스/기능 가이드: [**REFERENCE_WIKI.md**](./docs/REFERENCE_WIKI.md)
-> - 기술 명세/아키텍처: [**TECH_WIKI.md**](./docs/TECH_WIKI.md)
-> - 미래 전략/로드맵: [**FUTURE_PLAN.md**](./docs/FUTURE_PLAN.md)
-
-> [!TIP]
-> **WIKI INDEX**: 모든 가이드의 목차는 [**docs/WIKI_INDEX.md**](./docs/WIKI_INDEX.md)에서 확인하실 수 있습니다.
+* **Logic over Syntax**: 문법은 AI에게 맡기고, 분석가는 문제 정의와 로직 설계에 집중합니다.
+* **Critical Verification**: AI의 결과물을 의심하고 데이터 품질을 수호하는 실전 디버깅 역량을 배양합니다.
+* **Scientific Decision Making**: 단순한 수치 보고를 넘어 상업적 의사결정의 과학적 근거를 만드는 법을 터득합니다.
 
 ---
 
-## 🚀 시작하기
+## 🏗️ Technical Excellence
 
-### 📝 환경 설정
+QueryCraft는 최고의 기술적 완성도를 통해 전문적인 분석 환경을 구현합니다.
 
-`.env` 파일을 생성하고 Google Gemini API 키를 설정하세요.
-
-```bash
-cp .env.example .env
-# GEMINI_API_KEY=your_key_here
-```
-
-### 🐳 서비스 실행 (Docker)
-
-Docker Compose로 프론트엔드, 백엔드, DB를 한 번에 실행합니다.
-
-```bash
-docker compose up -d
-```
-
-- **Web**: `http://localhost:15173`
-- **API Docs**: `http://localhost:15174/docs`
-
-### 🏗️ 초기 셋업
-
-실습을 위한 기초 데이터와 오늘자 문제를 생성합니다.
-
-```bash
-docker compose exec backend python -c "from backend.api.admin import initial_setup; initial_setup()"
-```
+* **Intelligence**: Gemini 2.0 Flash 모델을 기반으로 한 실시간 도메인 생성 및 고도화된 SQL 채점 엔진.
+* **Performance**: 대용량 가산 데이터를 실시간으로 조회하고 처리하기 위한 DuckDB 인메모리 엔진 탑재.
+* **Connectivity**: 외부 AI 에이전트가 데이터에 직접 접근할 수 있도록 설계된 차세대 MCP(Model Context Protocol) 지원.
+* **Design**: 분석에 몰입할 수 있도록 설계된 Arcade 스타일의 고품질 UI 및 반응형 에디터 환경.
 
 ---
 
-## 🤝 라이선스 및 저작권
+## 📖 Documentation
 
-이 프로젝트는 MIT 라인선스 하에 배포됩니다.
+운영 및 기술 가이드에 대한 상세 내용은 아래 문서를 참조하세요. 로컬 개발 환경 구축에 대한 내용은 `DEVELOPMENT_GUIDE.md`로 일원화되었습니다.
+
+* [**WIKI_INDEX.md**](./docs/WIKI_INDEX.md): 모든 문서의 중앙 목차.
+* [**REFERENCE_WIKI.md**](./docs/REFERENCE_WIKI.md): 서비스 상세 가이드.
+* [**TECH_WIKI.md**](./docs/TECH_WIKI.md): 시스템 아키텍처 및 구현 명세.
+* [**DEVELOPMENT_GUIDE.md**](./docs/DEVELOPMENT_GUIDE.md): 개발자용 로컬 설정 가이드.
+
+---
+
 Copyright © 2026 QueryCraft Team. All rights reserved.
