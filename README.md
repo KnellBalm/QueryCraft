@@ -5,9 +5,9 @@
 <h1 align="center">QueryCraft (쿼리크래프트)</h1>
 
 <p align="center">
-  <strong>"단순한 SQL 문법을 넘어, 비즈니스를 읽는 데이터 분석가로"</strong><br />
-  실무 데이터 환경을 완벽히 시뮬레이션하고, AI가 생성한 고도화된 문제와 피드백을 통해<br />
-  현업 시니어 분석가 수준의 문제 해결 역량을 쌓으세요.
+  <strong>"AI와 공존하며 의사결정의 심장부로 도약하는 데이터 분석가의 훈련소"</strong><br />
+  SQL 문법을 넘어, AI라는 강력한 무기를 제어하고 비즈니스 임팩트를 설계하는<br />
+  <strong>Analyst 2.0 & Decision Scientist</strong>로의 여정을 시작하세요.
 </p>
 
 <p align="center">
@@ -21,135 +21,114 @@
 
 ---
 
-## 🧐 Why QueryCraft?
+## 🧐 AI 시대, 왜 QueryCraft인가?
 
-대부분의 SQL 강의는 `SELECT`, `JOIN` 등 문법 교육에 치중합니다. 하지만 실무 분석가에게 필요한 역량은 **우리 프로젝트의 리텐션이 왜 떨어졌을까**와 같은 비즈니스 질문을 SQL로 변환하는 능력입니다.
+단순히 쿼리를 짤 줄 아는 '오퍼레이터(Operator)'는 AI로 대체됩니다. 하지만 비즈니스 로직을 설계하고 AI의 결과물을 검증하며 전략적 제안을 던지는 **'아키텍트(Architect)'**는 대체 불가능합니다.
 
-QueryCraft는 이 간극을 메우기 위해 탄생했습니다.
+QueryCraft는 분석가가 AI 시대를 정복할 수 있도록 돕는 유일한 시뮬레이션 환경입니다.
 
-1.  **Context-Driven Learning**: "회원가입 후 7일 이내 구매하지 않은 유저의 이탈 분석"과 같은 구체적인 실무 시나리오를 제공합니다.
-2.  **No More Tutorial Hell**: 정적이고 반복적인 데이터셋이 아닌, 매일 새롭게 바뀌는 동적 데이터와 문제를 통해 실전 기각을 극대화합니다.
-3.  **Senior Analyst in Your Pocket**: Google Gemini API를 활용하여, 당신의 쿼리가 왜 실무적으로 위험한지, 혹은 어떻게 더 효율적으로 개선할 수 있는지 시니어 분석가의 관점에서 피드백합니다.
+- **Logic over Syntax**: 쿼리 작성은 AI에게 맡기고(Text-to-SQL), 분석가는 문제 정의와 로직 설계에 집중합니다.
+- **Critical QA (The Guardian)**: AI가 범할 수 있는 논리적 오류를 찾아내고 데이터 품질을 수호하는 실전 디버깅 훈련을 제공합니다.
+- **RCA & Decision Science**: 매일 발생하는 가상의 비즈니스 장애 상황(RCA)을 해결하며, 의사결정의 과학적 근거를 만드는 법을 배웁니다.
 
 ---
 
-## 🌟 주요 특징 (Key Features)
+## 🌟 핵심 기능 (Key Features)
+
+### 2-Track 실무 가이드
+
+- **Track A: Core Skills**: 필수적인 SQL 기술과 데이터 도메인에 대한 깊은 이해도를 쌓습니다.
+- **Track B: Future Lab**: AI 에이전트 협업, MCP 연동, 자동 인사이트 추출 등 최신 AI 분석 기술을 실험합니다.
 
 | Feature | Description |
 | :--- | :--- |
-| **🤖 AI Daily Generation** | Gemini 2.0 Flash가 매일 각기 다른 비즈니스 상황을 설정하고, 그에 최적화된 6개의 분석 과제를 출제합니다. |
-| **🏬 5개 산업군 특화 데이터** | 커머스, SaaS, 핀테크 등 각 산업별 핵심 KPI(North Star Metric)를 반영한 가상 데이터 구조를 시뮬레이션합니다. |
-| **⏰ KST Integration** | 글로벌 클라우드 환경에서도 모든 데이터 집계와 스케줄링이 한국 표준시(KST) 기준으로 정확히 작동하도록 설계되었습니다. |
-| **⚡ Hybrid Data Store** | 안정적인 메타데이터 관리를 위한 **PostgreSQL**과 대용량 로그 분석 성능을 위한 **DuckDB**의 장점을 결합했습니다. |
-| **💡 Interactive Editor** | 전용 Monaco Editor를 통해 테이블 스키마에 기반한 스마트 자동완성과 쿼리 실행 환경을 제공합니다. |
+| **🤖 Problem Engine** | Gemini 2.0 Flash가 매일 각기 다른 비즈니스 상황을 설정하고 6개의 도전을 출제합니다. |
+| **🏬 KPI Simulation** | 커머스, SaaS, 핀테크 등 각 산업별 북스타 메트릭(NSM)을 반영한 가상 도메인을 제공합니다. |
+| **💡 AI Deep Feedback** | 시니어 분석가의 관점에서 당신의 분석 로직이 비즈니스적으로 어떤 임팩트를 미치는지 평가합니다. |
+| **⚡ Real-time Analytics** | **DuckDB**를 활용하여 초고속 로그 분석 환경을 시뮬레이션합니다. |
+| **🔌 MCP Integration** | AI가 실제 데이터 스키마를 인지하고 실시간 가이드를 제공하는 차세대 프로토콜을 탑재했습니다. |
 
 ---
 
-## 🏗️ 시스템 아키텍처 (Architecture)
-
-QueryCraft는 확장 가능하고 안정적인 현대적 웹 아키텍처를 지향합니다.
+## 🏗️ 시스템 아키텍처
 
 ```mermaid
-flowchart TD
-    subgraph Frontend [Frontend - React/TS]
-        Web[Web Application]
-        Editor[Monaco SQL Editor]
+graph TD
+    subgraph "Frontend Layer (React/TS)"
+        Web["Web App (Arcade UI)"]
+        Monaco["SQL Editor"]
     end
 
-    subgraph Backend [QueryCraft Engine - FastAPI]
-        API[REST API Layer]
-        Gen[AI Problem Generator]
-        Grade[SQL Grader & Reviewer]
-        Sched[KST Scheduler]
+    subgraph "Intelligence Layer (FastAPI)"
+        ProblemGen["AI Problem Generator"]
+        AIService["Gemini 2.0 Flash"]
+        Grader["AI Logic Grader"]
     end
 
-    subgraph Storage [Hybrid Data Store]
+    subgraph "Data Layer"
         PG[(PostgreSQL - Metadata)]
-        Duck[(DuckDB - Log Analysis)]
+        Duck[(DuckDB - Event Logs)]
+        Storage[(Daily JSON Store)]
     end
 
-    subgraph External [AI Service]
-        Gemini[Gemini 2.0 Flash]
-    end
-
-    Web <--> API
-    Editor <--> API
-    API --> Gen & Grade & Sched
-    Gen & Grade <--> Gemini
-    Grade --> PG & Duck
-    Gen --> PG
+    Web <--> ProblemGen
+    Monaco <--> Grader
+    ProblemGen & Grader <--> AIService
+    Grader <--> Duck & PG
+    ProblemGen --> Storage
 ```
 
 ---
 
-## 📡 데이터 도메인 및 분석 목표 (Domains)
+## 📂 프로젝트 구조
 
-QueryCraft가 제공하는 5가지 가상 기업을 통해 각 분야의 핵심 데이터를 마스터하세요.
-
-- 🛒 **TrendPick (이커머스)**
-  - **목표**: 구매 퍼널 최적화 및 리텐션 강화
-  - **핵심 데이터**: 주문, 장바구니, 유입 채널, 쿠폰 사용 이력
-- ☁️ **TaskSync (B2B SaaS)**
-  - **목표**: 무료 유저의 유료 전환(Upgrade) 및 Churn 방지
-  - **핵심 데이터**: 기능 Adoption, 온보딩 성공률, API 호출량, 유료 플랜
-- 📱 **InsightFlow (콘텐츠)**
-  - **목표**: 유저 인게이지먼트 및 구독 갱신율 분석
-  - **핵심 데이터**: 콘텐츠 완독률(Scroll Depth), 읽기 시간, 공유, 북마크
-- 🤝 **HobbyLink (커뮤니티)**
-  - **목표**: 활성 생산자(Creator) 확보 및 네트워크 선순환 분석
-  - **핵심 데이터**: 포스팅 생성, 댓글/좋아요 인터랙션, 팔로우 네트워크
-- 💳 **SafePay (핀테크)**
-  - **목표**: 거래 성공률 관리 및 이상 거래(Fraud) 탐지
-  - **핵심 데이터**: 송금 시도/성공/실패 로그, KYC 완료율, 카드 결제
-
----
-
-## 📂 프로젝트 구조 (Structure)
-
-프로젝트를 핵심 기능 단위로 분리하여 효율적으로 관리하며, 상세 문서는 `docs/` 내의 **Wiki 시스템**을 참조합니다.
+프로젝트 관리는 전문화된 **Wiki 시스템**을 통해 이루어집니다.
 
 ```text
 QueryCraft/
-├── 📂 backend/       # FastAPI 서버 (API, AI 채점, 세션 관리)
-├── 📂 frontend/      # React/TS 웹 애플리케이션 및 디자인 시스템
-├── 📂 problems/      # AI 문제 생성 프롬프트 및 데이터 템플릿
-├── 📂 docs/          # 통합 Wiki 및 서비스 가이드 (가장 먼저 확인!)
-├── 📂 scripts/       # DB 마이그레이션 및 관리용 유틸리티 스케줄러
-├── 📂 shared/        # 백엔드/서비스 간 공용 코드
-└── 📂 tests/         # 유닛 및 통합 테스트 스케줄러
+├── 📂 backend/       # FastAPI 서버 및 AI 생성기 엔진
+├── 📂 frontend/      # React/TS 웹 애플리케이션 (Arcade Style)
+├── 📂 docs/          # 통합 Wiki 및 서비스 마스터 플랜 (가장 중요!)
+├── 📂 shared/        # 도메인 모델 및 유틸리티 공용 코드
+└── 📂 tests/         # 품질 보증을 위한 통합 테스트 슈트
 ```
 
+> [!IMPORTANT]
+> **상세 문서는 Wiki를 확인하세요!**
+> - 비즈니스/기능 가이드: [**REFERENCE_WIKI.md**](./docs/REFERENCE_WIKI.md)
+> - 기술 명세/아키텍처: [**TECH_WIKI.md**](./docs/TECH_WIKI.md)
+> - 미래 전략/로드맵: [**FUTURE_PLAN.md**](./docs/FUTURE_PLAN.md)
+
 > [!TIP]
-> **상세 가이드를 찾으시나요?**
-> 모든 서비스 기획 및 기술 명세는 [**docs/README.md**](./docs/README.md)에서 테마별 위키로 확인하실 수 있습니다.
+> **WIKI INDEX**: 모든 가이드의 목차는 [**docs/WIKI_INDEX.md**](./docs/WIKI_INDEX.md)에서 확인하실 수 있습니다.
 
 ---
 
-## 🚀 시작하기 (Getting Started)
+## 🚀 시작하기
 
-### 1. 환경 설정 (Environment)
+### 📝 환경 설정
 
-`.env` 파일을 생성하고 Google Gemini API 키를 설정합니다.
+`.env` 파일을 생성하고 Google Gemini API 키를 설정하세요.
 
 ```bash
 cp .env.example .env
 # GEMINI_API_KEY=your_key_here
 ```
 
-### 2. 서비스 실행 (Docker)
+### 🐳 서비스 실행 (Docker)
 
-Docker Compose를 사용하여 전체 서비스를 즉시 시작할 수 있습니다.
+Docker Compose로 프론트엔드, 백엔드, DB를 한 번에 실행합니다.
 
 ```bash
 docker compose up -d
 ```
 
-* **Frontend**: [http://localhost:15173](http://localhost:15173)
-* **API Docs**: [http://localhost:15174/docs](http://localhost:15174/docs)
+- **Web**: `http://localhost:15173`
+- **API Docs**: `http://localhost:15174/docs`
 
-### 3. 초기 데이터 셋업 (Initial Setup)
+### 🏗️ 초기 셋업
 
-최초 실행 시 실습용 기초 데이터와 문제를 생성해야 합니다.
+실습을 위한 기초 데이터와 오늘자 문제를 생성합니다.
 
 ```bash
 docker compose exec backend python -c "from backend.api.admin import initial_setup; initial_setup()"
@@ -157,20 +136,7 @@ docker compose exec backend python -c "from backend.api.admin import initial_set
 
 ---
 
-## 🛠️ 기술 명세 (Tech Specs)
+## 🤝 라이선스 및 저작권
 
-- **Backend**: Python 3.12, FastAPI, Pandas, SQLAlchemy
-- **Frontend**: React 18, TypeScript, Vite, Monaco Editor
-- **Database**: PostgreSQL (User/Meta), DuckDB (Large-scale Events)
-- **AI**: Google Generative AI (Gemini 2.0 Flash)
-- **Infrastructure**: Docker, GCP Cloud Run, GitHub Actions
-
----
-
-## 📄 라이선스 (License)
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-<p align="center">
-  Copyright © 2026 QueryCraft Team. All rights reserved.
-</p>
+이 프로젝트는 MIT 라인선스 하에 배포됩니다.
+Copyright © 2026 QueryCraft Team. All rights reserved.

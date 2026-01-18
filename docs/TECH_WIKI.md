@@ -9,6 +9,7 @@
 QueryCraft의 핵심은 **비즈니스 시나리오 기반의 데이터 생성**과 **LLM을 활용한 문제 출제**가 결합된 아키텍처입니다.
 
 ### 1.1 Generation Pipeline
+
 1. **Business Profiles**: 이커머스, SaaS 등 산업별 표준 지표 정의 (`product_config.py`).
 2. **Synthetic Data Engine**: 확률적 사용자 행동 시뮬레이션 및 데이터 적재 (`data_generator_advanced.py`).
 3. **Anomaly Injection**: 의도적인 장애 상황(이상 패턴) 주입 (`anomaly_injector.py`).
@@ -16,11 +17,15 @@ QueryCraft의 핵심은 **비즈니스 시나리오 기반의 데이터 생성**
 5. **Double-Loop Validation**: AI가 생성한 SQL을 실제 DB에서 실행 검증 후 문제 확정.
 
 ### 1.2 핵심 기술 파일
+
 | 파일 | 역할 | 특징 |
 | :--- | :--- | :--- |
 | `data_generator_advanced.py` | 대량 데이터 생성 | `COPY` 명령어를 통한 고속 적재 지원 |
 | `anomaly_injector.py` | 시나리오 설계 | RCA 모드를 위한 구체적인 장애 도메인 주입 |
 | `problems/generator.py` | 문제 라이프사이클 | LLM 호출 및 SQL 유효성 실시간 검증 루프 |
+
+> [!TIP]
+> **Generator 상세 가이드**: 구현 예시와 검증 규칙은 [**GENERATOR_GUIDE.md**](./GENERATOR_GUIDE.md)를 참조하세요.
 
 ---
 
@@ -29,15 +34,18 @@ QueryCraft의 핵심은 **비즈니스 시나리오 기반의 데이터 생성**
 AI 기능을 통해 분석가에게 진화된 업무 환경을 제공합니다.
 
 ### 2.1 RCA (Root Cause Analysis) 시나리오
+
 - **컨셉**: 매출 급감 등 비즈니스 위기 상황을 SQL로 해결하는 시뮬레이션.
 - **AI 역할**: 매일 새로운 원인이 담긴 데이터 주입 및 단계별 힌트 생성.
 - **구현**: 사용자가 제출한 SQL과 답변 내용을 AI가 논리적/정량적으로 동시 평가.
 
 ### 2.2 Text-to-SQL & AI Insight
+
 - **Text-to-SQL**: 자연어 질문을 에디터 내에서 즉시 SQL 초안으로 변환.
 - **AI Insight**: 쿼리 결과 테이블을 분석하여 **Key Findings**, **Action Items**를 도출하는 리포트 자동 생성.
 
 ### 2.3 MCP (Model Context Protocol) 연동
+
 - **목표**: 외부 IDE(Cursor, Claude Desktop)가 QueryCraft의 DB 스키마와 문제 데이터에 직접 접근.
 - **Tool 스펙**: `get_schema`, `preview_data`, `execute_sql`, `submit_solution` 등 제공.
 
@@ -48,43 +56,40 @@ AI 기능을 통해 분석가에게 진화된 업무 환경을 제공합니다.
 QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 **Design Tokens** 시스템을 사용합니다. 모든 시각적 요소는 하드코딩된 값 대신 토큰화된 변수를 참조합니다.
 
 ### 3.1 토큰 카테고리
+
 - **Colors**: 브랜드 컬러 및 시맨틱 컬러(Success, Error 등) 정의. 다크/라이트 모드 대응 지원.
 - **Spacing**: 4px 베이스 유닛 기반의 `var(--space-*)` 활용.
 - **Typography**: 폰트 크기, 굵기, 자간을 관리하여 타이포그래피 일관성 유지.
 - **Radius/Breakpoints**: 컴포넌트 라운딩 및 반응형 레이아웃 토큰.
 
 ### 3.2 사용 규칙
+
 - **항상 토큰 사용**: CSS 작성 시 픽셀(`px`)이나 색상 코드(`#`)를 직접 사용하는 대신 `var(--token-name)`을 사용합니다.
 - **시맨틱 컬러 우선**: 특정 색상(예: `--neon-green`)보다 목적에 맞는 토큰(예: `--success-color`)을 우선 사용합니다.
-- **상세 명세**: [DESIGN_TOKENS_GUIDE.md](./DESIGN_TOKENS_GUIDE.md) (파일은 보존되거나 상세 참조용으로 관리)
+- **상세 명세**: [DESIGN_TOKENS_GUIDE.md](./DESIGN_TOKENS_GUIDE.md)
+- **컴포넌트 라이브러리**: Arcade UI Primitives의 상세 Props와 사용 예시는 [**UI_COMPONENTS_GUIDE.md**](./UI_COMPONENTS_GUIDE.md)를 참조하세요.
 
 ---
 
 ## 🚀 4. 인프라 배포 및 운영 가이드
 
 ### 4.1 상용 아키텍처 (GCP + Supabase)
+
 - **Frontend/Backend**: GCP Cloud Run (Docker 기반 서버리스).
 - **Database**: Supabase (PostgreSQL 15+).
 - **Scheduler**: GCP Cloud Scheduler → Cloud Run Worker 직접 트리거.
 - **CI/CD**: GitHub Actions를 통한 `main` 브랜치 자동 배포.
 
-### 3.2 필수 환경 변수
-
--   **Frontend/Backend**: GCP Cloud Run (Docker 기반 서버리스).
--   **Database**: Supabase (PostgreSQL 15+).
--   **Scheduler**: GCP Cloud Scheduler → Cloud Run Worker 직접 트리거.
--   **CI/CD**: GitHub Actions를 통한 `main` 브랜치 자동 배포.
-
 ### 4.2 필수 환경 변수
 
--   `POSTGRES_DSN`: Supabase 연결 URI (Connection Pooler 사용 필수).
--   `GEMINI_API_KEY`: Google Gemini Pro API Key.
--   `ENV`: `production` 또는 `development`.
+- **POSTGRES_DSN**: Supabase 연결 URI (Connection Pooler 사용 필수).
+- **GEMINI_API_KEY**: Google Gemini Pro API Key.
+- **ENV**: `production` 또는 `development`.
 
 ### 4.3 운영 노하우
 
--   **KST 보정**: 모든 날짜 계산은 `backend/common/date_utils.py`를 통해 한국 시간으로 처리.
--   **백필(Backfill)**: `worker/main.py --date YYYY-MM-DD` 인자를 통해 누락된 과거 데이터 생성 가능.
+- **KST 보정**: 모든 날짜 계산은 `backend/common/date_utils.py`를 통해 한국 시간으로 처리.
+- **백필(Backfill)**: `worker/main.py --date YYYY-MM-DD` 인자를 통해 누락된 과거 데이터 생성 가능.
 
 ---
 
@@ -92,11 +97,13 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 
 ### 5.1 Analytics Stack
 
--   **Mixpanel**: 주력 유저 행동 분석 (퍼널, 리텐션, 코호트).
--   **GA4**: 서비스 유입 및 기본 지표 모니터링.
+- **Mixpanel**: 주력 유저 행동 분석 (퍼널, 리텐션, 코호트).
+- **GA4**: 서비스 유입 및 기본 지표 모니터링.
 
 ### 5.2 핵심 트래킹 이벤트
-### 4.3 데이터 명명 규칙
+
+#### 데이터 명명 규칙
+
 - **Event**: Title Case (예: `Problem Solved`).
 - **Property**: Snake Case (예: `attempt_count`).
 
@@ -111,4 +118,5 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 - **로그인 시스템 안정성**: `login_attempts` 테이블을 통한 무차별 대입 공격 방어(Rate Limiting) 적용.
 
 ---
-*마지막 업데이트: 2026-01-18*
+
+**마지막 업데이트: 2026-01-18**
