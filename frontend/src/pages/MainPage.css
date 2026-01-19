@@ -606,14 +606,19 @@
 }
 
 .mode-arrow {
+    position: absolute;
+    right: var(--space-4);
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 1.2rem;
     color: var(--track-primary);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
 }
 
 .arcade-mode-card:hover .mode-arrow {
     opacity: 1;
+    transform: translateY(-50%) translateX(4px);
 }
 
 /* Future Lab 모드 카드 스타일 */
