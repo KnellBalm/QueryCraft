@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 import ScenarioPanel from '../components/ScenarioPanel';
 import './DailyChallenge.css';
 
@@ -56,25 +57,18 @@ const DailyChallenge: React.FC = () => {
     setError(null);
 
     try {
-      const endpoint = date 
-        ? `/api/daily/${date}`
-        : '/api/daily/latest';
-      
-      const response = await fetch(`http://localhost:15174${endpoint}`, {
-        credentials: 'include',
-      });
+      const endpoint = date
+        ? `/daily/${date}`
+        : '/daily/latest';
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Daily Challenge를 찾을 수 없습니다 (${date || '최신'})`);
-        }
-        throw new Error('데이터를 불러오는데 실패했습니다');
-      }
-
-      const data = await response.json();
-      setChallenge(data);
+      const response = await api.get(endpoint);
+      setChallenge(response.data);
     } catch (err: any) {
-      setError(err.message);
+      if (err.response?.status === 404) {
+        setError(`Daily Challenge를 찾을 수 없습니다 (${date || '최신'})`);
+      } else {
+        setError(err.message || '데이터를 불러오는데 실패했습니다');
+      }
     } finally {
       setLoading(false);
     }
@@ -130,7 +124,7 @@ const DailyChallenge: React.FC = () => {
           <h1>🗓️ Daily Challenge</h1>
           <span className="daily-date">{challenge.scenario.date}</span>
         </div>
-        <button 
+        <button
           className="toggle-scenario-btn"
           onClick={() => setShowScenario(!showScenario)}
         >
@@ -139,7 +133,7 @@ const DailyChallenge: React.FC = () => {
       </div>
 
       {showScenario && (
-        <ScenarioPanel 
+        <ScenarioPanel
           scenario={challenge.scenario}
           onClose={() => setShowScenario(false)}
         />
@@ -156,8 +150,8 @@ const DailyChallenge: React.FC = () => {
 
         <div className="problems-grid">
           {challenge.problems.map((problem, idx) => (
-            <div 
-              key={problem.problem_id} 
+            <div
+              key={problem.problem_id}
               className="problem-card"
               onClick={() => handleProblemClick(problem)}
             >
