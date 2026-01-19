@@ -330,13 +330,28 @@ async def generate_problems(request: GenerateProblemsRequest, admin=Depends(requ
 def run_full_generation_task(today: date):
     """백그라운드에서 전체 생성을 수행하는 데몬 함수"""
     from backend.common.logging import get_logger
+    import time
     logger = get_logger("backend.admin.generation")
     
-    results = []
-    errors = []
+    version_id = None
+    start_time = time.time()
     
     try:
         logger.info(f"Start background full generation for {today}")
+        
+        # 0. 초기 상태 기록
+        with postgres_connection() as pg:
+            res = pg.fetch_df(f"""
+                INSERT INTO public.dataset_versions 
+                (generation_date, generation_type, status, created_at)
+                VALUES ('{today}', 'full_unified', 'running', now())
+                RETURNING version_id
+            """)
+            if not res.empty:
+                version_id = int(res.iloc[0]['version_id'])
+        
+        results = []
+        errors = []
         
         # 1. 통합 데이터 생성
         try:
@@ -345,23 +360,46 @@ def run_full_generation_task(today: date):
             results.append("✓ 통합 데이터 생성 완료 (PA + Stream)")
         except Exception as e:
             errors.append(f"✗ 데이터 생성 실패: {str(e)}")
-            # logger.error(f"Data generation failed: {e}")
         
         # 2. 통합 문제 생성 (PA + Stream)
         from problems.generator import generate as gen_problems
+        p_count = 0
         with postgres_connection() as pg:
             for mode in ["pa", "stream"]:
                 try:
                     path = gen_problems(today, pg, mode=mode)
                     if path:
                         results.append(f"✓ {mode.upper()} 문제 생성 완료: {path}")
+                        # 문제 수 합산 (간이 방식)
+                        try:
+                            import json
+                            with open(path, 'r') as f:
+                                data = json.load(f)
+                                p_count += len(data.get('problems', []))
+                        except:
+                            pass
                     else:
                         errors.append(f"✗ {mode.upper()} 문제 생성 실패 (결과 없음)")
                 except Exception as e:
                     errors.append(f"✗ {mode.upper()} 문제 생성 오류: {str(e)}")
-                    # logger.error(f"Problem generation ({mode}) failed: {e}")
         
-        # 완료 로그
+        # 3. 최종 상태 업데이트
+        duration = int((time.time() - start_time) * 1000)
+        status = 'completed' if not errors else 'failed'
+        error_msg = "\n".join(errors) if errors else None
+        
+        if version_id:
+            with postgres_connection() as pg:
+                pg.execute(f"""
+                    UPDATE public.dataset_versions
+                    SET 
+                        status = '{status}',
+                        error_message = {f"'{error_msg}'" if error_msg else 'NULL'},
+                        duration_ms = {duration},
+                        problem_count = {p_count}
+                    WHERE version_id = {version_id}
+                """)
+        
         if not errors:
             logger.info(f"Full generation finished successfully for {today}")
         else:
@@ -369,6 +407,12 @@ def run_full_generation_task(today: date):
             
     except Exception as e:
         logger.critical(f"Unhandled error in generation task: {e}")
+        if version_id:
+            try:
+                with postgres_connection() as pg:
+                    pg.execute(f"UPDATE public.dataset_versions SET status = 'failed', error_message = '{str(e)}' WHERE version_id = {version_id}")
+            except:
+                pass
 
 
 @router.post("/trigger-now")
