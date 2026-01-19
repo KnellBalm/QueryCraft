@@ -112,36 +112,42 @@ function ArcadeModesCore() {
                     <div className="mode-content">
                         <span className="mode-icon">📅</span>
                         <div className="mode-info">
-                            <h3>오늘의 도전</h3>
+                            <div className="mode-title-row">
+                                <h3>오늘의 도전</h3>
+                                <span className="mode-badge">DAILY</span>
+                            </div>
                             <p>매일 새로운 PA 문제</p>
                         </div>
                     </div>
-                    <div className="mode-badge">DAILY</div>
                     <span className="mode-arrow">▶</span>
                 </Link>
-                
+
                 <Link to="/stream" className="arcade-mode-card mode-stream">
                     <div className="mode-content">
                         <span className="mode-icon">📡</span>
                         <div className="mode-info">
-                            <h3>스트림 분석</h3>
+                            <div className="mode-title-row">
+                                <h3>스트림 분석</h3>
+                                <span className="mode-badge">NEW</span>
+                            </div>
                             <p>실시간 이벤트 분석</p>
                         </div>
                     </div>
-                    <div className="mode-badge">NEW</div>
                     <span className="mode-arrow">▶</span>
                 </Link>
-                
+
                 <Link to="/practice" className="arcade-mode-card mode-practice">
                     <div className="mode-glow" />
                     <div className="mode-content">
                         <span className="mode-icon">♾️</span>
                         <div className="mode-info">
-                            <h3>연습장</h3>
+                            <div className="mode-title-row">
+                                <h3>연습장</h3>
+                                <span className="mode-badge">∞</span>
+                            </div>
                             <p>무제한 훈련</p>
                         </div>
                     </div>
-                    <div className="mode-badge">∞</div>
                     <span className="mode-arrow">▶</span>
                 </Link>
             </div>
@@ -162,39 +168,45 @@ function ArcadeModesFuture({ showToast }: { showToast: (msg: string, type: 'succ
                     <div className="mode-content">
                         <span className="mode-icon">🤖</span>
                         <div className="mode-info">
-                            <h3>AI 워크스페이스</h3>
+                            <div className="mode-title-row">
+                                <h3>AI 워크스페이스</h3>
+                                <span className="mode-badge">NEW</span>
+                            </div>
                             <p>에이전트 시뮬레이션</p>
                         </div>
                     </div>
-                    <div className="mode-badge">NEW</div>
                     <span className="mode-arrow">▶</span>
                 </Link>
-                
+
                 <Link to="/rca" className="arcade-mode-card mode-rca">
                     <div className="mode-glow" />
                     <div className="mode-content">
                         <span className="mode-icon">🔍</span>
                         <div className="mode-info">
-                            <h3>RCA 시뮬레이터</h3>
+                            <div className="mode-title-row">
+                                <h3>RCA 시뮬레이터</h3>
+                                <span className="mode-badge">BETA</span>
+                            </div>
                             <p>원인 분석 훈련</p>
                         </div>
                     </div>
-                    <div className="mode-badge">BETA</div>
                     <span className="mode-arrow">▶</span>
                 </Link>
-                
-                <div 
+
+                <div
                     className="arcade-mode-card mode-mcp disabled"
                     onClick={() => showToast('MCP Sandbox 준비 중입니다! 🧪', 'info')}
                 >
                     <div className="mode-content">
                         <span className="mode-icon">🧪</span>
                         <div className="mode-info">
-                            <h3>MCP 샌드박스</h3>
+                            <div className="mode-title-row">
+                                <h3>MCP 샌드박스</h3>
+                                <span className="mode-badge soon">SOON</span>
+                            </div>
                             <p>도구 빌딩</p>
                         </div>
                     </div>
-                    <div className="mode-badge soon">SOON</div>
                 </div>
             </div>
         </div>
@@ -334,26 +346,26 @@ export function MainPage() {
         <div className="main-page arcade-lobby" data-track={track}>
             {/* 비로그인 시 히어로 */}
             {!user && <LandingHero track={track} />}
-            
+
             {/* 메인 아케이드 레이아웃 */}
             <div className="arcade-container">
                 {/* 왼쪽: 리더보드 */}
                 <aside className="arcade-sidebar left">
                     <LeaderboardPanel leaderboard={leaderboard} currentUser={user} />
                 </aside>
-                
+
                 {/* 중앙: 프로필 + 모드 선택 */}
                 <main className="arcade-main">
                     {user && <PlayerCard user={user} stats={userStats} />}
                     {user && history.length > 0 && <ActivityStrip history={history} />}
-                    
+
                     {isCore ? (
                         <ArcadeModesCore />
                     ) : (
                         <ArcadeModesFuture showToast={showToast} />
                     )}
                 </main>
-                
+
                 {/* 오른쪽: 추천 문제 */}
                 <aside className="arcade-sidebar right">
                     <RecommendPanel problems={recommendedProblems} />
@@ -375,7 +387,7 @@ function LabIntroSection() {
                 <h2>🤖 QueryCraft AI LAB</h2>
                 <p>AI와 함께 더 빠르고 효율적으로 SQL 지식을 마스터하세요.</p>
             </div>
-            
+
             <div className="lab-features-grid">
                 <div className="lab-feature-card">
                     <div className="feature-icon">⌨️</div>

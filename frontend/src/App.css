@@ -808,42 +808,43 @@
   }
 
   .nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
   .nav a {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    /* 가독성 유지 */
     white-space: nowrap;
   }
 
   .user-stats {
-    gap: 0.3rem;
-    font-size: 0.75rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
   }
 
   .streak,
   .level,
   .correct {
-    padding: 0.2rem 0.4rem;
+    padding: 0.25rem 0.5rem;
   }
 
   .stats-link {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   .theme-toggle {
-    width: 30px;
-    height: 30px;
-    font-size: 0.9rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
   }
 
   .btn-mypage,
   .btn-admin {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
   }
 }
 
