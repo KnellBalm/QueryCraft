@@ -107,9 +107,20 @@ const DailyChallenge: React.FC = () => {
     return (
       <div className="daily-challenge-page">
         <div className="error-container">
-          <h2>⚠️ 오류</h2>
+          <h2>📅 Daily Challenge를 준비 중입니다</h2>
           <p>{error}</p>
-          <button onClick={() => navigate('/daily')}>최신 챌린지로 이동</button>
+          <p className="error-hint">매일 오전 10시(KST)에 새로운 Daily Challenge가 생성됩니다.</p>
+          <div className="error-buttons">
+            <button onClick={() => navigate('/pa')} className="btn-primary">
+              📊 PA 문제 풀기
+            </button>
+            <button onClick={() => navigate('/practice')} className="btn-secondary">
+              ♾️ 연습장으로 이동
+            </button>
+            <button onClick={() => window.location.reload()} className="btn-outline">
+              🔄 새로고침
+            </button>
+          </div>
         </div>
       </div>
     );
