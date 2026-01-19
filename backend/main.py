@@ -4,7 +4,7 @@ QueryCraft - FastAPI Backend
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.problems import router as problems_router
@@ -122,7 +122,6 @@ else:
 # 404 및 기타 에러 로깅 미들웨어
 @app.middleware("http")
 async def log_errors_middleware(request, call_next):
-    from fastapi import Request
     from starlette.responses import Response
     
     response = await call_next(request)
@@ -132,6 +131,30 @@ async def log_errors_middleware(request, call_next):
         logger = get_logger("backend.main.404")
         logger.warning(f"404 Not Found: {request.method} {request.url.path} (Referer: {request.headers.get('referer', 'N/A')})")
         
+    return response
+
+# API prefix rewrite middleware
+# 프론트엔드에서 /api prefix 없이 요청하는 경우(예: /auth/me) 자동으로 /api를 붙여서 처리
+@app.middleware("http")
+async def path_rewrite_middleware(request: Request, call_next):
+    path = request.url.path
+    # /api로 시작하지 않고, 알려진 prefix로 시작하는 경우 rewrite
+    # health 체크는 제외 (/health는 prefix 없이 사용)
+    prefixes = ["/auth", "/daily", "/sql", "/problems", "/stats", "/admin", "/practice"]
+
+    if not path.startswith("/api/"):
+        for prefix in prefixes:
+            if path.startswith(prefix + "/") or path == prefix:
+                new_path = "/api" + path
+                request.scope["path"] = new_path
+
+                # 디버깅용 로그 (필요시 활성화)
+                # from backend.common.logging import get_logger
+                # logger = get_logger("backend.main.rewrite")
+                # logger.debug(f"Path rewritten: {path} -> {new_path}")
+                break
+
+    response = await call_next(request)
     return response
 
 # 라우터 등록 (순서 중요: /problems/recommend 보다 먼저 등록)
