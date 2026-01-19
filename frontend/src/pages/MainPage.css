@@ -108,7 +108,7 @@
     max-width: var(--breakpoint-2xl);
     margin: 0 auto;
     padding: var(--space-8);
-    min-height: calc(100vh - 160px);
+    /* min-height 제거 - 콘텐츠 크기에 맞춤 */
 }
 
 @media (max-width: 1200px) {
@@ -679,8 +679,8 @@
 .lab-features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 4rem;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .lab-feature-card {
