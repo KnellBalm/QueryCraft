@@ -70,6 +70,51 @@ AI가 코드를 짜는 시대, 분석가의 가치는 **'어떻게 짜는가'**�
 
 ---
 
+## 🔄 Integrated Daily Lifecycle
+
+QueryCraft는 매일 새로운 비즈니스 환경을 자동으로 구축하여 분석가에게 제공합니다.
+
+```mermaid
+sequenceDiagram
+    participant S as Cloud Scheduler (GCP)
+    participant A as Admin API (/trigger-now)
+    participant D as Data Engine (Synthetic Data)
+    participant G as Problem Generator (Gemini AI)
+    participant DB as Postgres/DuckDB
+
+    S->>A: ⏰ 매일 정해진 시간 호출
+    A->>D: 1. 데이터 생성 시작
+    D->>D: 무작위 산업군 선택 (e.g. Fintech)
+    D->>DB: PostgreSQL/DuckDB에 로그 적재
+    A->>G: 2. 전용 문제 생성 시작
+    G->>DB: 데이터 요약/스키마 정보 읽기
+    G->>G: Gemini API 호출 (Custom Prompt)
+    G->>DB: 정답 SQL 검증 및 문제 저장
+    A-->>S: ✅ 생성 완료 보고
+```
+
+### 1단계: 트리거 및 산업군 선정 (Selection)
+- **GCP Cloud Scheduler**가 백엔드의 `/api/admin/trigger-now` 엔드포인트를 호출합니다.
+- 데이터 생성 엔진(`data_generator_advanced.py`)이 동작하며, 오늘 하루 동안 모든 유저가 함께 분석할 **산업군(Product Type)**을 무작위로 선택합니다. (예: 월요일-커머스, 화요일-핀테크...)
+
+### 2단계: 가상 데이터 적재 (Synthetic Data)
+- 선택된 산업군에 맞는 시나리오로 사용자들의 가상 행동 로그를 생성합니다.
+- **PostgreSQL**: 서비스 메인 데이터 (유저, 주문, 장바구니 등 PA용)
+- **DuckDB/Parquet**: 대용량 실시간 이벤트 데이터 (Stream 분석용)
+- 이 과정에서 의도적인 **이상 징후(Anomaly)**가 주입되어 나중에 사용자가 RCA(원인 분석) 문제로 풀게 됩니다.
+
+### 3단계: AI 문제 생성 (Double-Loop Generation)
+- `problems/generator.py`가 실행됩니다.
+- **Prompting**: `prompt.py`는 현재 DB에 쌓인 데이터의 통계(가입자 수, 날짜 범위 등)를 요약하여 Gemini에게 전달합니다. (예: "오늘 핀테크 데이터가 1만 건 있으니, 송금 실패와 관련된 문제를 내줘.")
+- **Validation**: Gemini가 문제를 보내주면, 백엔드는 즉시 그 `answer_sql`을 실제 DB에서 실행해 봅니다. 결과가 잘 나오면 '검증된 문제'로 확정합니다.
+
+### 4단계: 유저 인터페이스 접속 (User UX)
+- 유저가 접속하면 `MainPage.tsx`가 오늘의 메타데이터를 가져옵니다.
+- 화면에는 **"오늘의 산업: 핀테크(Fintech)"**와 같은 정보가 표시됩니다.
+- 유저는 **Workspace**로 접근하여, AI가 방금 따끈따끈하게 만들어낸 문제를 풀며 실무 감각을 익히게 됩니다.
+
+---
+
 ## 🏗️ Technical Excellence
 
 QueryCraft는 최고의 기술적 완성도를 통해 전문적인 분석 환경을 구현합니다.

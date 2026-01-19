@@ -67,8 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const res = await api.post('/auth/login', { email, password });
             if (res.data.success) {
-                // 로그인 성공 후 /auth/me에서 is_admin 포함 전체 정보 조회
-                await refreshUser();
+                // 로그인 성공 시 응답에 포함된 기본 정보를 먼저 설정하여 'null' 상태 공백 방지
+                if (res.data.user) {
+                    setUser(res.data.user);
+                }
+
+                // 세션 쿠키가 브라우저에 확실히 반영되도록 아주 짧은 지연 후 리프레시
+                setTimeout(async () => {
+                    try {
+                        await refreshUser();
+                    } catch (e) {
+                        console.error("Auth: Failed to fetch full user info after login", e);
+                        // 이미 setUser를 했으므로 null로 만들지 않고 유지
+                    }
+                }, 100);
+
                 // 로그인 성공 이벤트 트래킹
                 analytics.loginSuccess(res.data.user?.id || email, 'email');
                 return { success: true };

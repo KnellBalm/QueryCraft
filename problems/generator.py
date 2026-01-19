@@ -189,53 +189,96 @@ def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_ty
             logger.error(f"Failed to save problem {p.get('problem_id')} to DB: {e}")
 
 
+def ensure_dir(path: Path):
+    """디렉토리가 존재하는지 확인하고 없으면 생성"""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logger.error(f"Failed to create directory {path}: {e}")
+
+
 def generate(today: date, pg: PostgresEngine, mode: str = "pa") -> str:
-    """문제 세트 생성 - 월별 JSON에 누적 + DB 저장"""
-    logger.info(f"start generating {NUM_PROBLEM_SETS} {mode.upper()} problem sets for {today}")
+    """
+    문제 세트 생성 - 월별 JSON에 누적 + DB 저장 (통합 generator)
+
+    Args:
+        today: 생성 날짜
+        pg: PostgreSQL Engine
+        mode: "pa" (2세트=12문제) | "stream" (1세트=6문제) | "rca" (1세트=6문제)
+
+    Returns:
+        생성된 월별 파일 경로
+    """
+    # Cloud Run 환경 확인 (휘발성 파일 시스템 대응)
+    is_cloud_run = os.environ.get("K_SERVICE") is not None
     
+    # Mode별 세트 수 결정
+    num_sets = 2 if mode == "pa" else 1
+
+    logger.info(f"start generating {num_sets} {mode.upper()} problem set(s) for {today}")
+
     month_str = today.strftime("%Y-%m")
-    # 파일명에 모드 포함
     path = PROBLEM_DIR / f"{mode}_{month_str}.json"
-    
+    ensure_dir(PROBLEM_DIR)
+
+    monthly_data = {"month": month_str, "data_type": mode, "problems": []}
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            monthly_data = json.load(f)
-    else:
-        monthly_data = {"month": month_str, "data_type": mode, "problems": []}
-    
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+                if content.strip():
+                    monthly_data = json.loads(content)
+        except Exception as e:
+            logger.warning(f"Failed to load existing monthly file {path}: {e}")
+
     all_problems = []
-    for set_idx in range(NUM_PROBLEM_SETS):
+    for set_idx in range(num_sets):
         try:
             problems = generate_single_set(today, pg, set_idx, mode=mode)
-            all_problems.extend(problems)
+            if problems:
+                all_problems.extend(problems)
         except Exception as e:
             logger.error(f"Failed to generate {mode} set {set_idx}: {e}")
-    
+
     if not all_problems:
+        logger.error(f"No problems generated for {mode} on {today}. AI might have failed.")
         return ""
 
-    # 1. DB 저장
-    save_problems_to_db(pg, all_problems, today, mode)
-    
+    # 1. DB 저장 (Primary Source - 필수)
+    try:
+        save_problems_to_db(pg, all_problems, today, mode)
+    except Exception as e:
+        logger.error(f"CRITICAL: Failed to save problems to DB: {e}")
+        # DB 저장이 실패하면 로직을 계속 진행하되 에러를 남김 (파일이라도 남기기 위해)
+
+    # Cloud Run 환경이면 파일 저장은 옵션 (실패해도 중단하지 않음)
+    def safe_save_json(target_path: Path, data: any):
+        try:
+            ensure_dir(target_path.parent)
+            with open(target_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.info(f"Successfully saved to {target_path}")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to save file to {target_path}: {e}")
+            return False
+
     # 2. 월별 파일에 추가
     monthly_data["problems"].extend(all_problems)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(monthly_data, f, ensure_ascii=False, indent=2)
-    
+    safe_save_json(path, monthly_data)
+
     # 3. 기존 daily 폴더 호환
     daily_filename = f"{mode}_{today}.json" if mode != "pa" else f"{today}.json"
     daily_path = Path("problems/daily") / daily_filename
-    with open(daily_path, "w", encoding="utf-8") as f:
-        json.dump(all_problems, f, ensure_ascii=False, indent=2)
-    
+    safe_save_json(daily_path, all_problems)
+
     # 4. 세트별 파일 저장
-    for set_idx in range(NUM_PROBLEM_SETS):
+    for set_idx in range(num_sets):
         set_problems = [p for p in all_problems if p.get("set_index") == set_idx]
         if set_problems:
             set_filename = f"{mode}_{today}_set{set_idx}.json" if mode != "pa" else f"{today}_set{set_idx}.json"
             set_path = Path("problems/daily") / set_filename
-            with open(set_path, "w", encoding="utf-8") as f:
-                json.dump(set_problems, f, ensure_ascii=False, indent=2)
-    
-    logger.info(f"generated and saved {len(all_problems)} {mode} problems for {today}")
+            safe_save_json(set_path, set_problems)
+
+    logger.info(f"✅ Generated and saved {len(all_problems)} {mode} problems for {today}")
     return str(path)

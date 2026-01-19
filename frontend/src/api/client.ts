@@ -36,7 +36,7 @@ export const problemsApi = {
 
     schema: (dataType: string) =>
         api.get(`/problems/schema/${dataType}`),
-    
+
     recommend: (limit: number = 3) =>
         api.get('/problems/recommend', { params: { limit } }),
 };
@@ -60,12 +60,12 @@ export const sqlApi = {
 
     // AI 도움 기능 (Daily 문제용, 문제당 1회)
     aiHelp: (problemId: string, helpType: 'hint' | 'solution', currentSql: string = '', attemptCount: number = 0, dataType: string = 'pa') =>
-        api.post('/sql/ai-help', { 
-            problem_id: problemId, 
-            help_type: helpType, 
+        api.post('/sql/ai-help', {
+            problem_id: problemId,
+            help_type: helpType,
             current_sql: currentSql,
             attempt_count: attemptCount,
-            data_type: dataType 
+            data_type: dataType
         }),
 };
 
@@ -105,6 +105,7 @@ export const adminApi = {
     getProblemFiles: () => api.get('/admin/problem-files'),
     // 스케줄러 수동 실행
     runSchedulerJob: (jobType: string) => api.post('/admin/run-scheduler-job', null, { params: { job_type: jobType } }),
+    triggerNow: () => api.post('/admin/trigger-now'),
 };
 
 // 인증 API
@@ -115,7 +116,7 @@ export const authApi = {
     googleLogin: () => `${API_BASE}/auth/google/login`,
     kakaoLogin: () => `${API_BASE}/auth/kakao/login`,
     deleteAccount: () => api.delete('/auth/account'),
-    changePassword: (currentPassword: string, newPassword: string) => 
+    changePassword: (currentPassword: string, newPassword: string) =>
         api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
 };
 

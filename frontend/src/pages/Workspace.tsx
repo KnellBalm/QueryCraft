@@ -1,5 +1,6 @@
 // frontend/src/pages/Workspace.tsx
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { SQLEditor } from '../components/SQLEditor';
 import { TableSchema } from '../components/TableSchema';
 import { InsightModal } from '../components/InsightModal';
@@ -13,10 +14,13 @@ import type { Problem, TableSchema as Schema, SQLExecuteResponse, SubmitResponse
 import './Workspace.css';
 
 interface WorkspaceProps {
-    dataType: 'pa' | 'stream' | 'rca';
+    dataType?: 'pa' | 'stream' | 'rca';
 }
 
-export function Workspace({ dataType }: WorkspaceProps) {
+export function Workspace({ dataType: propDataType }: WorkspaceProps) {
+    const { dataType: paramDataType } = useParams<{ dataType: any }>();
+    const dataType = (propDataType || paramDataType || 'pa') as 'pa' | 'stream' | 'rca';
+
     const [problems, setProblems] = useState<Problem[]>([]);
     const [isFetching, setIsFetching] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -37,8 +41,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
     const [translating, setTranslating] = useState(false);
 
     // AI 도움 기능 (Daily 문제용)
-    const [aiHelpUsed, setAiHelpUsed] = useState<{[problemId: string]: boolean}>({});
-    const [aiHelpResult, setAiHelpResult] = useState<{type: string; content: string} | null>(null);
+    const [aiHelpUsed, setAiHelpUsed] = useState<{ [problemId: string]: boolean }>({});
+    const [aiHelpResult, setAiHelpResult] = useState<{ type: string; content: string } | null>(null);
     const [aiHelpLoading, setAiHelpLoading] = useState(false);
     const [showAiHelpMenu, setShowAiHelpMenu] = useState(false);
 
@@ -82,8 +86,8 @@ export function Workspace({ dataType }: WorkspaceProps) {
 
     // Analytics: 페이지 로드 및 문제 선택 추적
     useEffect(() => {
-        const pagePath = dataType === 'pa' ? '/pa-practice' : 
-                         dataType === 'stream' ? '/stream-practice' : '/rca-practice';
+        const pagePath = dataType === 'pa' ? '/pa-practice' :
+            dataType === 'stream' ? '/stream-practice' : '/rca-practice';
         analytics.pageView(pagePath, { data_type: dataType });
     }, [dataType]);
 
@@ -367,7 +371,7 @@ export function Workspace({ dataType }: WorkspaceProps) {
                         <div className="spacer" />
                         {/* AI 도움 버튼 (문제당 1회) */}
                         <div className="ai-help-container" style={{ position: 'relative' }}>
-                            <button 
+                            <button
                                 onClick={() => setShowAiHelpMenu(!showAiHelpMenu)}
                                 disabled={aiHelpLoading || !selectedProblem || (selectedProblem && aiHelpUsed[selectedProblem.problem_id])}
                                 className="btn-ai-help"

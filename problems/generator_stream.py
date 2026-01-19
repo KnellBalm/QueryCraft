@@ -1,6 +1,18 @@
 # problems/generator_stream.py
-"""Stream 문제 생성기 - 월별 JSON + 정답 통합"""
+"""
+[DEPRECATED] Stream 문제 생성기 - 월별 JSON + 정답 통합
+
+⚠️ 이 파일은 통합 generator 아키텍처로 대체되었습니다.
+새로운 코드에서는 problems.generator.generate(mode="stream")를 사용하세요.
+
+마이그레이션 가이드:
+  기존: problems.generator_stream.generate_stream_problems(today, pg)
+  신규: problems.generator.generate(today, pg, mode="stream")
+
+이 파일은 하위 호환성을 위해 유지되며, 향후 버전에서 제거될 예정입니다.
+"""
 from __future__ import annotations
+import warnings
 
 import json
 import os
@@ -236,7 +248,18 @@ def save_problems_to_db(pg: PostgresEngine, problems: list, today: date, data_ty
 
 
 def generate_stream_problems(target_date: date, pg: PostgresEngine) -> str:
-    """Stream 문제 생성 - 월별 JSON에 누적 + DB 저장"""
+    """
+    [DEPRECATED] Stream 문제 생성 - 월별 JSON에 누적 + DB 저장
+
+    이 함수는 deprecated되었습니다. problems.generator.generate(mode="stream")를 사용하세요.
+    """
+    warnings.warn(
+        "generator_stream.generate_stream_problems()는 deprecated되었습니다. "
+        "problems.generator.generate(mode='stream')를 사용하세요.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    logger.warning("[DEPRECATED] generate_stream_problems() 호출됨. 통합 generator로 마이그레이션하세요.")
     logger.info("generating stream problems for %s", target_date)
     
     month_str = target_date.strftime("%Y-%m")

@@ -277,263 +277,98 @@ async def get_system_status(admin=Depends(require_admin)):
 
 @router.post("/generate-problems", response_model=GenerateProblemsResponse)
 async def generate_problems(request: GenerateProblemsRequest, admin=Depends(require_admin)):
-    """문제 생성 (PA 또는 Stream)"""
+    """문제 생성 (PA, Stream, RCA 통합 지원)"""
     today = get_today_kst()
+    mode = request.data_type
     
-    if request.data_type in ["pa", "rca"]:
-        try:
-            from problems.generator import generate as gen_problems
-            mode = request.data_type
-            
-            with postgres_connection() as pg:
+    try:
+        from problems.generator import generate as gen_problems
+        
+        with postgres_connection() as pg:
+            # Rca는 추가 파라미터(product_type)가 필요할 수 있음
+            if mode == "rca":
+                # request에 product_type이 있으면 사용, 없으면 Commerce 기본
+                p_type = getattr(request, 'product_type', 'commerce')
+                path = gen_problems(today, pg, mode=mode, product_type=p_type)
+            else:
                 path = gen_problems(today, pg, mode=mode)
-            
-            # 생성된 문제 수 확인
-            import json
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-                # 월별 파일일 경우 전체가 아닌 방금 생성된 문제만 세는 것이 정확하지만, 
-                # 일단 파일 시스템 구조상 daily/_today.json을 확인하는 것이 더 빠를 수 있음
-                import os
-                daily_filename = f"{mode}_{today}.json" if mode != "pa" else f"{today}.json"
-                daily_path = os.path.join("problems/daily", daily_filename)
-                if os.path.exists(daily_path):
-                    with open(daily_path, encoding="utf-8") as df:
-                        problems = json.load(df)
-                        p_count = len(problems)
-                else:
-                    problems = data.get("problems", []) if isinstance(data, dict) else data
-                    p_count = len(problems)
-            
-            return GenerateProblemsResponse(
-                success=True,
-                message=f"{mode.upper()} 문제 생성 완료",
-                path=path,
-                problem_count=p_count
-            )
-        except Exception as e:
+        
+        if not path:
             return GenerateProblemsResponse(
                 success=False,
-                message=f"{request.data_type.upper()} 문제 생성 실패: {str(e)}"
+                message=f"{mode.upper()} 문제 생성 실패 (AI 응답 없음)",
+                path="",
+                problem_count=0
             )
-    
-    elif request.data_type == "stream":
+
+        # 생성된 문제 수 확인
+        p_count = 0
         try:
-            from problems.generator_stream import generate_stream_problems
-            
-            with postgres_connection() as pg:
-                path = generate_stream_problems(today, pg)
-            
             import json
-            with open(path, encoding="utf-8") as f:
-                problems = json.load(f)
-            
-            return GenerateProblemsResponse(
-                success=True,
-                message="Stream 문제 생성 완료",
-                path=path,
-                problem_count=len(problems)
-            )
-        except Exception as e:
-            return GenerateProblemsResponse(
-                success=False,
-                message=f"Stream 문제 생성 실패: {str(e)}"
-            )
-    
-    else:
+            daily_filename = f"{mode}_{today}.json" if mode != "pa" else f"{today}.json"
+            daily_path = os.path.join("problems/daily", daily_filename)
+            if os.path.exists(daily_path):
+                with open(daily_path, encoding="utf-8") as f:
+                    data = json.load(f)
+                    p_count = len(data)
+        except:
+            pass
+
+        return GenerateProblemsResponse(
+            success=True,
+            message=f"{mode.upper()} 문제 생성 완료",
+            path=path,
+            problem_count=p_count
+        )
+    except Exception as e:
         return GenerateProblemsResponse(
             success=False,
-            message="지원하지 않는 data_type입니다."
+            message=f"{mode.upper()} 문제 생성 오류: {str(e)}"
         )
-
-
-@router.post("/trigger-rca", response_model=GenerateProblemsResponse)
-async def trigger_rca(request: TriggerRCARequest, admin=Depends(require_admin)):
-    """RCA 시나리오 수동 트리거 (이상 데이터 주입 + 문제 생성)"""
-    from backend.common.logging import get_logger
-    logger = get_logger(__name__)
-    today = get_today_kst()
-    
-    try:
-        from backend.generator.anomaly_injector import inject_random_anomaly, AnomalyType
-        from backend.generator.data_generator_advanced import PRODUCT_PROFILES
-        
-        # 1. 이상 패턴 주입
-        p_type = request.product_type or "commerce"
-        if p_type not in PRODUCT_PROFILES:
-            return GenerateProblemsResponse(success=False, message=f"지원하지 않는 product_type: {p_type}")
-        
-        a_type = None
-        if request.anomaly_type:
-            try:
-                a_type = AnomalyType(request.anomaly_type)
-            except ValueError:
-                return GenerateProblemsResponse(success=False, message=f"지원하지 않는 anomaly_type: {request.anomaly_type}")
-        
-        logger.info(f"[RCA] Triggering anomaly injection: product={p_type}, type={a_type}")
-        with postgres_connection() as pg:
-            anomaly_info = inject_random_anomaly(pg, p_type, force_type=a_type)
-            
-            if not anomaly_info:
-                return GenerateProblemsResponse(success=False, message="이상 패턴 주입 실패")
-            
-            # 2. RCA 문제 생성 (주입된 메타데이터를 프롬프트가 참조함)
-            from problems.generator import generate as gen_problems
-            path = gen_problems(today, pg, mode="rca", product_type=p_type)
-            
-            # 생성된 문제 수 확인
-            import json
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-                problems = data.get("problems", []) if isinstance(data, dict) else data
-                p_count = len(problems)
-            
-            return GenerateProblemsResponse(
-                success=True,
-                message=f"RCA 트리거 완료: {anomaly_info['type']} 주입 및 문제 {p_count}개 생성",
-                path=path,
-                problem_count=p_count
-            )
-            
-    except Exception as e:
-        logger.error(f"[RCA] Trigger failed: {e}")
-        return GenerateProblemsResponse(success=False, message=f"RCA 트리거 실패: {str(e)}")
-
-
-@router.post("/refresh-data", response_model=RefreshDataResponse)
-async def refresh_data(request: RefreshDataRequest, admin=Depends(require_admin)):
-    """데이터 갱신"""
-    try:
-        from backend.generator.data_generator_advanced import generate_data
-        
-        if request.data_type == "pa":
-            generate_data(modes=("pa",))
-            return RefreshDataResponse(success=True, message="PA 데이터 갱신 완료")
-        elif request.data_type == "stream":
-            generate_data(modes=("stream",))
-            return RefreshDataResponse(success=True, message="Stream 데이터 갱신 완료")
-        else:
-            return RefreshDataResponse(success=False, message="잘못된 data_type")
-    except Exception as e:
-        return RefreshDataResponse(success=False, message=f"데이터 갱신 실패: {str(e)}")
-
-
-
-
-
-
-@router.post("/initial-setup")
-async def initial_setup(admin=Depends(require_admin)):
-    """초기 데이터 셋업 (PA + Stream 데이터 및 문제 생성)"""
-    results = []
-    errors = []
-    
-    try:
-        # 1. PA 데이터 생성
-        try:
-            from backend.generator.data_generator_advanced import generate_data
-            generate_data(modes=("pa",))
-            results.append("✓ PA 데이터 생성 완료")
-        except Exception as e:
-            errors.append(f"✗ PA 데이터 생성 실패: {str(e)}")
-        
-        # 2. Stream 데이터 생성
-        try:
-            from backend.generator.data_generator_advanced import generate_data
-            generate_data(modes=("stream",))
-            results.append("✓ Stream 데이터 생성 완료")
-        except Exception as e:
-            errors.append(f"✗ Stream 데이터 생성 실패: {str(e)}")
-        
-        # 3. PA 문제 생성
-        try:
-            from problems.generator import generate as gen_problems
-            with postgres_connection() as pg:
-                path = gen_problems(get_today_kst(), pg)
-            results.append(f"✓ PA 문제 생성 완료: {path}")
-        except Exception as e:
-            errors.append(f"✗ PA 문제 생성 실패: {str(e)}")
-        
-        # 4. Stream 문제 생성
-        try:
-            from problems.generator_stream import generate_stream_problems
-            with postgres_connection() as pg:
-                path = generate_stream_problems(get_today_kst(), pg)
-            results.append(f"✓ Stream 문제 생성 완료: {path}")
-        except Exception as e:
-            errors.append(f"✗ Stream 문제 생성 실패: {str(e)}")
-        
-        db_log(
-            category=LogCategory.SYSTEM,
-            message=f"Initial setup completed. Success: {len(results)}, Errors: {len(errors)}",
-            level=LogLevel.INFO if not errors else LogLevel.WARNING,
-            source="admin"
-        )
-        
-        return {
-            "success": len(errors) == 0,
-            "results": results,
-            "errors": errors,
-            "message": f"{len(results)}개 작업 완료, {len(errors)}개 실패"
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "results": results,
-            "errors": errors + [f"Unexpected error: {str(e)}"],
-            "message": "초기화 중 오류 발생"
-        }
 
 
 @router.post("/trigger-now")
 async def trigger_generation_now(admin=Depends(require_admin)):
-    """즉시 문제/데이터 생성 실행 (스케줄러 수동 트리거)"""
+    """즉시 통합 생성 실행 (데이터 + PA + Stream 문제)"""
     results = []
     errors = []
-    
-    from datetime import date
     today = get_today_kst()
     
     try:
-        # 1. 데이터 생성 (PA + Stream)
+        # 1. 통합 데이터 생성
         try:
             from backend.generator.data_generator_advanced import generate_data
             generate_data(modes=("pa", "stream"))
-            results.append("✓ PA/Stream 데이터 생성 완료")
+            results.append("✓ 통합 데이터 생성 완료 (PA + Stream)")
         except Exception as e:
             errors.append(f"✗ 데이터 생성 실패: {str(e)}")
         
-        # 2. PA 문제 생성
-        try:
-            from problems.generator import generate as gen_pa
-            with postgres_connection() as pg:
-                path = gen_pa(today, pg)
-            results.append(f"✓ PA 문제 생성 완료: {path}")
-        except Exception as e:
-            errors.append(f"✗ PA 문제 생성 실패: {str(e)}")
-        
-        # 3. Stream 문제 생성
-        try:
-            from problems.generator_stream import generate_stream_problems
-            with duckdb_connection() as duck:
-                path = generate_stream_problems(target_date=today, duck=duck)
-            results.append(f"✓ Stream 문제 생성 완료: {path}")
-        except Exception as e:
-            errors.append(f"✗ Stream 문제 생성 실패: {str(e)}")
+        # 2. 통합 문제 생성 (PA + Stream)
+        from problems.generator import generate as gen_problems
+        with postgres_connection() as pg:
+            for mode in ["pa", "stream"]:
+                try:
+                    path = gen_problems(today, pg, mode=mode)
+                    if path:
+                        results.append(f"✓ {mode.upper()} 문제 생성 완료: {path}")
+                    else:
+                        errors.append(f"✗ {mode.upper()} 문제 생성 실패 (결과 없음)")
+                except Exception as e:
+                    errors.append(f"✗ {mode.upper()} 문제 생성 오류: {str(e)}")
         
         return {
             "success": len(errors) == 0,
             "date": today.isoformat(),
             "results": results,
             "errors": errors,
-            "message": f"완료 ({len(results)}개 성공, {len(errors)}개 실패)"
+            "message": f"통합 생성 완료 ({len(results)}개 성공, {len(errors)}개 실패)"
         }
     except Exception as e:
         return {
             "success": False,
             "results": results,
             "errors": errors + [str(e)],
-            "message": "예기치 않은 오류"
+            "message": "통합 생성 중 알 수 없는 오류"
         }
 
 @router.get("/dataset-versions")
@@ -1003,21 +838,21 @@ async def trigger_daily_generation(request: Request):
         except Exception as e:
             logger.warning(f"[TRIGGER] Data gen error: {e}")
         
-        # 2. PA 문제 생성
+        # 2. PA 문제 생성 (통합 generator 사용)
         try:
-            from problems.generator import generate as gen_pa
-            gen_pa(today, pg)
+            from problems.generator import generate
+            generate(today, pg, mode="pa")  # 2세트 = 12문제
             results["pa_problems"] = True
-            logger.info("[TRIGGER] PA problems generated")
+            logger.info("[TRIGGER] PA problems generated (unified generator)")
         except Exception as e:
             logger.warning(f"[TRIGGER] PA problem gen error: {e}")
-        
-        # 3. Stream 문제 생성
+
+        # 3. Stream 문제 생성 (통합 generator 사용)
         try:
-            from problems.generator_stream import generate_stream_problems
-            generate_stream_problems(today, pg)
+            from problems.generator import generate
+            generate(today, pg, mode="stream")  # 1세트 = 6문제
             results["stream_problems"] = True
-            logger.info("[TRIGGER] Stream problems generated")
+            logger.info("[TRIGGER] Stream problems generated (unified generator)")
         except Exception as e:
             logger.warning(f"[TRIGGER] Stream problem gen error: {e}")
         

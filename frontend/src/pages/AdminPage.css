@@ -1,143 +1,126 @@
 /* frontend/src/pages/AdminPage.css */
 
-.admin-page {
+.admin-page-container {
   padding: 2rem;
-  color: var(--text-primary);
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 80px);
 }
 
-.admin-page h1 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-  color: var(--text-primary);
+/* Header & Tabs */
+.admin-header {
+  margin-bottom: 2.5rem;
 }
 
-.admin-section {
-  background: var(--bg-primary);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--card-shadow);
+.admin-title h1 {
+  font-size: 2.2rem;
+  margin: 0;
+  background: linear-gradient(to right, var(--text-primary), var(--accent-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.admin-title p {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  background: var(--bg-secondary);
+  padding: 0.4rem;
+  border-radius: 12px;
+  width: fit-content;
   border: 1px solid var(--border-color);
 }
 
-.admin-section h2 {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  color: var(--text-primary);
-}
-
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.status-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  color: var(--text-primary);
-}
-
-.status-item span:first-child {
-  color: var(--text-secondary);
-}
-
-.status-item .ok {
-  color: var(--success-color);
-}
-
-.status-item .error {
-  color: var(--error-color);
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.action-buttons button {
-  padding: 0.75rem 1.25rem;
+.admin-tabs button {
+  padding: 0.6rem 1.2rem;
   border: none;
-  border-radius: 6px;
-  background: var(--accent-color);
-  color: #fff;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.action-buttons button:hover {
-  background: var(--accent-hover);
+.admin-tabs button:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.action-buttons button:disabled {
-  background: var(--text-muted);
-  cursor: not-allowed;
-}
-
-.message {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: rgba(99, 102, 241, 0.15);
-  border-radius: 4px;
+.admin-tabs button.active {
+  background: var(--bg-primary);
   color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Content Area */
+.admin-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Table Utilities (Overriding global if needed) */
 .admin-table {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.admin-table th,
-.admin-table td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .admin-table th {
   background: var(--bg-tertiary);
-  font-weight: 600;
   color: var(--text-secondary);
+  font-weight: 600;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.problems-status {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--bg-tertiary);
+  vertical-align: middle;
 }
 
-.difficulty-breakdown {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
+.admin-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  display: inline-block;
+/* Specific Component Styles */
+.status-item-compact {
+  transition: transform 0.2s;
 }
 
-.badge-easy {
-  background: rgba(76, 175, 80, 0.2);
-  color: var(--success-color);
+.status-item-compact:hover {
+  transform: translateX(4px);
 }
 
-.badge-medium {
-  background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
+.full-gen-btn {
+  background: linear-gradient(45deg, var(--accent-color), #818cf8) !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  border: none !important;
 }
 
-.badge-hard {
-  background: rgba(244, 67, 54, 0.2);
-  color: var(--error-color);
+.full-gen-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
 }

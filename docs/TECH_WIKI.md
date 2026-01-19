@@ -16,13 +16,48 @@ QueryCraft의 핵심은 **비즈니스 시나리오 기반의 데이터 생성**
 4. **Context-Aware Prompting**: 스키마와 이상 정보를 결합하여 Gemini Pro에 전달.
 5. **Double-Loop Validation**: AI가 생성한 SQL을 실제 DB에서 실행 검증 후 문제 확정.
 
-### 1.2 핵심 기술 파일
+### 1.2 통합 Generator 아키텍처 (2026-01-19 구축)
+
+**단일 엔트리 포인트**를 통해 PA, Stream, RCA 모든 문제 타입을 생성하는 통합 아키텍처입니다.
+
+**호출 인터페이스**:
+```python
+from problems.generator import generate
+
+# PA: 2세트(12문제) 생성
+generate(today, pg, mode="pa")
+
+# Stream: 1세트(6문제) 생성
+generate(today, pg, mode="stream")
+
+# RCA: 1세트(6문제) 생성
+generate(today, pg, mode="rca")
+```
+
+**내부 흐름**:
+1. `prompt.py::build_prompt(mode)` 호출 → mode별 프롬프트 자동 선택
+   - `mode="pa"` → `build_pa_prompt()`
+   - `mode="stream"` → `build_stream_prompt()` (새로 추가)
+   - `mode="rca"` → `build_rca_prompt()`
+2. Gemini API 호출하여 6개 문제 생성
+3. 각 문제의 answer_sql 실행하여 expected_result 생성
+4. **PostgreSQL DB 저장 (Primary Source)**
+5. 파일 저장 (백업/로컬 개발용, 실패해도 중단하지 않음)
+
+**안정성 강화**:
+- **Cloud Run 대응**: `K_SERVICE` 환경 변수로 Cloud Run 감지, DB-first 모드
+- **Graceful Degradation**: 파일 저장 실패 시 warning 처리, 데이터 손실 방지
+- **에러 원천 차단**: `ensure_dir()`, `safe_save_json()` 헬퍼 함수로 파일 시스템 에러 방지
+
+### 1.3 핵심 기술 파일
 
 | 파일 | 역할 | 특징 |
 | :--- | :--- | :--- |
+| `problems/generator.py` | **통합 문제 생성기** | PA/Stream/RCA 단일 인터페이스, mode별 동적 세트 수 결정 |
+| `problems/prompt.py` | 프롬프트 라우터 | mode별 프롬프트 자동 선택 및 Gemini 호출 |
+| `problems/prompt_stream.py` | Stream 프롬프트 | Stream 데이터 요약 및 프롬프트 생성 (2026-01-19 신규) |
 | `data_generator_advanced.py` | 대량 데이터 생성 | `COPY` 명령어를 통한 고속 적재 지원 |
 | `anomaly_injector.py` | 시나리오 설계 | RCA 모드를 위한 구체적인 장애 도메인 주입 |
-| `problems/generator.py` | 문제 라이프사이클 | LLM 호출 및 SQL 유효성 실시간 검증 루프 |
 
 > [!TIP]
 > **Generator 상세 가이드**: 구현 예시와 검증 규칙은 [**GENERATOR_GUIDE.md**](./GENERATOR_GUIDE.md)를 참조하세요.
@@ -119,4 +154,4 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 
 ---
 
-**마지막 업데이트: 2026-01-18**
+**마지막 업데이트: 2026-01-19**

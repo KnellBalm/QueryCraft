@@ -84,12 +84,13 @@ const DailyChallenge: React.FC = () => {
   };
 
   const handleProblemClick = (problem: Problem) => {
-    // Workspace로 이동하면서 문제 선택
+    // Workspace로 이동하면서 문제 선택 (dataType을 URL 경로에 포함)
+    const dataType = problem.problem_type || 'pa';
     const params = new URLSearchParams({
       date: challenge?.scenario.date || '',
       problemId: problem.problem_id,
     });
-    navigate(`/workspace?${params.toString()}`);
+    navigate(`/workspace/${dataType}?${params.toString()}`);
   };
 
   if (loading) {

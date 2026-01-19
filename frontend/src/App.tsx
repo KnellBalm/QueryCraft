@@ -129,7 +129,7 @@ function AppContent() {
                 <NavLink to="/ailab" className={({ isActive }) => isActive ? 'active' : ''}>
                   🤖 AI Workspace
                 </NavLink>
-                
+
                 <NavLink to="/rca" className={({ isActive }) => isActive ? 'active' : ''}>
                   🔍 RCA Simulator
                 </NavLink>
@@ -192,7 +192,6 @@ function AppContent() {
           <Routes>
             {isWeekend && !canAccessOnWeekend ? (
               <>
-                {/* On weekends, show WeekendClosed by default but allow Practice mode */}
                 <Route path="/practice" element={<Practice />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/admin" element={<AdminPage />} />
@@ -203,8 +202,15 @@ function AppContent() {
                 <Route path="/" element={<MainPage />} />
                 <Route path="/daily" element={<DailyChallenge />} />
                 <Route path="/daily/:date" element={<DailyChallenge />} />
+
+                {/* Unified Workspace Entry */}
+                <Route path="/workspace" element={<Workspace />} />
+                <Route path="/workspace/:dataType" element={<Workspace />} />
+
+                {/* Legacy Redirection/Mapping */}
                 <Route path="/pa" element={<Workspace dataType="pa" />} />
                 <Route path="/stream" element={<Workspace dataType="stream" />} />
+
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/datacenter" element={<DataCenterPage />} />
                 <Route path="/practice" element={<Practice />} />

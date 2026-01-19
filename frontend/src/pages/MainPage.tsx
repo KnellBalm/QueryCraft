@@ -100,6 +100,29 @@ const LandingHero = memo(({ track }: { track: 'core' | 'future' }) => {
 
 // 아케이드 모드 선택 (세로 배치)
 function ArcadeModesCore() {
+    const [metadata, setMetadata] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        problemsApi.list('pa').then(res => {
+            setMetadata(res.data.metadata);
+        }).finally(() => {
+            setLoading(false);
+        });
+    }, []);
+
+    const productTypeLabel = useMemo(() => {
+        if (!metadata) return '분석 환경 준비 중...';
+        const typeMap: Record<string, string> = {
+            'commerce': '커머스 (E-commerce)',
+            'fintech': '핀테크 (Fintech)',
+            'saas': 'SaaS (B2B)',
+            'gaming': '게이밍 (Gaming)',
+            'healthcare': '헬스케어 (Healthcare)'
+        };
+        return typeMap[metadata.product_type] || metadata.product_type;
+    }, [metadata]);
+
     return (
         <div className="arcade-modes">
             <h2 className="modes-title">
@@ -107,30 +130,27 @@ function ArcadeModesCore() {
                 게임 모드
             </h2>
             <div className="mode-list">
-                <Link to="/pa" className="arcade-mode-card mode-daily">
+                {/* Unified Daily Challenge Card */}
+                <Link to="/daily" className="arcade-mode-card mode-daily">
                     <div className="mode-glow" />
+                    <div className="mode-btn-shine" />
                     <div className="mode-content">
                         <span className="mode-icon">📅</span>
                         <div className="mode-info">
                             <div className="mode-title-row">
-                                <h3>오늘의 도전</h3>
+                                <h3>오늘의 일일 분석</h3>
                                 <span className="mode-badge">DAILY</span>
                             </div>
-                            <p>매일 새로운 PA 문제</p>
-                        </div>
-                    </div>
-                    <span className="mode-arrow">▶</span>
-                </Link>
-
-                <Link to="/stream" className="arcade-mode-card mode-stream">
-                    <div className="mode-content">
-                        <span className="mode-icon">📡</span>
-                        <div className="mode-info">
-                            <div className="mode-title-row">
-                                <h3>스트림 분석</h3>
-                                <span className="mode-badge">NEW</span>
-                            </div>
-                            <p>실시간 이벤트 분석</p>
+                            <p className="mode-desc">
+                                {loading ? '환경 로딩 중...' : `오늘의 산업: ${productTypeLabel}`}
+                            </p>
+                            {!loading && metadata && (
+                                <div className="mode-meta-tags">
+                                    <span className="tag">PA</span>
+                                    <span className="tag">STREAM</span>
+                                    <span className="tag-premium">{metadata.company_name}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <span className="mode-arrow">▶</span>
@@ -142,10 +162,10 @@ function ArcadeModesCore() {
                         <span className="mode-icon">♾️</span>
                         <div className="mode-info">
                             <div className="mode-title-row">
-                                <h3>연습장</h3>
+                                <h3>SQL 연습장</h3>
                                 <span className="mode-badge">∞</span>
                             </div>
-                            <p>무제한 훈련</p>
+                            <p>무제한 트레이닝 (자유 주제)</p>
                         </div>
                     </div>
                     <span className="mode-arrow">▶</span>
