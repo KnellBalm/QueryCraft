@@ -211,11 +211,12 @@ def grade_submission(
 ) -> SubmitResponse:
     """문제 제출 채점 - grading 스키마 테이블 비교 방식"""
     start = time.time()
-    session_date = date.today().isoformat()
+    today_kst = get_today_kst()
+    session_date = today_kst.isoformat()
     
     try:
         # 1. 문제 로드 (DB 우선, 파일 폴백 - problem_service 활용)
-        problem = get_problem_by_id(problem_id, data_type, user_id=user_id)
+        problem = get_problem_by_id(problem_id, data_type, target_date=today_kst, user_id=user_id)
         if not problem:
             return SubmitResponse(
                 is_correct=False,

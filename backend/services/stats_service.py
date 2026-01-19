@@ -32,8 +32,8 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
                     FROM public.submissions
                 """)
         
-        total = int(df.iloc[0]["total"]) if len(df) > 0 else 0
-        correct = int(df.iloc[0]["correct"]) if len(df) > 0 and df.iloc[0]["correct"] else 0
+        total = int(df.iloc[0]["total"]) if len(df) > 0 and pd.notnull(df.iloc[0]["total"]) else 0
+        correct = int(df.iloc[0]["correct"]) if len(df) > 0 and pd.notnull(df.iloc[0]["correct"]) else 0
         accuracy = (correct / total * 100) if total > 0 else 0
     except Exception:
         total, correct, accuracy = 0, 0, 0

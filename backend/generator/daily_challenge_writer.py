@@ -13,6 +13,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from generator.scenario_generator import BusinessScenario, TableConfig
 from generator.unified_problem_generator import generate_daily_problems
+from backend.common.date_utils import get_today_kst
+
+
+def clean_nan(obj):
+    """NaN/Inf 값을 JSON 직렬화 가능한 None으로 변환"""
+    import math
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: clean_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_nan(v) for v in obj]
+    return obj
 
 
 # 파일 경로
@@ -74,10 +89,16 @@ def save_daily_challenge(
             "medium": sum(1 for p in problems if p['difficulty'] == 'medium'),
             "hard": sum(1 for p in problems if p['difficulty'] == 'hard'),
         },
-        "created_at": date.today().isoformat()
     }
+    filepath = os.path.join(PROBLEMS_DIR, f"{target_date}.json")
+    daily_challenge = clean_nan({
+        "version": "2.0",
+        "scenario": scenario_data,
+        "problems": problems,
+        "metadata": metadata
+    })
     
-    # 1. DB 저장 (PostgreSQL)
+    # DB 저장 (PostgreSQL) - 정규화된 데이터 사용
     try:
         from backend.services.database import postgres_connection
         with postgres_connection() as pg:
@@ -91,20 +112,17 @@ def save_daily_challenge(
                     problems_data = EXCLUDED.problems_data,
                     metadata = EXCLUDED.metadata,
                     created_at = NOW()
-            """, (target_date, "2.0", json.dumps(scenario_data), json.dumps(problems), json.dumps(metadata)))
+            """, (
+                target_date, 
+                "2.0", 
+                json.dumps(daily_challenge["scenario"], ensure_ascii=False), 
+                json.dumps(daily_challenge["problems"], ensure_ascii=False), 
+                json.dumps(daily_challenge["metadata"], ensure_ascii=False)
+            ))
             print(f"✅ Daily Challenge saved to DB: {target_date}")
     except Exception as e:
         print(f"⚠️ Failed to save to DB: {e}")
 
-    # 2. 로컬 파일 저장 (백업/로컬 개발용)
-    os.makedirs(PROBLEMS_DIR, exist_ok=True)
-    filepath = os.path.join(PROBLEMS_DIR, f"{target_date}.json")
-    daily_challenge = {
-        "version": "2.0",
-        "scenario": scenario_data,
-        "problems": problems,
-        "metadata": metadata
-    }
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(daily_challenge, f, ensure_ascii=False, indent=2)
     
@@ -231,7 +249,7 @@ def generate_and_save_daily_challenge(target_date: Optional[str] = None) -> str:
     from generator.scenario_generator import generate_scenario
     
     if target_date is None:
-        target_date = date.today().isoformat()
+        target_date = get_today_kst().isoformat()
     
     print(f"\n🎯 Generating Daily Challenge for {target_date}...")
     
