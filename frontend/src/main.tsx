@@ -4,6 +4,7 @@ import { PostHogProvider } from 'posthog-js/react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider } from './contexts/AuthContext'
 import './styles/theme.css'
+import './index.css'
 import { initAnalytics } from './services/analytics'
 import App from './App.tsx'
 
