@@ -8,7 +8,7 @@
     width: 100%;
     min-height: 100%;
     background: var(--bg-secondary);
-    background-image: 
+    background-image:
         radial-gradient(circle at 20% 80%, rgba(var(--track-primary-rgb), 0.1) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(var(--track-primary-rgb), 0.05) 0%, transparent 50%);
 }
@@ -41,19 +41,17 @@
     padding: var(--space-16) var(--space-8);
     text-align: center;
     overflow: hidden;
-    background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
 }
 
 .hero-scanline {
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.1) 2px,
-        rgba(0, 0, 0, 0.1) 4px
-    );
+    background: repeating-linear-gradient(0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.1) 2px,
+            rgba(0, 0, 0, 0.1) 4px);
     pointer-events: none;
     opacity: 0.3;
 }
@@ -123,12 +121,12 @@
         display: flex;
         gap: var(--space-4);
     }
-    
+
     .arcade-sidebar.left,
     .arcade-sidebar.right {
         order: 1;
     }
-    
+
     .arcade-main {
         order: 0;
     }
@@ -200,9 +198,17 @@
     border: 1px solid var(--track-primary);
 }
 
-.rank-row.rank-1 { border-left: 3px solid #ffd700; }
-.rank-row.rank-2 { border-left: 3px solid #c0c0c0; }
-.rank-row.rank-3 { border-left: 3px solid #cd7f32; }
+.rank-row.rank-1 {
+    border-left: 3px solid #ffd700;
+}
+
+.rank-row.rank-2 {
+    border-left: 3px solid #c0c0c0;
+}
+
+.rank-row.rank-3 {
+    border-left: 3px solid #cd7f32;
+}
 
 .rank-medal {
     width: 28px;
@@ -254,9 +260,20 @@
     text-transform: uppercase;
 }
 
-.difficulty-badge.easy { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-.difficulty-badge.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.difficulty-badge.hard { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.difficulty-badge.easy {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.difficulty-badge.medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.difficulty-badge.hard {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
 
 .recommend-title {
     flex: 1;
@@ -351,19 +368,15 @@
 
 /* Daily Challenge 카드 스타일 */
 .mode-daily .mode-glow {
-    background: radial-gradient(
-        circle at center,
-        rgba(139, 92, 246, 0.3) 0%,
-        transparent 70%
-    );
+    background: radial-gradient(circle at center,
+            rgba(139, 92, 246, 0.3) 0%,
+            transparent 70%);
 }
 
 .mode-daily:hover .mode-glow {
-    background: radial-gradient(
-        circle at center,
-        rgba(139, 92, 246, 0.5) 0%,
-        transparent 70%
-    );
+    background: radial-gradient(circle at center,
+            rgba(139, 92, 246, 0.5) 0%,
+            transparent 70%);
 }
 
 .mode-daily .mode-icon {
@@ -372,7 +385,7 @@
 
 .mode-daily:hover {
     border-color: rgba(139, 92, 246, 0.6);
-    box-shadow: 
+    box-shadow:
         0 0 20px rgba(139, 92, 246, 0.3),
         0 8px 32px rgba(0, 0, 0, 0.4);
 }
@@ -454,9 +467,17 @@
     background: var(--bg-tertiary);
 }
 
-.strip-cell.success { background: var(--success-color); }
-.strip-cell.fail { background: var(--warning-color); }
-.strip-cell.empty { opacity: 0.3; }
+.strip-cell.success {
+    background: var(--success-color);
+}
+
+.strip-cell.fail {
+    background: var(--warning-color);
+}
+
+.strip-cell.empty {
+    opacity: 0.3;
+}
 
 /* =============================================
    Arcade Mode Cards (Vertical List)
@@ -613,12 +634,14 @@
 [data-track="future"] .arcade-mode-card .mode-badge {
     background: linear-gradient(135deg, #a855f7, #f472b6);
 }
+
 /* =============================================
    AI Lab Intro Section (Integrated)
 ============================================= */
 .lab-intro-section {
     max-width: 1200px;
-    margin: 4rem auto;
+    margin: 1.5rem auto 4rem;
+    /* 상단 마진 축소 */
     padding: 3rem 2rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 24px;
@@ -720,6 +743,11 @@
 }
 
 @media (max-width: 768px) {
-    .lab-intro-header h2 { font-size: 1.75rem; }
-    .lab-features-grid { grid-template-columns: 1fr; }
+    .lab-intro-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .lab-features-grid {
+        grid-template-columns: 1fr;
+    }
 }
