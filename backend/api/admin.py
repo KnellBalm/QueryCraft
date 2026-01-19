@@ -453,13 +453,16 @@ async def get_dataset_versions():
                 FROM public.dataset_versions
                 ORDER BY created_at DESC
                 LIMIT 30
-            """)
+            # NaN 값 처리 (JSON 시리얼라이즈 오류 방지)
+            import numpy as np
+            df = df.replace({np.nan: None})
+            
             versions = []
             for _, row in df.iterrows():
                 versions.append({
                     "version_id": row.get("version_id"),
-                    "created_at": row.get("created_at").isoformat() if row.get("created_at") else None,
-                    "generation_date": row.get("generation_date").isoformat() if row.get("generation_date") else None,
+                    "created_at": row.get("created_at").isoformat() if row.get("created_at") and hasattr(row.get("created_at"), 'isoformat') else None,
+                    "generation_date": row.get("generation_date").isoformat() if row.get("generation_date") and hasattr(row.get("generation_date"), 'isoformat') else None,
                     "generation_type": row.get("generation_type"),
                     "data_type": row.get("data_type"),
                     "problem_count": row.get("problem_count"),
