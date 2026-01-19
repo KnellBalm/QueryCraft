@@ -19,7 +19,7 @@ def update_user_skills(user_id: str, problem_id: str, is_correct: bool):
     try:
         with postgres_connection() as pg:
             # 1. 문제의 카테고리 확인
-            res = pg.fetch_df("SELECT category FROM public.problems WHERE id = %s OR description::jsonb->>'problem_id' = %s", (problem_id, problem_id))
+            res = pg.fetch_df("SELECT category FROM public.problems WHERE id::text = %s OR description::jsonb->>'problem_id' = %s", (problem_id, problem_id))
             if len(res) == 0:
                 logger.warning(f"Category not found for problem {problem_id}")
                 return

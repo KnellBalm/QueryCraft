@@ -39,6 +39,12 @@ class Problem(BaseModel):
     expected_meta: Optional[dict] = None
     xp_value: Optional[int] = 5
     
+    # 메타데이터 및 카테고리
+    data_type: Optional[str] = None  # pa | stream
+    problem_date: Optional[str] = None  # YYYY-MM-DD
+    set_index: Optional[int] = 0
+    category: Optional[str] = None
+
     # 상태 정보 (조회 시 추가)
     is_completed: Optional[bool] = None
     is_correct: Optional[bool] = None

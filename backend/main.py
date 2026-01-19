@@ -88,16 +88,17 @@ app = FastAPI(
 cloud_origins = [
     "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
     "https://query-craft-frontend-758178119666.us-central1.run.app",
+    "https://query-craft-frontend-758178119666.a.run.app", # 추가
     "https://querycraft.run.app",  # 커스텀 도메인 예비
 ]
-cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
+# 좀 더 유연한 regex: query-craft-frontend로 시작하는 모든 .run.app 도메인 허용
+cloud_origin_regex = r"https://query-craft-frontend-.*\.run\.app"
 
 if os.getenv("ENV") == "production":
     # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cloud_origins,
-        # Cloud Run URL 형식 모두 허용 (project-id 또는 hash 기반)
         allow_origin_regex=cloud_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],

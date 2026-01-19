@@ -29,15 +29,20 @@ else:
 
 # 용도별 모델 설정 (무료 티어 할당량 분산)
 class GeminiModels:
-    PROBLEM = os.getenv("GEMINI_MODEL_PROBLEM", "gemini-2.5-flash")      # 문제 생성
-    GRADING = os.getenv("GEMINI_MODEL_GRADING", "gemini-2.5-flash")      # 채점
-    TIPS = os.getenv("GEMINI_MODEL_TIPS", "gemini-2.5-flash-lite")       # 오늘의 팁 (경량)
-    HINTS = os.getenv("GEMINI_MODEL_HINTS", "gemini-2.5-flash-lite")     # 힌트 (경량)
-    ERROR = os.getenv("GEMINI_MODEL_ERROR", "gemini-3-flash")            # 에러 설명
-    FALLBACK = "gemini-1.5-flash"                                         # 폴백
+    PROBLEM = os.getenv("GEMINI_MODEL_PROBLEM", "gemini-flash-latest")      # 문제 생성
+    GRADING = os.getenv("GEMINI_MODEL_GRADING", "gemini-flash-latest")      # 채점
+    TIPS = os.getenv("GEMINI_MODEL_TIPS", "gemini-flash-lite-latest")       # 오늘의 팁 (경량)
+    HINTS = os.getenv("GEMINI_MODEL_HINTS", "gemini-flash-lite-latest")     # 힌트 (경량)
+    ERROR = os.getenv("GEMINI_MODEL_ERROR", "gemini-3-flash-preview")       # 에러 설명
+    FALLBACK = "gemini-flash-latest"                                         # 폴백
 
 # 기본 모델 (호환성)
 MODEL = os.getenv("GEMINI_MODEL", GeminiModels.PROBLEM)
+
+# 잘못된 모델명이 수동으로 설정된 경우를 대비한 보정
+if any(m in MODEL for m in ["gemini-1.5", "gemini-2.1", "gemini-2.5-flash", "gemini-3-flash"]):
+    if "latest" not in MODEL:
+        MODEL = "gemini-flash-latest"
 
 
 def get_model_for_purpose(purpose: str) -> str:
@@ -83,8 +88,19 @@ def _call_gemini_with_retry(model: str, contents: str, purpose: str = "general",
             return client.models.generate_content(model=current_model, contents=contents)
         except Exception as e:
             err_str = str(e)
-            # 재시도 가능한 에러 체크 (503: Overloaded, 429: Rate Limit)
-            if any(code in err_str for code in ["503", "429", "UNAVAILABLE", "ResourceExhausted"]) or "overloaded" in err_str.lower():
+            # 재시도 가능한 에러 체크 (503: Overloaded, 429: Rate Limit, 404: Model Not Found)
+            if any(code in err_str for code in ["503", "429", "404", "NOT_FOUND", "UNAVAILABLE", "ResourceExhausted"]) or "overloaded" in err_str.lower():
+                # 404나 NOT_FOUND가 포함되어 있으면 즉시 모델을 폴백으로 변경하고 재시도
+                if any(code in err_str for code in ["404", "NOT_FOUND"]):
+                    if current_model != GeminiModels.FALLBACK:
+                        logger.warning(f"[GEMINI] Model {current_model} not found. Falling back to {GeminiModels.FALLBACK}")
+                        current_model = GeminiModels.FALLBACK
+                        continue
+                    else:
+                        # 이미 폴백 모델인데도 404라면 진짜 에러
+                        logger.error(f"[GEMINI] Fallback model also not found: {e}")
+                        raise e
+
                 # 2번째 재시도부터는 모델을 폴백 모델로 변경 시도
                 if i >= 1 and current_model != GeminiModels.FALLBACK:
                     logger.warning(f"[GEMINI] High load detected. Falling back to {GeminiModels.FALLBACK}")

@@ -241,9 +241,9 @@ async def get_system_status(admin=Depends(require_admin)):
         with postgres_connection() as pg:
             # problems 테이블에서 오늘 날짜 문제 조회
             df = pg.fetch_df("""
-                SELECT problem_id, difficulty, data_type
+                SELECT title as problem_id, difficulty, data_type
                 FROM public.problems
-                WHERE session_date = %s
+                WHERE problem_date = %s
             """, [today])
             
             if len(df) > 0:
@@ -860,7 +860,7 @@ async def trigger_daily_generation(request: Request):
             existing = pg.fetch_df("""
                 SELECT data_type, COUNT(*) as cnt 
                 FROM public.problems 
-                WHERE session_date = %s 
+                WHERE problem_date = %s 
                 GROUP BY data_type
             """, [today])
             

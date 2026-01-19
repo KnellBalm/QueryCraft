@@ -9,6 +9,7 @@ __pycache__/
 data/*
 .env
 .env.dev
+.env.*
 *.zip
 *.log
 

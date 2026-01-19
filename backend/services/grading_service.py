@@ -280,7 +280,8 @@ def grade_submission(
                 is_correct=is_correct,
                 feedback=feedback,
                 user_id=user_id,
-                difficulty=problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
+                difficulty=problem.difficulty if hasattr(problem, 'difficulty') else 'medium',
+                xp_earned=xp_value if is_correct else 0
             )
         
         # 5. 사용자 스킬 및 XP 업데이트 (정답 시)
@@ -324,7 +325,8 @@ def grade_submission(
             is_correct=False,
             feedback=feedback,
             user_id=user_id,
-            difficulty='medium'  # Error case fallback
+            difficulty='medium',  # Error case fallback
+            xp_earned=0
         )
         
         return SubmitResponse(
@@ -374,7 +376,8 @@ def save_submission_pg(
     is_correct: bool,
     feedback: str,
     user_id: str = None,
-    difficulty: str = 'medium'
+    difficulty: str = 'medium',
+    xp_earned: int = 0
 ):
     """제출 기록 저장 (PostgreSQL)
     
@@ -383,9 +386,12 @@ def save_submission_pg(
     try:
         with postgres_connection() as pg:
             pg.execute("""
-                INSERT INTO public.submissions (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id, difficulty)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id, difficulty))
+                INSERT INTO public.submissions (
+                    session_date, problem_id, data_type, submitted_sql, 
+                    is_correct, note, user_id, difficulty, submitted_at, xp_earned
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+            """, (session_date, problem_id, data_type, sql_text, is_correct, feedback, user_id, difficulty, xp_earned))
     except Exception as e:
         from backend.common.logging import get_logger
         logger = get_logger("grading_service")

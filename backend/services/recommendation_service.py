@@ -21,9 +21,9 @@ def get_recommended_problems(user_id: str, limit: int = 3) -> List[Problem]:
         with postgres_connection() as pg:
             # 1. 취약 카테고리 중 풀지 않은 문제 우선 조회
             df = pg.fetch_df("""
-                SELECT p.description, p.data_type, p.problem_date, p.category
+                SELECT p.description, p.data_type, p.problem_date, p.category, p.title as problem_id
                 FROM public.problems p
-                LEFT JOIN public.submissions s ON s.problem_id = (p.description::jsonb)->>'problem_id' AND s.user_id = %s AND s.is_correct = true
+                LEFT JOIN public.submissions s ON s.problem_id = p.title AND s.user_id = %s AND s.is_correct = true
                 WHERE s.id IS NULL
                 AND p.category = ANY(%s)
                 ORDER BY p.problem_date DESC, RANDOM()
@@ -35,9 +35,9 @@ def get_recommended_problems(user_id: str, limit: int = 3) -> List[Problem]:
                 needed = limit - len(df)
                 exclude_ids = [] # 이미 선택된 ID 제외 로직 생략 (limit이 작으므로)
                 df_extra = pg.fetch_df("""
-                    SELECT p.description, p.data_type, p.problem_date, p.category
+                    SELECT p.description, p.data_type, p.problem_date, p.category, p.title as problem_id
                     FROM public.problems p
-                    LEFT JOIN public.submissions s ON s.problem_id = (p.description::jsonb)->>'problem_id' AND s.user_id = %s AND s.is_correct = true
+                    LEFT JOIN public.submissions s ON s.problem_id = p.title AND s.user_id = %s AND s.is_correct = true
                     WHERE s.id IS NULL
                     ORDER BY p.problem_date DESC, RANDOM()
                     LIMIT %s
@@ -47,7 +47,7 @@ def get_recommended_problems(user_id: str, limit: int = 3) -> List[Problem]:
             # 3. 그래도 부족하면 전체 랜덤 (복습)
             if len(df) == 0:
                 df = pg.fetch_df("""
-                    SELECT description, data_type, problem_date, category
+                    SELECT description, data_type, problem_date, category, title as problem_id
                     FROM public.problems
                     ORDER BY RANDOM()
                     LIMIT %s
@@ -61,7 +61,10 @@ def get_recommended_problems(user_id: str, limit: int = 3) -> List[Problem]:
                 
                 # 메타데이터 보충
                 problem.data_type = row["data_type"]
-                # category 정보는 Problem 스키마에 없으므로 context 등을 통해 전달하거나 
+                problem.problem_date = str(row["problem_date"])
+                problem.category = row["category"]
+                
+                # category 정보는 context 등을 통해 전달하거나 
                 # 나중에 API에서 별도 처리 가능하게 note 등에 활용
                 if not problem.context:
                     problem.context = ""
@@ -79,7 +82,7 @@ def get_reason_for_recommendation(user_id: str, problem_id: str) -> str:
     """추천 사유 생성 (데이터 기반)"""
     try:
         with postgres_connection() as pg:
-            res = pg.fetch_df("SELECT category FROM public.problems WHERE description::jsonb->>'problem_id' = %s", (problem_id,))
+            res = pg.fetch_df("SELECT category FROM public.problems WHERE title = %s", (problem_id,))
             if len(res) > 0:
                 category = res.iloc[0]['category']
                 category_map = {

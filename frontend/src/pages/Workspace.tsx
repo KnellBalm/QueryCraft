@@ -107,6 +107,7 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
         if (!sql.trim()) return;
         setLoading(true);
         setSubmitResult(null);
+        setAiHelpResult(null); // Clear previous AI help/error
 
         // 첫 실행/타이핑 시 시도로 기록
         if (selectedProblem && lastAttemptedRef.current !== selectedProblem.problem_id) {
@@ -141,6 +142,7 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
         if (!sql.trim() || !selectedProblem) return;
         setSubmitting(true);
         setSubmitResult(null);
+        setAiHelpResult(null); // Clear previous AI help/error
         try {
             const res = await sqlApi.submit(selectedProblem.problem_id, sql, dataType);
             setSubmitResult(res.data);
@@ -360,7 +362,7 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
                                 }
                             }}
                             onExecute={handleExecute}
-                            height="calc(100% - 80px)" // header + actions
+                            height="calc(100%)" // header + actions  #에디터 작동 안하면 100% - 80px 로 변경
                             tables={tables}
                         />
                     </div>

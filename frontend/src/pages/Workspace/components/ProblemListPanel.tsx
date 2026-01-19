@@ -55,34 +55,7 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
                 ))}
             </div>
 
-            {metadata && (
-                <div className="dataset-context">
-                    <div className="context-header">
-                        <span className={`company-badge ${dataType === 'rca' ? 'rca' : ''}`}>
-                            {dataType === 'rca' ? '🚨 ANOMALY DETECTION' : 'BUSINESS CONTEXT'}
-                        </span>
-                        <span className="product-type-tag">{metadata.product_type}</span>
-                        {dataType === 'rca' && <span className="rca-tag">Root Cause Analysis</span>}
-                    </div>
-                    <div className="company-name">{metadata.company_name}</div>
-                    <div className="company-desc">{metadata.company_description}</div>
 
-                    {metadata.north_star && (
-                        <div className="kpi-row">
-                            <div className="kpi-item">
-                                <span className="kpi-label">North Star Metric</span>
-                                <span className="kpi-value">✨ {metadata.north_star}</span>
-                            </div>
-                            {metadata.key_metrics && metadata.key_metrics.length > 0 && (
-                                <div className="kpi-item">
-                                    <span className="kpi-label">Core KPIs</span>
-                                    <span className="kpi-value">📊 {metadata.key_metrics[0]} 등</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
 
             {selectedProblem && (
                 <div className="problem-detail">
@@ -95,6 +68,24 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
 
                     {selectedProblem.requester && (
                         <div className={`slack-message ${dataType === 'rca' ? 'rca' : ''}`}>
+                            {metadata && (
+                                <div className="dataset-context simplified">
+                                    <div className="context-header">
+                                        <span className={`company-badge ${dataType === 'rca' ? 'rca' : ''}`}>
+                                            {dataType === 'rca' ? '🚨 ANOMALY' : 'CONTEXT'}
+                                        </span>
+                                        <span className="company-name-tiny">{metadata.company_name}</span>
+                                        <span className="product-type-tag">{metadata.product_type}</span>
+                                    </div>
+                                    {metadata.north_star && (
+                                        <div className="kpi-mini">
+                                            <span className="kpi-label">Goal:</span>
+                                            <span className="kpi-value">✨ {metadata.north_star}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="slack-header">
                                 <span className="slack-avatar">{dataType === 'rca' ? '🌩️' : '👤'}</span>
                                 <span className="slack-sender">{selectedProblem.requester}</span>

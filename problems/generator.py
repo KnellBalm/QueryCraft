@@ -1,6 +1,7 @@
 # problems/generator.py
 """PA 문제 생성기 - 월별 JSON + 정답 통합"""
 import json
+import os
 from pathlib import Path
 from datetime import date
 from problems.templates import build_expected_sql
