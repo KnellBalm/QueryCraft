@@ -443,6 +443,10 @@
 
 .main {
   flex: 1;
+  min-height: 0;
+  /* flex 자식이 부모를 넘지 않도록 */
+  height: 0;
+  /* flex-grow가 실제 높이를 결정하도록 */
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
