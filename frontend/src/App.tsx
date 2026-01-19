@@ -217,6 +217,7 @@ function AppContent() {
                 <Route path="/rca" element={<Workspace dataType="rca" />} />
                 <Route path="/mcpsandbox" element={<MCPSandboxPage />} />
                 <Route path="/tutor" element={<AdaptiveTutorPage />} />
+                <Route path="/ailab" element={<Workspace dataType="stream" />} />
                 <Route path="/future" element={<FutureLabDashboard />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/admin" element={<AdminPage />} />
