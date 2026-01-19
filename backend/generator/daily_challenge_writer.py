@@ -58,96 +58,129 @@ def save_daily_challenge(
     target_date: Optional[str] = None
 ) -> str:
     """
-    Daily Challenge를 파일로 저장
-    
-    Args:
-        scenario: BusinessScenario 객체
-        problems: 문제 리스트
-        target_date: YYYY-MM-DD (없으면 scenario.date 사용)
-    
-    Returns:
-        저장된 파일 경로
+    Daily Challenge를 파일 및 DB로 저장
     """
     if target_date is None:
         target_date = scenario.date
     
-    # 디렉토리 생성
-    os.makedirs(PROBLEMS_DIR, exist_ok=True)
-    
-    # 파일 경로
-    filename = f"{target_date}.json"
-    filepath = os.path.join(PROBLEMS_DIR, filename)
-    
     # 데이터 구조
-    daily_challenge = {
-        "version": "2.0",  # 새 통합 버전
-        "scenario": serialize_scenario(scenario),
-        "problems": problems,
-        "metadata": {
-            "total_problems": len(problems),
-            "pa_count": sum(1 for p in problems if p['problem_type'] == 'pa'),
-            "stream_count": sum(1 for p in problems if p['problem_type'] == 'stream'),
-            "difficulty_distribution": {
-                "easy": sum(1 for p in problems if p['difficulty'] == 'easy'),
-                "medium": sum(1 for p in problems if p['difficulty'] == 'medium'),
-                "hard": sum(1 for p in problems if p['difficulty'] == 'hard'),
-            },
-            "created_at": date.today().isoformat()
-        }
+    scenario_data = serialize_scenario(scenario)
+    metadata = {
+        "total_problems": len(problems),
+        "pa_count": sum(1 for p in problems if p['problem_type'] == 'pa'),
+        "stream_count": sum(1 for p in problems if p['problem_type'] == 'stream'),
+        "difficulty_distribution": {
+            "easy": sum(1 for p in problems if p['difficulty'] == 'easy'),
+            "medium": sum(1 for p in problems if p['difficulty'] == 'medium'),
+            "hard": sum(1 for p in problems if p['difficulty'] == 'hard'),
+        },
+        "created_at": date.today().isoformat()
     }
     
-    # JSON 저장 (pretty print)
+    # 1. DB 저장 (PostgreSQL)
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            pg.execute("""
+                INSERT INTO public.daily_challenges (
+                    challenge_date, version, scenario_data, problems_data, metadata
+                ) VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (challenge_date) DO UPDATE SET
+                    version = EXCLUDED.version,
+                    scenario_data = EXCLUDED.scenario_data,
+                    problems_data = EXCLUDED.problems_data,
+                    metadata = EXCLUDED.metadata,
+                    created_at = NOW()
+            """, (target_date, "2.0", json.dumps(scenario_data), json.dumps(problems), json.dumps(metadata)))
+            print(f"✅ Daily Challenge saved to DB: {target_date}")
+    except Exception as e:
+        print(f"⚠️ Failed to save to DB: {e}")
+
+    # 2. 로컬 파일 저장 (백업/로컬 개발용)
+    os.makedirs(PROBLEMS_DIR, exist_ok=True)
+    filepath = os.path.join(PROBLEMS_DIR, f"{target_date}.json")
+    daily_challenge = {
+        "version": "2.0",
+        "scenario": scenario_data,
+        "problems": problems,
+        "metadata": metadata
+    }
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(daily_challenge, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ Daily Challenge saved: {filepath}")
+    print(f"✅ Daily Challenge saved to file: {filepath}")
     return filepath
 
 
 def load_daily_challenge(target_date: str) -> Optional[dict]:
     """
-    특정 날짜의 Daily Challenge 로드
-    
-    Args:
-        target_date: YYYY-MM-DD
-    
-    Returns:
-        Daily challenge dict or None
+    특정 날짜의 Daily Challenge 로드 (DB 우선, 없으면 파일)
     """
+    # 1. DB 시도
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            res = pg.fetch_one("""
+                SELECT version, scenario_data, problems_data, metadata
+                FROM public.daily_challenges
+                WHERE challenge_date = %s
+            """, (target_date,))
+            
+            if res:
+                return {
+                    "version": res[0],
+                    "scenario": res[1],
+                    "problems": res[2],
+                    "metadata": res[3]
+                }
+    except Exception as e:
+        print(f"⚠️ Failed to load from DB: {e}")
+
+    # 2. 파일 시도
     filename = f"{target_date}.json"
     filepath = os.path.join(PROBLEMS_DIR, filename)
-    
     if not os.path.exists(filepath):
         return None
-    
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
 def get_latest_challenge() -> Optional[dict]:
     """
-    가장 최근 Daily Challenge 로드
-    
-    Returns:
-        Latest daily challenge dict or None
+    가장 최근 Daily Challenge 로드 (DB 우선, 없으면 파일)
     """
+    # 1. DB 시도
+    try:
+        from backend.services.database import postgres_connection
+        with postgres_connection() as pg:
+            res = pg.fetch_one("""
+                SELECT version, scenario_data, problems_data, metadata, challenge_date
+                FROM public.daily_challenges
+                ORDER BY challenge_date DESC
+                LIMIT 1
+            """)
+            
+            if res:
+                return {
+                    "version": res[0],
+                    "scenario": res[1],
+                    "problems": res[2],
+                    "metadata": res[3]
+                }
+    except Exception as e:
+        print(f"⚠️ Failed to load latest from DB: {e}")
+
+    # 2. 파일 시도 (기존 로직)
     if not os.path.exists(PROBLEMS_DIR):
         return None
-    
-    # 모든 .json 파일 찾기
     files = [
         f for f in os.listdir(PROBLEMS_DIR)
-        if f.endswith('.json') and f.count('-') == 2  # YYYY-MM-DD.json 형식
+        if f.endswith('.json') and f.count('-') == 2
     ]
-    
     if not files:
         return None
-    
-    # 날짜순 정렬 (최신순)
     files.sort(reverse=True)
-    latest_file = files[0]
-    
-    filepath = os.path.join(PROBLEMS_DIR, latest_file)
+    filepath = os.path.join(PROBLEMS_DIR, files[0])
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 

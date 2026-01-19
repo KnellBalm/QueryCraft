@@ -55,14 +55,14 @@ def create_dynamic_tables(scenario: BusinessScenario, pg_conn) -> None:
         elif "subscription" in table_config.table_name:
             # Subscription 테이블 (saas)
             create_subscription_table(cur, full_name)
-        elif "content" in table_config.table_name:
+        elif "content" in table_config.table_name and "engagement" not in table_config.table_name:
             # Content metadata 테이블
             create_content_metadata_table(cur, full_name)
         elif "fraud" in table_config.table_name or "alert" in table_config.table_name:
             # Fraud alerts 테이블
             create_fraud_alerts_table(cur, full_name)
         else:
-            # Generic fact 테이블
+            # Generic fact 테이블 (User-based)
             create_generic_fact_table(cur, full_name, scenario.product_type)
         
         print(f"✓ Created table: {full_name}")
@@ -268,10 +268,12 @@ def generate_scenario_data(scenario: BusinessScenario, pg_conn) -> None:
             generate_user_data(cur, full_name, scenario, target_rows)
         elif "transaction" in table_config.table_name:
             generate_transaction_data(cur, full_name, scenario, target_rows)
+        elif "content" in table_config.table_name and "engagement" not in table_config.table_name:
+            generate_content_metadata_data(cur, full_name, scenario, target_rows)
         elif "fraud" in table_config.table_name or "alert" in table_config.table_name:
             generate_fraud_data(cur, full_name, scenario, target_rows)
         else:
-            # Generic data
+            # Generic data (including content_engagement)
             generate_generic_data(cur, full_name, scenario, target_rows)
         
         pg_conn.commit()
@@ -421,6 +423,31 @@ def generate_generic_data(cur, full_name: str, scenario: BusinessScenario, targe
         INSERT INTO {full_name}
         (user_id, event_date, metric_value, dimension1, dimension2)
         VALUES (%s, %s, %s, %s, %s)
+    """, rows)
+
+
+def generate_content_metadata_data(cur, full_name: str, scenario: BusinessScenario, target_rows: int) -> None:
+    """콘텐츠 메타데이터 생성"""
+    rows = []
+    categories = ['Tech', 'Lifestyle', 'Business', 'Sports', 'Entertainment']
+    types = ['article', 'video', 'podcast']
+    
+    for i in range(1, target_rows + 1):
+        title = f"Content Title {i}"
+        author_id = random.randint(1, 500)
+        category = random.choice(categories)
+        c_type = random.choice(types)
+        word_count = random.randint(300, 3000)
+        published_at = datetime.now() - timedelta(days=random.randint(0, 30))
+        view_count = random.randint(0, 10000)
+        like_count = random.randint(0, 500)
+        
+        rows.append((i, title, author_id, category, c_type, word_count, published_at, view_count, like_count))
+        
+    cur.executemany(f"""
+        INSERT INTO {full_name}
+        (content_id, title, author_id, category, content_type, word_count, published_at, view_count, like_count)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, rows)
 
 

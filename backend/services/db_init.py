@@ -376,6 +376,19 @@ def init_database():
             pg.execute("CREATE INDEX IF NOT EXISTS idx_rca_anomaly_type ON public.rca_anomaly_metadata(anomaly_type)")
             logger.info("✓ rca_anomaly_metadata table ready")
 
+            # 14. daily_challenges 테이블 (NEW: 통합 Daily Challenge 영구 저장)
+            pg.execute("""
+                CREATE TABLE IF NOT EXISTS public.daily_challenges (
+                    challenge_date DATE PRIMARY KEY,
+                    version TEXT NOT NULL,
+                    scenario_data JSONB NOT NULL,
+                    problems_data JSONB NOT NULL,
+                    metadata JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            logger.info("✓ daily_challenges table ready")
+
             # 관리자 설정
             import os
             admin_emails_str = os.getenv("ADMIN_EMAILS", "naca11@mobigen.com,naca11@naver.com,admin@querycraft.kr")
