@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTrack } from '../contexts/TrackContext';
 import { statsApi, problemsApi } from '../api/client';
 import { useToast } from '../components/Toast';
+import { Badge } from '../components/ui';
 import type { Problem, UserStats } from '../types';
 import './MainPage.css';
 
@@ -145,10 +146,12 @@ function ArcadeModesCore() {
                                 {loading ? '환경 로딩 중...' : `오늘의 산업: ${productTypeLabel}`}
                             </p>
                             {!loading && metadata && (
-                                <div className="mode-meta-tags">
-                                    <span className="tag">PA</span>
-                                    <span className="tag">STREAM</span>
-                                    <span className="tag-premium">{metadata.company_name}</span>
+                                <div className="mode-meta-tags" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
+                                    <Badge variant="info">PA</Badge>
+                                    <Badge variant="success">STREAM</Badge>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                        {metadata.company_name}
+                                    </span>
                                 </div>
                             )}
                         </div>

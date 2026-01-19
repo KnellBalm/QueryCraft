@@ -5,7 +5,7 @@ from backend.common.date_utils import get_today_kst
 import json
 import os
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from fastapi import APIRouter, HTTPException, Request, Depends, Query, BackgroundTasks
 
 from backend.schemas.admin import (
     SystemStatus, SchedulerStatus, DatabaseTable, TodayProblemsStatus,
@@ -327,14 +327,17 @@ async def generate_problems(request: GenerateProblemsRequest, admin=Depends(requ
         )
 
 
-@router.post("/trigger-now")
-async def trigger_generation_now(admin=Depends(require_admin)):
-    """즉시 통합 생성 실행 (데이터 + PA + Stream 문제)"""
+def run_full_generation_task(today: date):
+    """백그라운드에서 전체 생성을 수행하는 데몬 함수"""
+    from backend.common.logging import get_logger
+    logger = get_logger("backend.admin.generation")
+    
     results = []
     errors = []
-    today = get_today_kst()
     
     try:
+        logger.info(f"Start background full generation for {today}")
+        
         # 1. 통합 데이터 생성
         try:
             from backend.generator.data_generator_advanced import generate_data
@@ -342,6 +345,7 @@ async def trigger_generation_now(admin=Depends(require_admin)):
             results.append("✓ 통합 데이터 생성 완료 (PA + Stream)")
         except Exception as e:
             errors.append(f"✗ 데이터 생성 실패: {str(e)}")
+            # logger.error(f"Data generation failed: {e}")
         
         # 2. 통합 문제 생성 (PA + Stream)
         from problems.generator import generate as gen_problems
@@ -355,21 +359,34 @@ async def trigger_generation_now(admin=Depends(require_admin)):
                         errors.append(f"✗ {mode.upper()} 문제 생성 실패 (결과 없음)")
                 except Exception as e:
                     errors.append(f"✗ {mode.upper()} 문제 생성 오류: {str(e)}")
+                    # logger.error(f"Problem generation ({mode}) failed: {e}")
         
-        return {
-            "success": len(errors) == 0,
-            "date": today.isoformat(),
-            "results": results,
-            "errors": errors,
-            "message": f"통합 생성 완료 ({len(results)}개 성공, {len(errors)}개 실패)"
-        }
+        # 완료 로그
+        if not errors:
+            logger.info(f"Full generation finished successfully for {today}")
+        else:
+            logger.warning(f"Full generation finished with {len(errors)} errors: {errors}")
+            
     except Exception as e:
-        return {
-            "success": False,
-            "results": results,
-            "errors": errors + [str(e)],
-            "message": "통합 생성 중 알 수 없는 오류"
-        }
+        logger.critical(f"Unhandled error in generation task: {e}")
+
+
+@router.post("/trigger-now")
+async def trigger_generation_now(
+    background_tasks: BackgroundTasks,
+    admin=Depends(require_admin)
+):
+    """즉시 통합 생성 실행 (데이터 + PA + Stream 문제) - 백그라운드 작업"""
+    today = get_today_kst()
+    
+    # 작업 시작 (비동기)
+    background_tasks.add_task(run_full_generation_task, today)
+    
+    return {
+        "success": True,
+        "date": today.isoformat(),
+        "message": "통합 생성 작업이 백그라운드에서 시작되었습니다. 잠시 후 '콘텐츠 생성' 탭에서 결과를 확인해주세요."
+    }
 
 @router.get("/dataset-versions")
 async def get_dataset_versions():
