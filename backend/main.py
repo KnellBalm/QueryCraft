@@ -4,7 +4,7 @@ QueryCraft - FastAPI Backend
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.problems import router as problems_router
@@ -119,7 +119,25 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
+# Path Rewrite Middleware
+# 프론트엔드에서 /api 접두사 없이 요청하는 경우(예: /auth/me)를 처리
+@app.middleware("http")
+async def path_rewrite_middleware(request: Request, call_next):
+    path = request.url.path
+    if (path.startswith("/auth") or
+        path.startswith("/problems") or
+        path.startswith("/sql") or
+        path.startswith("/stats") or
+        path.startswith("/admin") or
+        path.startswith("/practice") or
+        path.startswith("/daily")):
+
+        request.scope["path"] = "/api" + path
+
+    response = await call_next(request)
+    return response
+
 # 404 및 기타 에러 로깅 미들웨어
 @app.middleware("http")
 async def log_errors_middleware(request, call_next):
