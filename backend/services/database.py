@@ -7,7 +7,6 @@ from psycopg2.pool import ThreadedConnectionPool
 import os
 
 from backend.engine.postgres_engine import PostgresEngine
-from backend.engine.duckdb_engine import DuckDBEngine
 from backend.config.db import PostgresEnv, get_duckdb_path
 
 # 글로벌 테이블 풀 (앱 시작 시 초기화)
@@ -27,8 +26,9 @@ def get_postgres() -> PostgresEngine:
     return PostgresEngine(dsn=env.dsn())
 
 
-def get_duckdb() -> DuckDBEngine:
+def get_duckdb() -> "DuckDBEngine":
     """DuckDB 연결 생성"""
+    from backend.engine.duckdb_engine import DuckDBEngine
     return DuckDBEngine(get_duckdb_path())
 
 
@@ -46,7 +46,7 @@ def postgres_connection() -> Generator[PostgresEngine, None, None]:
 
 
 @contextmanager
-def duckdb_connection() -> Generator[DuckDBEngine, None, None]:
+def duckdb_connection() -> Generator["DuckDBEngine", None, None]:
     """DuckDB 연결 컨텍스트 매니저"""
     duck = get_duckdb()
     try:

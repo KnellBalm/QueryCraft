@@ -38,6 +38,22 @@ class PostgresEngine:
     def fetch_df(self, sql: str, params: Iterable[Any] | None = None) -> pd.DataFrame:
         return pd.read_sql_query(sql, self.conn, params=params)
 
+    def fetch_one(self, sql: str, params: Iterable[Any] | None = None) -> dict | None:
+        """단일 행을 dict 형태로 반환"""
+        with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return cur.fetchone()
+
+    def fetch_all(self, sql: str, params: Iterable[Any] | None = None) -> list[dict]:
+        """모든 행을 dict 리스트 형태로 반환"""
+        with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
+
+    def fetchone(self, sql: str, params: Iterable[Any] | None = None):
+        """기존 코드 호환용 fetchone"""
+        return self.fetch_one(sql, params)
+
     def table_exists(self, table: str) -> bool:
         q = """
         SELECT 1

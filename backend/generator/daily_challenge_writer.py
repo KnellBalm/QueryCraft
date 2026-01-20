@@ -145,12 +145,26 @@ def load_daily_challenge(target_date: str) -> Optional[dict]:
             """, (target_date,))
             
             if res:
-                return {
-                    "version": res[0],
-                    "scenario": res[1],
-                    "problems": res[2],
-                    "metadata": res[3]
+                # v2.0 형식으로 조립 (Tuple이 아닌 Dict로 접근)
+                challenge_data = {
+                    "version": res.get("version", "2.0"),
+                    "scenario": res.get("scenario_data"),
+                    "problems": res.get("problems_data"),
+                    "metadata": res.get("metadata")
                 }
+                # JSON 문자열 처리 (DB에 JSONB가 아닌 TEXT로 저장된 경우 대비)
+                for key in ["scenario", "problems", "metadata"]:
+                    if isinstance(challenge_data[key], str):
+                        try:
+                            challenge_data[key] = json.loads(challenge_data[key])
+                        except: pass
+                
+                # v1.0->v2.0 보정
+                if isinstance(challenge_data["problems"], list) and challenge_data["scenario"] is None:
+                    first_item = challenge_data["problems"][0] if challenge_data["problems"] else {}
+                    challenge_data["scenario"] = first_item.get("scenario", "Daily SQL Challenge")
+                
+                return challenge_data
     except Exception as e:
         print(f"⚠️ Failed to load from DB: {e}")
 
@@ -160,7 +174,17 @@ def load_daily_challenge(target_date: str) -> Optional[dict]:
     if not os.path.exists(filepath):
         return None
     with open(filepath, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        data = json.load(f)
+        # v1.0 (list) -> v2.0 (dict) 변환
+        if isinstance(data, list) and len(data) > 0:
+            first_item = data[0]
+            data = {
+                "version": "1.0",
+                "scenario": first_item.get("scenario", "Daily SQL Challenge"),
+                "problems": data,
+                "metadata": {}
+            }
+        return data
 
 
 def get_latest_challenge() -> Optional[dict]:
@@ -179,12 +203,21 @@ def get_latest_challenge() -> Optional[dict]:
             """)
             
             if res:
-                return {
-                    "version": res[0],
-                    "scenario": res[1],
-                    "problems": res[2],
-                    "metadata": res[3]
+                # v2.0 형식으로 조립 (Dict)
+                challenge_data = {
+                    "version": res.get("version", "2.0"),
+                    "scenario": res.get("scenario_data"),
+                    "problems": res.get("problems_data"),
+                    "metadata": res.get("metadata")
                 }
+                # JSON 문자열 처리
+                for key in ["scenario", "problems", "metadata"]:
+                    if isinstance(challenge_data[key], str):
+                        try:
+                            challenge_data[key] = json.loads(challenge_data[key])
+                        except: pass
+                
+                return challenge_data
     except Exception as e:
         print(f"⚠️ Failed to load latest from DB: {e}")
 
@@ -200,15 +233,22 @@ def get_latest_challenge() -> Optional[dict]:
     files.sort(reverse=True)
     filepath = os.path.join(PROBLEMS_DIR, files[0])
     with open(filepath, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        data = json.load(f)
+        # v1.0->v2.0 보정
+        if isinstance(data, list) and len(data) > 0:
+            first_item = data[0]
+            data = {
+                "version": "1.0",
+                "scenario": first_item.get("scenario", "Daily SQL Challenge"),
+                "problems": data,
+                "metadata": {}
+            }
+        return data
 
 
 def archive_old_format_files():
     """
     기존 포맷 파일들을 archive로 이동
-    - YYYY-MM-DD_set0.json
-    - YYYY-MM-DD_set1.json
-    - stream_YYYY-MM-DD.json
     """
     archive_dir = os.path.join(
         os.path.dirname(PROBLEMS_DIR),
@@ -239,12 +279,6 @@ def archive_old_format_files():
 def generate_and_save_daily_challenge(target_date: Optional[str] = None) -> str:
     """
     Daily Challenge 생성 및 저장 (전체 파이프라인)
-    
-    Args:
-        target_date: YYYY-MM-DD (없으면 오늘)
-    
-    Returns:
-        저장된 파일 경로
     """
     from generator.scenario_generator import generate_scenario
     
@@ -254,24 +288,13 @@ def generate_and_save_daily_challenge(target_date: Optional[str] = None) -> str:
     print(f"\n🎯 Generating Daily Challenge for {target_date}...")
     
     # 1. Scenario 생성
-    print("1️⃣ Generating business scenario...")
     scenario = generate_scenario(target_date)
-    print(f"   ✓ Company: {scenario.company_name}")
-    print(f"   ✓ Product Type: {scenario.product_type}")
-    print(f"   ✓ Situation: {scenario.situation}")
     
     # 2. 문제 생성
-    print("\n2️⃣ Generating problems...")
     problems = generate_daily_problems(scenario)
-    print(f"   ✓ Generated {len(problems)} problems")
-    print(f"   ✓ PA: {sum(1 for p in problems if p['problem_type'] == 'pa')}, Stream: {sum(1 for p in problems if p['problem_type'] == 'stream')}")
     
     # 3. 파일 저장
-    print("\n3️⃣ Saving to file...")
     filepath = save_daily_challenge(scenario, problems, target_date)
-    
-    print(f"\n✅ Daily Challenge complete!")
-    print(f"📁 File: {filepath}")
     
     return filepath
 
@@ -293,6 +316,5 @@ if __name__ == "__main__":
     loaded = load_daily_challenge(target_date or date.today().isoformat())
     if loaded:
         print(f"✅ Successfully loaded {len(loaded['problems'])} problems")
-        print(f"   Scenario: {loaded['scenario']['situation']}")
     else:
         print("❌ Failed to load file")

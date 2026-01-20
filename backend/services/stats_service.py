@@ -1,5 +1,8 @@
 # backend/services/stats_service.py
-"""통계 서비스 - PostgreSQL submissions 테이블 사용 (개인화)"""
+"""
+통계 서비스 - PostgreSQL users 테이블 우선 사용 (Source of Truth)
+"""
+import pandas as pd
 from datetime import date, timedelta
 from typing import List, Optional
 
@@ -17,31 +20,38 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
     try:
         with postgres_connection() as pg:
             if user_id:
-                df = pg.fetch_df("""
+                # submissions 테이블에서 정답 수 계산
+                cnt_df = pg.fetch_df("""
                     SELECT 
                         COUNT(*) as total,
                         SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
                     FROM public.submissions
                     WHERE user_id = %s
                 """, [user_id])
+                total = int(cnt_df.iloc[0]["total"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["total"]) else 0
+                correct = int(cnt_df.iloc[0]["correct"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["correct"]) else 0
             else:
-                df = pg.fetch_df("""
+                # 전체 평균 등
+                cnt_df = pg.fetch_df("""
                     SELECT 
                         COUNT(*) as total,
                         SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
                     FROM public.submissions
                 """)
+                total = int(cnt_df.iloc[0]["total"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["total"]) else 0
+                correct = int(cnt_df.iloc[0]["correct"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["correct"]) else 0
         
-        total = int(df.iloc[0]["total"]) if len(df) > 0 and pd.notnull(df.iloc[0]["total"]) else 0
-        correct = int(df.iloc[0]["correct"]) if len(df) > 0 and pd.notnull(df.iloc[0]["correct"]) else 0
         accuracy = (correct / total * 100) if total > 0 else 0
     except Exception:
         total, correct, accuracy = 0, 0, 0
     
+    # 레벨 명칭 포맷팅 (Lv.X Name)
+    display_level = f"Lv.{level_info.get('level_num', 1)} {level_info['name']}"
+    
     return UserStats(
         streak=streak["current"],
         max_streak=streak["max"],
-        level=level_info["name"],
+        level=display_level,
         total_solved=total,
         correct=level_info.get("correct", correct),
         accuracy=round(accuracy, 1),
@@ -52,7 +62,7 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
 
 
 def get_streak(user_id: Optional[str] = None) -> dict:
-    """연속 출석 스트릭 계산 (개인화)"""
+    """연속 출석 스트릭 계산"""
     try:
         with postgres_connection() as pg:
             if user_id:
@@ -80,7 +90,6 @@ def get_streak(user_id: Optional[str] = None) -> dict:
     streak = 0
     today = get_today_kst()
     
-    # 최근 30일 데이터
     check = today
     for _ in range(30):
         if check.isoformat() in dates:
@@ -93,46 +102,34 @@ def get_streak(user_id: Optional[str] = None) -> dict:
 
 
 def get_level(user_id: Optional[str] = None) -> dict:
-    """점수 기반 레벨 계산 (개인화)"""
+    """사용자 레벨 및 XP 조회 (DB 저장값 우선)"""
     try:
         with postgres_connection() as pg:
             if user_id:
-                df = pg.fetch_df("""
-                    SELECT 
-                        COALESCE(SUM(
-                            CASE difficulty
-                                WHEN 'easy' THEN 10
-                                WHEN 'medium' THEN 25
-                                WHEN 'hard' THEN 50
-                                ELSE 25
-                            END
-                        ), 0) as total_score,
-                        COUNT(*) as correct_count
-                    FROM public.submissions
-                    WHERE is_correct = true AND user_id = %s
-                """, [user_id])
+                # 1. users 테이블에서 직접 조회 (Source of Truth)
+                user_row = pg.fetch_one("SELECT xp, level FROM public.users WHERE id = %s", [user_id])
+                if user_row:
+                    total_score = int(user_row.get("xp", 0))
+                    db_level = int(user_row.get("level", 1))
+                else:
+                    total_score, db_level = 0, 1
             else:
-                df = pg.fetch_df("""
-                    SELECT 
-                        COALESCE(SUM(
-                            CASE difficulty
-                                WHEN 'easy' THEN 10
-                                WHEN 'medium' THEN 25
-                                WHEN 'hard' THEN 50
-                                ELSE 25
-                            END
-                        ), 0) as total_score,
-                        COUNT(*) as correct_count
-                    FROM public.submissions
-                    WHERE is_correct = true
-                """)
-        total_score = int(df.iloc[0]["total_score"]) if len(df) > 0 else 0
-        correct_count = int(df.iloc[0]["correct_count"]) if len(df) > 0 else 0
+                total_score, db_level = 0, 1
+
+            # 정답 개수는 여전히 submissions에서 가져옴
+            if user_id:
+                cnt_df = pg.fetch_df("SELECT COUNT(*) as correct_count FROM public.submissions WHERE is_correct = true AND user_id = %s", [user_id])
+                correct_count = int(cnt_df.iloc[0]["correct_count"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["correct_count"]) else 0
+            else:
+                cnt_df = pg.fetch_df("SELECT COUNT(*) as correct_count FROM public.submissions WHERE is_correct = true")
+                correct_count = int(cnt_df.iloc[0]["correct_count"]) if len(cnt_df) > 0 and pd.notnull(cnt_df.iloc[0]["correct_count"]) else 0
+                
     except Exception:
         total_score = 0
         correct_count = 0
+        db_level = 1
     
-    # 점수 기반 레벨 체계
+    # 레벨 명칭 (UI 표시용)
     levels = [
         (0, "🌱 Beginner"),
         (50, "🌿 Learner"),
@@ -163,6 +160,7 @@ def get_level(user_id: Optional[str] = None) -> dict:
     return {
         "name": level_name,
         "score": total_score,
+        "level_num": db_level,
         "next": next_threshold,
         "correct": correct_count,
         "progress": min(progress, 100)
@@ -170,7 +168,7 @@ def get_level(user_id: Optional[str] = None) -> dict:
 
 
 def get_submission_history(limit: int = 20, data_type: str = None, user_id: Optional[str] = None) -> List[SubmissionHistory]:
-    """제출 이력 조회 (개인화)"""
+    """제출 이력 조회"""
     try:
         with postgres_connection() as pg:
             conditions = []
