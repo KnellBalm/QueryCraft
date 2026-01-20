@@ -96,39 +96,19 @@ jobs:
             --max-instances 2 \
             --memory 256Mi
 
-      # 6. Worker Job 빌드 및 배포 (Cloud Run Job - 무료 티어 최적화)
-      - name: Build and Push Worker
-        run: |
-          docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/worker:${{ github.sha }} -f worker/Dockerfile .
-          docker push us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/worker:${{ github.sha }}
-
-      - name: Deploy Worker Job
-        run: |
-          CLEAN_POSTGRES_DSN=$(echo "${{ secrets.POSTGRES_DSN }}" | tr -d '\n\r')
-
-          gcloud run jobs update querycraft-worker \
-            --image us-central1-docker.pkg.dev/$PROJECT_ID/query-craft/worker:${{ github.sha }} \
-            --region $REGION \
-            --task-timeout=3600 \
-            --max-retries=1 \
-            --memory=1Gi \
-            --cpu=1 \
-            --set-env-vars="POSTGRES_DSN=$CLEAN_POSTGRES_DSN,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
-
-      # 7. Cloud Scheduler 설정 - Job 직접 트리거 (무료 티어: 월 3개 작업)
+      # 6. Cloud Scheduler 설정 - 백엔드 직접 트리거 (X-Scheduler-Key 사용)
       - name: Setup Cloud Scheduler
         run: |
-          # Problem generation - Cloud Run Job 직접 트리거 (KST 10:00 = UTC 01:00)
-          # URI: https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/querycraft-worker:run
+          # Problem generation - Backend API 직접 호출 (KST 10:00 = UTC 01:00)
           gcloud scheduler jobs delete problem-generation-daily --location=$REGION --quiet || true
           gcloud scheduler jobs create http problem-generation-daily \
             --location=$REGION \
             --schedule="0 1 * * *" \
-            --uri="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/querycraft-worker:run" \
+            --uri="${{ steps.get-backend-url.outputs.BACKEND_URL }}/admin/trigger/daily-generation" \
             --http-method=POST \
             --time-zone="UTC" \
-            --oidc-service-account-email="758178119666-compute@developer.gserviceaccount.com" \
-            --description="Direct daily problem generation via Cloud Run Job execution API (Daily 10:00 KST)"
+            --headers="X-Scheduler-Key=${{ secrets.SCHEDULER_API_KEY }},Content-Type=application/json" \
+            --description="Daily problem generation via backend API trigger (Daily 10:00 KST)"
 
           # Tip generation - 독립 실행 (KST 00:30 = UTC 15:30)
           gcloud scheduler jobs delete tip-generation-daily --location=$REGION --quiet || true

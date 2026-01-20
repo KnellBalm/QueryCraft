@@ -962,6 +962,15 @@ async def trigger_daily_generation(request: Request):
         except Exception as e:
             logger.warning(f"[TRIGGER] Tip gen error: {e}")
         
+        # 5. Daily Challenge 테이블 업데이트 (백엔드 로드용)
+        try:
+            from backend.generator.daily_challenge_writer import save_daily_challenge
+            save_daily_challenge(today)
+            results["daily_challenge_saved"] = True
+            logger.info("[TRIGGER] Daily challenge table updated")
+        except Exception as e:
+            logger.warning(f"[TRIGGER] Daily challenge save error: {e}")
+        
         db_log(LogCategory.SCHEDULER, f"일일 생성 완료: {results}", LogLevel.INFO, "trigger")
         
     except Exception as e:
