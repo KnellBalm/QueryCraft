@@ -563,19 +563,35 @@ async def get_me(request: Request):
                 user["created_at"] = df.iloc[0].get("created_at").isoformat() if df.iloc[0].get("created_at") else None
     except Exception:
         user["is_admin"] = False
-    
     return {"logged_in": True, "user": user}
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
+async def logout(response: Response):
     """로그아웃"""
+    # The original logout function had a bug where it tried to delete a session
+    # without checking if session_id existed, and then deleted the cookie.
+    # The new logout function simplifies this to just delete the cookie.
+    # If a session_id was present, the session would eventually expire.
+    # For a more robust logout, we should still delete the session if it exists.
+    # Let's keep the original logic for session deletion if session_id is present.
     session_id = request.cookies.get("session_id")
     if session_id:
         delete_session(session_id)
     
     response.delete_cookie("session_id")
     return {"success": True}
+
+
+def get_user_id_from_request(request: Request) -> Optional[str]:
+    """Request에서 user_id 추출 (공통 유틸리티)"""
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        return None
+    session = get_session(session_id)
+    if not session or not session.get("user"):
+        return None
+    return session["user"].get("id")
 
 
 @router.get("/status")

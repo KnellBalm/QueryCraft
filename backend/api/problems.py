@@ -12,21 +12,10 @@ from backend.services.problem_service import (
 )
 from backend.services.recommendation_service import get_recommended_problems
 from backend.common.date_utils import get_today_kst
-from backend.api.auth import get_session
+from backend.api.auth import get_session, get_user_id_from_request
 
 
 router = APIRouter(prefix="/problems", tags=["problems"])
-
-
-def get_user_id_from_request(request: Request) -> Optional[str]:
-    """Request에서 user_id 추출"""
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        return None
-    session = get_session(session_id)
-    if not session or not session.get("user"):
-        return None
-    return session["user"].get("id")
 
 
 @router.get("/schema/{data_type}", response_model=list[TableSchema])
@@ -83,7 +72,7 @@ async def list_problems(
     problems_raw = get_problems(dt, data_type, user_id)
     
     # Daily Challenge 필터링 로직 적용 (6개 제한 및 세트 매칭)
-    from backend.api.daily import filter_problems_by_set
+    from backend.services.problem_service import filter_problems_by_set
     problems = filter_problems_by_set(problems_raw, user_id, dt)
     
     completed = sum(1 for p in problems if p.get('is_completed', False))

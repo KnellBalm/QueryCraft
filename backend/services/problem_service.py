@@ -18,6 +18,63 @@ PROBLEM_DIR = Path("problems/daily")
 NUM_PROBLEM_SETS = 2
 
 
+def filter_problems_by_set(problems_raw: List[Any], user_id: Optional[str], target_date: date) -> List[Dict[str, Any]]:
+    """사용자 세트에 맞는 문제만 필터링 및 프론트엔드용 필드 정규화"""
+    if not problems_raw:
+        return []
+    
+    # 1. Pydantic 모델인 경우 dict로 변환
+    problems = []
+    for p in problems_raw:
+        if hasattr(p, "model_dump"):
+            problems.append(p.model_dump())
+        elif isinstance(p, dict):
+            problems.append(p)
+        else:
+            problems.append(vars(p))
+
+    # 2. 문제 데이터에 set_index가 있는지 확인 (v2.0+)
+    has_set_index = any('set_index' in p for p in problems)
+    
+    # 3. 사용자 세트 인덱스 조회 (PA 타입 기준으로 대표 할당)
+    set_index = get_user_set_index(user_id, target_date, "pa")
+    
+    if not has_set_index:
+        filtered = problems[:6]
+    else:
+        # 4. 필터링 (set_index 매칭)
+        filtered = [p for p in problems if p.get('set_index') == set_index]
+    
+    # 만약 필터링 결과가 없으면 (예: 데이터 생성 오류) 전체 중 6개라도 반환
+    if not filtered:
+        logger.warning(f"No problems found for set_index {set_index}, falling back to any 6")
+        filtered = problems[:6]
+    
+    # 5. 프론트엔드 호환성을 위한 필드 정규화
+    final_problems = []
+    for p in filtered:
+        p_copy = p.copy()
+        # frontend/src/pages/DailyChallenge.tsx는 problem_type을 기대함
+        if 'problem_type' not in p_copy:
+            p_copy['problem_type'] = p_copy.get('data_type', 'pa')
+        # difficulty가 누락된 경우 기본값
+        if 'difficulty' not in p_copy:
+            p_copy['difficulty'] = 'medium'
+        # table_names가 누락된 경우 빈 리스트
+        if 'table_names' not in p_copy:
+            p_copy['table_names'] = p_copy.get('table_names', [])
+            
+        final_problems.append(p_copy)
+        
+    return final_problems[:6]
+from backend.common.logging import get_logger
+
+logger = get_logger(__name__)
+
+PROBLEM_DIR = Path("problems/daily")
+NUM_PROBLEM_SETS = 2
+
+
 def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str) -> int:
     """사용자에게 할당된 문제 세트 인덱스 조회 (없으면 랜덤 할당)"""
     if not user_id:
