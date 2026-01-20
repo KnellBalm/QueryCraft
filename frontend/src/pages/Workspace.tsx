@@ -34,6 +34,7 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
     const [leftWidth, setLeftWidth] = useState(45);
     const [editorHeightPercent, setEditorHeightPercent] = useState(50); // 기본 50%
     const [metadata, setMetadata] = useState<any>(null); // DatasetMetadata
+    const [scenario, setScenario] = useState<any>(null); // Daily Challenge Scenario
     const [insightData, setInsightData] = useState<any>(null); // 구조화된 인사이트 데이터
     const [showInsightModal, setShowInsightModal] = useState(false);
     const [insightLoading, setInsightLoading] = useState(false);
@@ -59,15 +60,39 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
     const loadData = useCallback(async () => {
         setIsFetching(true);
         try {
+            const searchParams = new URLSearchParams(window.location.search);
+            const targetDate = searchParams.get('date') || undefined;
+            const targetProblemId = searchParams.get('problemId');
+
+            // 방어 코드: dataType이 유효하지 않으면 호출 안함
+            if (!['pa', 'stream', 'rca'].includes(dataType)) {
+                console.warn('Invalid dataType for Workspace:', dataType);
+                return;
+            }
+
             const [problemsRes, schemaRes] = await Promise.all([
-                problemsApi.list(dataType),
+                problemsApi.list(dataType, targetDate),
                 problemsApi.schema(dataType),
             ]);
-            const newProblems = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
+
+            const newProblems: Problem[] = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
             setProblems(newProblems);
             setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
             setMetadata(problemsRes.data.metadata || null);
-            setSelectedIndex(0);
+            setScenario(problemsRes.data.scenario || null); // 시나리오 추가
+
+            // 특정 문제 ID가 지정된 경우 해당 인덱스 찾기
+            if (targetProblemId && newProblems.length > 0) {
+                const index = newProblems.findIndex(p => p.problem_id === targetProblemId);
+                if (index !== -1) {
+                    setSelectedIndex(index);
+                } else {
+                    setSelectedIndex(0);
+                }
+            } else {
+                setSelectedIndex(0);
+            }
+
             setSubmitResult(null);
             setResult(null);
             setSql('');
@@ -317,6 +342,7 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
                         problems={problems}
                         selectedIndex={selectedIndex}
                         metadata={metadata}
+                        scenario={scenario}
                         isFetching={isFetching}
                         dataType={dataType}
                         onSelectProblem={handleSelectProblem}

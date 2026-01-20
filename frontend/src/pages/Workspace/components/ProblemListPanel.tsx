@@ -16,6 +16,7 @@ interface ProblemListPanelProps {
     problems: Problem[];
     selectedIndex: number;
     metadata: DatasetMetadata | null;
+    scenario?: any; // 추가
     isFetching: boolean;
     dataType: 'pa' | 'stream' | 'rca';
     onSelectProblem: (index: number) => void;
@@ -27,6 +28,7 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
     problems,
     selectedIndex,
     metadata,
+    scenario, // 추가
     isFetching,
     dataType,
     onSelectProblem,
@@ -56,6 +58,18 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
             </div>
 
 
+
+            {scenario && (
+                <div className="daily-scenario-context">
+                    <div className="scenario-title-bar">
+                        <span className="scenario-label">📅 오늘의 상황</span>
+                        <span className="scenario-date">{scenario.date}</span>
+                    </div>
+                    <div className="scenario-description">
+                        {renderMarkdown(scenario.background || scenario.story)}
+                    </div>
+                </div>
+            )}
 
             {selectedProblem && (
                 <div className="problem-detail">

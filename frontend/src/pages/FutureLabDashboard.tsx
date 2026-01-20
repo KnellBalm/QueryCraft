@@ -43,10 +43,12 @@ export function FutureLabDashboard() {
                 <div className="hero-content">
                     <span className="hero-badge">🚀 FUTURE LAB</span>
                     <h1>AI 시대의 분석 환경을 미리 경험하세요</h1>
-                    <p>
-                        2026년의 데이터 분석가가 일하는 방식입니다.
-                        AI와 협업하여 더 빠르고, 더 정확하게 인사이트를 도출하세요.
-                    </p>
+                    <div className="hero-actions">
+                        <Link to="/daily" className="btn-quick-start">
+                            <span>🔥 오늘의 데일리 챌린지 시작하기</span>
+                            <small>클릭 한 번으로 바로 SQL 풀기</small>
+                        </Link>
+                    </div>
                 </div>
             </div>
 

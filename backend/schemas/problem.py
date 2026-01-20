@@ -67,6 +67,7 @@ class ProblemListResponse(BaseModel):
     total: int
     completed: int
     metadata: Optional[DatasetMetadata] = None
+    scenario: Optional[dict] = None  # Daily Challenge 시나리오 정보 추가
 
 
 class ProblemDetailResponse(BaseModel):

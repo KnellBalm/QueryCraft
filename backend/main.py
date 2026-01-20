@@ -131,7 +131,8 @@ async def log_errors_middleware(request, call_next):
     if response.status_code == 404:
         from backend.common.logging import get_logger
         logger = get_logger("backend.main.404")
-        logger.warning(f"404 Not Found: {request.method} {request.url.path} (Referer: {request.headers.get('referer', 'N/A')})")
+        full_url = str(request.url)
+        logger.warning(f"404 Not Found: {request.method} {full_url} (Referer: {request.headers.get('referer', 'N/A')})")
         
     return response
 

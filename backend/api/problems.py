@@ -83,6 +83,13 @@ async def list_problems(
     problems = get_problems(dt, data_type, user_id)
     completed = sum(1 for p in problems if p.is_completed)
     
+    # 챌린지 시나리오 조회 (Daily Challenge 테이블 우선)
+    scenario_data = None
+    from backend.generator.daily_challenge_writer import load_daily_challenge
+    challenge = load_daily_challenge(dt.isoformat())
+    if challenge:
+        scenario_data = challenge.get("scenario")
+
     # 메타데이터 추가
     metadata = None
     if data_type in ("pa", "rca"):
@@ -107,7 +114,8 @@ async def list_problems(
         problems=problems,
         total=len(problems),
         completed=completed,
-        metadata=metadata
+        metadata=metadata,
+        scenario=scenario_data
     )
     
     # Deprecation 헤더 추가 (PA, Stream만)

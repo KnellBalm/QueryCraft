@@ -62,7 +62,22 @@ const DailyChallenge: React.FC = () => {
         : '/daily/latest';
 
       const response = await api.get(endpoint);
-      setChallenge(response.data);
+      const data: DailyChallengeData = response.data;
+      setChallenge(data);
+
+      // 데이터가 있고 리다이렉트 방지 파라미터가 없으면 즉시 이동
+      const searchParams = new URLSearchParams(window.location.search);
+      const shouldRedirect = searchParams.get('redirect') !== 'false';
+
+      if (data.problems && data.problems.length > 0 && shouldRedirect) {
+        const firstProblem = data.problems[0];
+        const dataType = firstProblem.problem_type || 'pa';
+        const params = new URLSearchParams({
+          date: data.scenario.date || '',
+          problemId: firstProblem.problem_id,
+        });
+        navigate(`/workspace/${dataType}?${params.toString()}`, { replace: true });
+      }
     } catch (err: any) {
       if (err.response?.status === 404) {
         setError(`Daily Challenge를 찾을 수 없습니다 (${date || '최신'})`);

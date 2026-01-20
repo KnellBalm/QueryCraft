@@ -42,7 +42,46 @@
     color: var(--text-secondary);
     font-size: 1.1rem;
     line-height: 1.6;
-    margin: 0;
+    margin: 0 0 2rem 0;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.btn-quick-start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--neon-purple) 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px var(--accent-glow);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-quick-start:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 35px var(--accent-glow);
+    filter: brightness(1.1);
+}
+
+.btn-quick-start span {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+
+.btn-quick-start small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    font-weight: 400;
 }
 
 /* Features Grid */

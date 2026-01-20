@@ -369,7 +369,7 @@ async def google_login():
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(400, "Google OAuth not configured")
     
-    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/auth/google/callback"
+    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/api/auth/google/callback"
     google_auth_url = (
         "https://accounts.google.com/o/oauth2/auth"
         f"?client_id={GOOGLE_CLIENT_ID}"
@@ -386,7 +386,7 @@ async def google_callback(code: str, response: Response):
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         raise HTTPException(400, "Google OAuth not configured")
     
-    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/auth/google/callback"
+    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/api/auth/google/callback"
     
     # 토큰 교환
     async with httpx.AsyncClient() as client:
@@ -453,7 +453,7 @@ async def kakao_login():
     if not KAKAO_CLIENT_ID:
         raise HTTPException(400, "Kakao OAuth not configured")
     
-    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/auth/kakao/callback"
+    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/api/auth/kakao/callback"
     kakao_auth_url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={KAKAO_CLIENT_ID}"
@@ -469,7 +469,7 @@ async def kakao_callback(code: str, response: Response):
     if not KAKAO_CLIENT_ID:
         raise HTTPException(400, "Kakao OAuth not configured")
     
-    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/auth/kakao/callback"
+    redirect_uri = f"{FRONTEND_URL.replace('15173', '15174')}/api/auth/kakao/callback"
     
     # 토큰 교환
     async with httpx.AsyncClient() as client:
