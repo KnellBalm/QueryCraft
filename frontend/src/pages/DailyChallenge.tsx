@@ -134,7 +134,7 @@ const DailyChallenge: React.FC = () => {
       <div className="daily-header">
         <div className="daily-title">
           <h1>🗓️ Daily Challenge</h1>
-          <span className="daily-date">{challenge.scenario.date}</span>
+          <span className="daily-date">{challenge.scenario?.date || ''}</span>
         </div>
         <button
           className="toggle-scenario-btn"
@@ -153,10 +153,10 @@ const DailyChallenge: React.FC = () => {
 
       <div className="problems-section">
         <div className="problems-header">
-          <h2>📝 오늘의 문제 ({challenge.metadata.total_problems}개)</h2>
+          <h2>📝 오늘의 문제 ({challenge.metadata?.total_problems || 0}개)</h2>
           <div className="problem-stats">
-            <span className="stat">PA: {challenge.metadata.pa_count}</span>
-            <span className="stat">Stream: {challenge.metadata.stream_count}</span>
+            <span className="stat">PA: {challenge.metadata?.pa_count || 0}</span>
+            <span className="stat">Stream: {challenge.metadata?.stream_count || 0}</span>
           </div>
         </div>
 

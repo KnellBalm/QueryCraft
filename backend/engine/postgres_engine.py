@@ -35,6 +35,24 @@ class PostgresEngine:
         with self.conn.cursor() as cur:
             psycopg2.extras.execute_batch(cur, sql, rows, page_size=5000)
 
+    def fetch_one(self, sql: str, params: Iterable[Any] | None = None) -> dict | None:
+        """단일 행을 dict 형식으로 반환"""
+        with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def fetch_all(self, sql: str, params: Iterable[Any] | None = None) -> list[dict]:
+        """모든 행을 dict 리스트 형식으로 반환"""
+        with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+
+    def fetchone(self, sql: str, params: Iterable[Any] | None = None) -> dict | None:
+        """Alias for fetch_one (DuckDBEngine compatibility)"""
+        return self.fetch_one(sql, params)
+
     def fetch_df(self, sql: str, params: Iterable[Any] | None = None) -> pd.DataFrame:
         return pd.read_sql_query(sql, self.conn, params=params)
 
