@@ -40,6 +40,17 @@ async def get_latest_daily_challenge(request: Request):
         user_id, 
         target_date
     )
+
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    if "scenario" in challenge and "metadata" in challenge:
+        scenario = challenge["scenario"]
+        challenge["metadata"].update({
+            "company_name": scenario.get("company_name"),
+            "company_description": scenario.get("company_description"),
+            "product_type": scenario.get("product_type"),
+            "north_star": scenario.get("north_star"),
+            "key_metrics": scenario.get("key_metrics"),
+        })
     
     return challenge
 
@@ -75,6 +86,17 @@ async def get_daily_challenge(request: Request, target_date: str):
         user_id, 
         dt
     )
+
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    if "scenario" in challenge and "metadata" in challenge:
+        scenario = challenge["scenario"]
+        challenge["metadata"].update({
+            "company_name": scenario.get("company_name"),
+            "company_description": scenario.get("company_description"),
+            "product_type": scenario.get("product_type"),
+            "north_star": scenario.get("north_star"),
+            "key_metrics": scenario.get("key_metrics"),
+        })
     
     return challenge
 
@@ -99,10 +121,22 @@ async def get_daily_problems_only(request: Request, target_date: str):
     
     user_id = get_user_id_from_request(request)
     
+    metadata = challenge.get("metadata", {}).copy()
+    scenario = challenge.get("scenario", {})
+    
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    metadata.update({
+        "company_name": scenario.get("company_name"),
+        "company_description": scenario.get("company_description"),
+        "product_type": scenario.get("product_type"),
+        "north_star": scenario.get("north_star"),
+        "key_metrics": scenario.get("key_metrics"),
+    })
+
     return {
         "date": target_date,
         "problems": filter_problems_by_set(challenge.get("problems", []), user_id, dt),
-        "metadata": challenge["metadata"]
+        "metadata": metadata
     }
 
 
