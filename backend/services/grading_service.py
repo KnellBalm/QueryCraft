@@ -270,7 +270,19 @@ def grade_submission(
         logger = get_logger("grading_service")
         logger.info(f"Grading result for {user_id}: problem={problem_id}, is_correct={is_correct}")
     
-    # 1. PostgreSQL에 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
+        # 4. XP 계산 및 사용자 스킬 업데이트 (정답 시)
+        xp_earned = 0
+        if user_id:
+            from backend.services.skill_service import update_user_skills
+            update_user_skills(user_id, problem_id, is_correct)
+            
+            if is_correct:
+                diff = problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
+                xp_earned = get_difficulty_xp(diff)
+                award_xp(user_id, xp_earned)
+                feedback += f" (+{xp_earned} XP)"
+    
+        # 5. PostgreSQL에 제출 기록 저장 (PostgreSQL) - 로그인한 사용자만
         if user_id:
             save_submission_pg(
                 session_date=session_date,
@@ -281,19 +293,8 @@ def grade_submission(
                 feedback=feedback,
                 user_id=user_id,
                 difficulty=problem.difficulty if hasattr(problem, 'difficulty') else 'medium',
-                xp_earned=xp_value if is_correct else 0
+                xp_earned=xp_earned
             )
-        
-        # 5. 사용자 스킬 및 XP 업데이트 (정답 시)
-        if user_id:
-            from backend.services.skill_service import update_user_skills
-            update_user_skills(user_id, problem_id, is_correct)
-            
-            if is_correct:
-                diff = problem.difficulty if hasattr(problem, 'difficulty') else 'medium'
-                xp_value = get_difficulty_xp(diff)
-                award_xp(user_id, xp_value)
-                feedback += f" (+{xp_value} XP)"
         
         # 6. 로깅
         result_text = "정답" if is_correct else "오답"
