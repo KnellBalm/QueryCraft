@@ -1,4 +1,5 @@
 # backend/services/grading_service.py
+# [STABLE-FLOW] 이 파일은 핵심 채점 로직을 포함하고 있으며 현재 안정 상태로 고정되었습니다. 수정 시 주의하십시오.
 """채점 서비스 - grading 스키마 테이블 비교 방식"""
 import time
 import json

@@ -1,4 +1,5 @@
 # backend/services/problem_service.py
+# [STABLE-FLOW] 이 파일은 핵심 문제 관리 로직을 포함하며 현재 안정 상태로 고정되었습니다. 수정 시 주의하십시오.
 """문제 관련 서비스"""
 import json
 import random

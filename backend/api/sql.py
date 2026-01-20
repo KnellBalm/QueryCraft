@@ -1,4 +1,5 @@
 # backend/api/sql.py
+# [STABLE-FLOW] 이 파일은 핵심 제출 API 로직을 포함하며 현재 안정 상태로 고정되었습니다. 수정 시 주의하십시오.
 """SQL 실행 API"""
 from fastapi import APIRouter, Request
 from pydantic import BaseModel

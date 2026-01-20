@@ -1,4 +1,5 @@
 // frontend/src/components/SQLEditor.tsx
+// [STABLE-FLOW] 이 파일은 핵심 에디터 UI 및 로직을 포함하며 현재 안정 상태로 고정되었습니다. 수정 시 주의하십시오.
 import Editor, { type Monaco } from '@monaco-editor/react';
 import { useCallback, useRef, useEffect } from 'react';
 import type { editor } from 'monaco-editor';
