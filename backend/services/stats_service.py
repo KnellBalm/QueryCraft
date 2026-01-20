@@ -2,7 +2,6 @@
 """통계 서비스 - PostgreSQL submissions 테이블 사용 (개인화)"""
 from datetime import date, timedelta
 from typing import List, Optional
-import pandas as pd
 
 from backend.services.database import postgres_connection
 from backend.common.date_utils import get_today_kst
@@ -42,7 +41,7 @@ def get_user_stats(user_id: Optional[str] = None) -> UserStats:
     return UserStats(
         streak=streak["current"],
         max_streak=streak["max"],
-        level=f"Lv.{level_info.get('level_num', 1)} {level_info['name']}",
+        level=level_info["name"],
         total_solved=total,
         correct=level_info.get("correct", correct),
         accuracy=round(accuracy, 1),
@@ -94,20 +93,10 @@ def get_streak(user_id: Optional[str] = None) -> dict:
 
 
 def get_level(user_id: Optional[str] = None) -> dict:
-    """사용자 레벨 및 XP 조회 (DB 저장값 우선)"""
+    """점수 기반 레벨 계산 (개인화)"""
     try:
         with postgres_connection() as pg:
             if user_id:
-                # 1. users 테이블에서 직접 조회
-                user_row = pg.fetch_one("SELECT xp, level FROM public.users WHERE id = %s", [user_id])
-                if user_row:
-                    total_score = int(user_row.get("xp", 0))
-                    # DB 레벨이 100단위가 아닐 경우를 대비해 재계산 로직 유지하거나 원본 노출
-                    db_level = int(user_row.get("level", 1))
-                else:
-                    total_score, db_level = 0, 1
-            else:
-                # 전체 평균 등 (필요 시 submissions 활용)
                 df = pg.fetch_df("""
                     SELECT 
                         COALESCE(SUM(
@@ -117,27 +106,33 @@ def get_level(user_id: Optional[str] = None) -> dict:
                                 WHEN 'hard' THEN 50
                                 ELSE 25
                             END
-                        ), 0) as total_score
+                        ), 0) as total_score,
+                        COUNT(*) as correct_count
+                    FROM public.submissions
+                    WHERE is_correct = true AND user_id = %s
+                """, [user_id])
+            else:
+                df = pg.fetch_df("""
+                    SELECT 
+                        COALESCE(SUM(
+                            CASE difficulty
+                                WHEN 'easy' THEN 10
+                                WHEN 'medium' THEN 25
+                                WHEN 'hard' THEN 50
+                                ELSE 25
+                            END
+                        ), 0) as total_score,
+                        COUNT(*) as correct_count
                     FROM public.submissions
                     WHERE is_correct = true
                 """)
-                total_score = int(df.iloc[0]["total_score"]) if len(df) > 0 else 0
-                db_level = (total_score // 100) + 1
-
-            # 정답 개수는 여전히 submissions에서 가져옴
-            if user_id:
-                cnt_df = pg.fetch_df("SELECT COUNT(*) as correct_count FROM public.submissions WHERE is_correct = true AND user_id = %s", [user_id])
-                correct_count = int(cnt_df.iloc[0]["correct_count"]) if len(cnt_df) > 0 else 0
-            else:
-                cnt_df = pg.fetch_df("SELECT COUNT(*) as correct_count FROM public.submissions WHERE is_correct = true")
-                correct_count = int(cnt_df.iloc[0]["correct_count"]) if len(cnt_df) > 0 else 0
-                
+        total_score = int(df.iloc[0]["total_score"]) if len(df) > 0 else 0
+        correct_count = int(df.iloc[0]["correct_count"]) if len(df) > 0 else 0
     except Exception:
         total_score = 0
         correct_count = 0
-        db_level = 1
     
-    # 레벨 명칭 (UI 표시용)
+    # 점수 기반 레벨 체계
     levels = [
         (0, "🌱 Beginner"),
         (50, "🌿 Learner"),
@@ -165,11 +160,9 @@ def get_level(user_id: Optional[str] = None) -> dict:
     if next_threshold > current_threshold:
         progress = int((total_score - current_threshold) / (next_threshold - current_threshold) * 100)
     
-    # DB에 레벨 이름이 저장되어 있지 않으므로 계산된 이름 사용, 단 레벨 숫자는 DB값 존중 가능
     return {
         "name": level_name,
         "score": total_score,
-        "level_num": db_level,
         "next": next_threshold,
         "correct": correct_count,
         "progress": min(progress, 100)

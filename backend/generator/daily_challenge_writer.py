@@ -145,26 +145,12 @@ def load_daily_challenge(target_date: str) -> Optional[dict]:
             """, (target_date,))
             
             if res:
-                # v2.0 형식으로 조립
-                challenge_data = {
-                    "version": res.get("version", "2.0"),
-                    "scenario": res.get("scenario_data"),
-                    "problems": res.get("problems_data"),
-                    "metadata": res.get("metadata")
+                return {
+                    "version": res[0],
+                    "scenario": res[1],
+                    "problems": res[2],
+                    "metadata": res[3]
                 }
-                # JSON 문자열 처리
-                for key in ["scenario", "problems", "metadata"]:
-                    if isinstance(challenge_data[key], str):
-                        try:
-                            challenge_data[key] = json.loads(challenge_data[key])
-                        except: pass
-                
-                # v1.0->v2.0 보정
-                if isinstance(challenge_data["problems"], list) and challenge_data["scenario"] is None:
-                    first_item = challenge_data["problems"][0] if challenge_data["problems"] else {}
-                    challenge_data["scenario"] = first_item.get("scenario", "Daily SQL Challenge")
-                
-                return challenge_data
     except Exception as e:
         print(f"⚠️ Failed to load from DB: {e}")
 
@@ -174,17 +160,7 @@ def load_daily_challenge(target_date: str) -> Optional[dict]:
     if not os.path.exists(filepath):
         return None
     with open(filepath, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        # v1.0 (list) -> v2.0 (dict) 변환
-        if isinstance(data, list) and len(data) > 0:
-            first_item = data[0]
-            data = {
-                "version": "1.0",
-                "scenario": first_item.get("scenario", "Daily SQL Challenge"),
-                "problems": data,
-                "metadata": {}
-            }
-        return data
+        return json.load(f)
 
 
 def get_latest_challenge() -> Optional[dict]:
@@ -203,26 +179,12 @@ def get_latest_challenge() -> Optional[dict]:
             """)
             
             if res:
-                challenge_data = {
-                    "version": res.get("version", "2.0"),
-                    "scenario": res.get("scenario_data"),
-                    "problems": res.get("problems_data"),
-                    "metadata": res.get("metadata"),
-                    "challenge_date": res.get("challenge_date")
+                return {
+                    "version": res[0],
+                    "scenario": res[1],
+                    "problems": res[2],
+                    "metadata": res[3]
                 }
-                # JSON 문자열 처리
-                for key in ["scenario", "problems", "metadata"]:
-                    if isinstance(challenge_data[key], str):
-                        try:
-                            challenge_data[key] = json.loads(challenge_data[key])
-                        except: pass
-                
-                # 변환 로직
-                if isinstance(challenge_data["problems"], list) and challenge_data["scenario"] is None:
-                    first_item = challenge_data["problems"][0] if challenge_data["problems"] else {}
-                    challenge_data["scenario"] = first_item.get("scenario", "Daily SQL Challenge")
-
-                return challenge_data
     except Exception as e:
         print(f"⚠️ Failed to load latest from DB: {e}")
 
