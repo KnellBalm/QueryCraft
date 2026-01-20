@@ -20,55 +20,59 @@ PROBLEM_TYPES = ['pa', 'stream']
 
 def generate_daily_problems(scenario: BusinessScenario) -> List[dict]:
     """
-    하나의 시나리오에서 6문제 생성
-    - PA 3문제 + Stream 3문제
-    - 난이도: Easy 2, Medium 2, Hard 2
+    하나의 시나리오에서 12문제 생성 (2개 세트 x 6문제)
+    - Set 0: 6문제 (PA 3, Stream 3 / Easy 2, Medium 2, Hard 2)
+    - Set 1: 6문제 (PA 3, Stream 3 / Easy 2, Medium 2, Hard 2)
     
     Args:
         scenario: BusinessScenario 객체
     
     Returns:
-        6개의 문제 딕셔너리 리스트
+        12개의 문제 딕셔너리 리스트
     """
-    problems = []
+    all_problems = []
     
-    # 난이도와 유형 조합 생성
-    # Easy 2개 (PA 1, Stream 1)
-    # Medium 2개 (PA 1, Stream 1)  
-    # Hard 2개 (PA 1, Stream 1)
-    combinations = [
-        ('easy', 'pa'),
-        ('easy', 'stream'),
-        ('medium', 'pa'),
-        ('medium', 'stream'),
-        ('hard', 'pa'),
-        ('hard', 'stream'),
-    ]
-    
-    # 순서 섞기 (매번 다른 순서)
-    random.shuffle(combinations)
-    
-    for idx, (difficulty, problem_type) in enumerate(combinations, 1):
-        problem_id = f"{scenario.date}-{idx}"
+    for set_idx in range(2):
+        set_problems = []
+        # 난이도와 유형 조합 생성
+        combinations = [
+            ('easy', 'pa'),
+            ('easy', 'stream'),
+            ('medium', 'pa'),
+            ('medium', 'stream'),
+            ('hard', 'pa'),
+            ('hard', 'stream'),
+        ]
         
-        if problem_type == 'pa':
-            problem = generate_pa_problem(
-                scenario=scenario,
-                difficulty=difficulty,
-                problem_id=problem_id,
-                problem_number=idx
-            )
-        else:
-            problem = generate_stream_problem(
-                scenario=scenario,
-                difficulty=difficulty,
-                problem_id=problem_id,
-                problem_number=idx
-            )
+        # 순서 섞기
+        random.shuffle(combinations)
         
-        problems.append(problem)
+        for idx_in_set, (difficulty, problem_type) in enumerate(combinations, 1):
+            # 전역 고유 ID: {date}-{set}-{idx}
+            problem_id = f"{scenario.date}-{set_idx}-{idx_in_set}"
+            
+            if problem_type == 'pa':
+                problem = generate_pa_problem(
+                    scenario=scenario,
+                    difficulty=difficulty,
+                    problem_id=problem_id,
+                    problem_number=idx_in_set
+                )
+            else:
+                problem = generate_stream_problem(
+                    scenario=scenario,
+                    difficulty=difficulty,
+                    problem_id=problem_id,
+                    problem_number=idx_in_set
+                )
+            
+            # 세트 정보 주입
+            problem['set_index'] = set_idx
+            set_problems.append(problem)
+            
+        all_problems.extend(set_problems)
     
-    return problems
+    return all_problems
 
 
 def generate_pa_problem(

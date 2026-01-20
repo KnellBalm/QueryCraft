@@ -17,9 +17,8 @@ data/*
 # .agent/*
 # !.agent/rules/
 
-# 생성된 문제 파일 (각 환경에서 자체 생성)
-problems/daily/
-problems/monthly/
+# 생성된 문제 파일 및 아카이브 (각 환경에서 자체 생성)
+problems/
 
 # Secrets 백업 및 보호
 .env.secrets.local

@@ -87,10 +87,20 @@ def get_streak(user_id: Optional[str] = None) -> dict:
     if not dates:
         return {"current": 0, "max": 0}
     
-    streak = 0
     today = get_today_kst()
+    yesterday = today - timedelta(days=1)
     
-    check = today
+    # 오늘 또는 어제 기록이 없으면 연속 끊김
+    today_iso = today.isoformat()
+    yesterday_iso = yesterday.isoformat()
+    
+    if today_iso not in dates and yesterday_iso not in dates:
+        return {"current": 0, "max": len(dates)}
+    
+    # 오늘 붙어 시작하거나, 어제부터 시작하거나
+    check = today if today_iso in dates else yesterday
+    streak = 0
+    
     for _ in range(30):
         if check.isoformat() in dates:
             streak += 1

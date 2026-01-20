@@ -188,7 +188,7 @@ function AppContent() {
           </div>
         </header>
 
-        <main className="main">
+        <main className="app-main">
           <Routes>
             {isWeekend && !canAccessOnWeekend ? (
               <>
