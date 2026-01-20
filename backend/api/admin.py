@@ -383,7 +383,38 @@ def run_full_generation_task(today: date):
                 except Exception as e:
                     errors.append(f"✗ {mode.upper()} 문제 생성 오류: {str(e)}")
         
-        # 3. 최종 상태 업데이트
+        # 3. Daily Challenge 통합 저장 (daily_challenges 테이블 및 파일)
+        try:
+            from backend.generator.daily_challenge_writer import save_daily_challenge
+            from backend.generator.scenario_generator import generate_scenario
+            
+            # 1, 2 단계에서 생성된 문제들을 DB에서 다시 읽어와서 통합 시나리오와 결합
+            with postgres_connection() as pg:
+                # 오늘 자 모든 문제 가져오기
+                df = pg.fetch_df("""
+                    SELECT description FROM public.problems 
+                    WHERE problem_date = %s
+                """, [today])
+                
+                db_problems = []
+                for _, row in df.iterrows():
+                    desc = row["description"]
+                    if isinstance(desc, str):
+                        db_problems.append(json.loads(desc))
+                    else:
+                        db_problems.append(desc)
+                
+                if db_problems:
+                    # 기존 시나리오가 있으면 로드, 없으면 생성
+                    scenario = generate_scenario(str(today))
+                    save_daily_challenge(scenario, db_problems, str(today))
+                    results.append("✓ Daily Challenge 통합 저장 완료")
+                else:
+                    errors.append("✗ 통합 저장 실패: 생성된 문제가 없습니다.")
+        except Exception as e:
+            errors.append(f"✗ 통합 저장 오류: {str(e)}")
+            
+        # 4. 최종 상태 업데이트
         duration = int((time.time() - start_time) * 1000)
         status = 'completed' if not errors else 'failed'
         error_msg = "\n".join(errors) if errors else None

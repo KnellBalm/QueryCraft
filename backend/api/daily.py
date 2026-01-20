@@ -15,29 +15,45 @@ router = APIRouter(prefix="/daily", tags=["Daily Challenge"])
 
 
 def filter_problems_by_set(problems: List[dict], user_id: Optional[str], target_date: date) -> List[dict]:
-    """사용자 세트에 맞는 문제만 필터링"""
+    """사용자 세트에 맞는 문제만 필터링 및 프론트엔드용 필드 정규화"""
     if not problems:
         return []
     
     # 1. 문제 데이터에 set_index가 있는지 확인 (v2.0+)
     has_set_index = any('set_index' in p for p in problems)
     
-    if not has_set_index:
-        # 구버전 데이터는 상위 6개만 반환 (또는 전체 반환)
-        return problems[:6]
-    
     # 2. 사용자 세트 인덱스 조회 (PA 타입 기준으로 대표 할당)
+    # get_user_set_index는 0 또는 1을 반환함
     set_index = get_user_set_index(user_id, target_date, "pa")
     
-    # 3. 필터링
-    filtered = [p for p in problems if p.get('set_index') == set_index]
+    if not has_set_index:
+        filtered = problems[:6]
+    else:
+        # 3. 필터링 (set_index 매칭)
+        filtered = [p for p in problems if p.get('set_index') == set_index]
     
     # 만약 필터링 결과가 없으면 (예: 데이터 생성 오류) 전체 중 6개라도 반환
     if not filtered:
         logger.warning(f"No problems found for set_index {set_index}, falling back to any 6")
-        return problems[:6]
+        filtered = problems[:6]
+    
+    # 4. 프론트엔드 호환성을 위한 필드 정규화
+    final_problems = []
+    for p in filtered:
+        p_copy = p.copy()
+        # frontend/src/pages/DailyChallenge.tsx는 problem_type을 기대함
+        if 'problem_type' not in p_copy:
+            p_copy['problem_type'] = p_copy.get('data_type', 'pa')
+        # difficulty가 누락된 경우 기본값
+        if 'difficulty' not in p_copy:
+            p_copy['difficulty'] = 'medium'
+        # table_names가 누락된 경우 빈 리스트 (expected_columns 등에서 유추 가능하나 우선 빈 값)
+        if 'table_names' not in p_copy:
+            p_copy['table_names'] = p_copy.get('table_names', [])
+            
+        final_problems.append(p_copy)
         
-    return filtered
+    return final_problems[:6]
 
 
 @router.get("/latest")

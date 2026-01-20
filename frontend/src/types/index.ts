@@ -15,6 +15,7 @@ export interface Problem {
     problem_id: string;
     title?: string;
     data_type?: string;
+    problem_type?: string;
     difficulty: 'easy' | 'medium' | 'hard';
     topic: string;
     requester?: string;

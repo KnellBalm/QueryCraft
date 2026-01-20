@@ -70,12 +70,20 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
                 return;
             }
 
+            const isDaily = dataType === 'pa' || dataType === 'stream';
+
             const [problemsRes, schemaRes] = await Promise.all([
-                problemsApi.list(dataType, targetDate),
+                isDaily ? problemsApi.dailyProblems(targetDate) : problemsApi.list(dataType, targetDate),
                 problemsApi.schema(dataType),
             ]);
 
-            const newProblems: Problem[] = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
+            let newProblems: Problem[] = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
+
+            // 데일리 챌린지인 경우, 현재 dataType (pa/stream)에 맞는 문제만 추출
+            if (isDaily) {
+                newProblems = newProblems.filter(p => (p.problem_type || (p as any).data_type) === dataType);
+            }
+
             setProblems(newProblems);
             setTables(Array.isArray(schemaRes.data) ? schemaRes.data : []);
             setMetadata(problemsRes.data.metadata || null);

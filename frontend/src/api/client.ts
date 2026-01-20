@@ -31,6 +31,9 @@ export const problemsApi = {
     list: (dataType: string, date?: string) =>
         api.get(`/problems/${dataType}`, { params: { target_date: date } }),
 
+    dailyProblems: (date?: string) =>
+        api.get(date ? `/daily/${date}/problems` : '/daily/latest'),
+
     detail: (dataType: string, problemId: string, date?: string) =>
         api.get(`/problems/${dataType}/${problemId}`, { params: { target_date: date } }),
 

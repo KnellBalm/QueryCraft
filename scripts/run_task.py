@@ -72,11 +72,11 @@ def task_gen_data(args):
     generate_data(modes=modes)
     print(f"✅ 데이터 생성 완료 (modes: {modes})")
 
-@registry.register("db-init", "데이터베이스 스키마 초기화")
-def task_db_init(args):
-    from scripts.init_postgres import init_db
-    init_db()
-    print("✅ DB 초기화 완료")
+# @registry.register("db-init", "데이터베이스 스키마 초기화")
+# def task_db_init(args):
+#     from scripts.init_postgres import init_db
+#     init_db()
+#     print("✅ DB 초기화 완료")
 
 @registry.register("verify", "전체 시스템 검증 (Build & Test)")
 def task_verify(args):

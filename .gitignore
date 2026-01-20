@@ -26,3 +26,6 @@ problems/stream_daily/
 # Secrets 백업 및 보호
 .env.secrets.local
 docs/archive/envs/
+
+# Legacy 백업 폴더
+legacy/

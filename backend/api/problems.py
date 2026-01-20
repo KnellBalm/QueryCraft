@@ -80,8 +80,13 @@ async def list_problems(
         dt = get_today_kst()
     
     user_id = get_user_id_from_request(request)
-    problems = get_problems(dt, data_type, user_id)
-    completed = sum(1 for p in problems if p.is_completed)
+    problems_raw = get_problems(dt, data_type, user_id)
+    
+    # Daily Challenge 필터링 로직 적용 (6개 제한 및 세트 매칭)
+    from backend.api.daily import filter_problems_by_set
+    problems = filter_problems_by_set(problems_raw, user_id, dt)
+    
+    completed = sum(1 for p in problems if p.get('is_completed', False))
     
     # 챌린지 시나리오 조회 (Daily Challenge 테이블 우선)
     scenario_data = None

@@ -186,10 +186,10 @@ const DailyChallenge: React.FC = () => {
                 <div className="problem-number">#{idx + 1}</div>
                 <div className="problem-badges">
                   <span className="type-badge">
-                    {getTypeIcon(problem.problem_type)} {problem.problem_type.toUpperCase()}
+                    {getTypeIcon(problem.problem_type)} {problem.problem_type?.toUpperCase() || 'PA'}
                   </span>
-                  <span className={`difficulty-badge ${problem.difficulty}`}>
-                    {getDifficultyIcon(problem.difficulty)} {problem.difficulty}
+                  <span className={`difficulty-badge ${problem.difficulty || 'medium'}`}>
+                    {getDifficultyIcon(problem.difficulty || 'medium')} {problem.difficulty || 'medium'}
                   </span>
                 </div>
               </div>
@@ -204,11 +204,11 @@ const DailyChallenge: React.FC = () => {
 
               <div className="problem-footer">
                 <div className="problem-tables">
-                  {problem.table_names.slice(0, 2).map((table, i) => (
+                  {(problem.table_names || []).slice(0, 2).map((table, i) => (
                     <code key={i}>{table.split('.').pop()}</code>
                   ))}
-                  {problem.table_names.length > 2 && (
-                    <span>+{problem.table_names.length - 2}</span>
+                  {(problem.table_names || []).length > 2 && (
+                    <span>+{(problem.table_names || []).length - 2}</span>
                   )}
                 </div>
                 <button className="solve-btn">문제 풀기 →</button>
