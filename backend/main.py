@@ -6,6 +6,8 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from backend.api.problems import router as problems_router
 from backend.api.sql import router as sql_router
@@ -18,6 +20,17 @@ from backend.api.daily import router as daily_router  # Daily Challenge (NEW)
 
 # 초기화 상태 기록
 init_status = {"initialized": False, "error": None}
+
+class PathRewriteMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Rewrite paths that start with known prefixes but miss /api
+        # e.g. /auth/me -> /api/auth/me
+        path = request.url.path
+        if path.startswith(("/auth", "/daily", "/sql", "/problems", "/stats", "/admin", "/practice")) and not path.startswith("/api"):
+            request.scope["path"] = f"/api{path}"
+
+        response = await call_next(request)
+        return response
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,6 +95,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add PathRewriteMiddleware
+app.add_middleware(PathRewriteMiddleware)
 
 # CORS 설정 - 환경별 분리
 # Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
