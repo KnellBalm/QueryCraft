@@ -567,7 +567,7 @@ async def get_me(request: Request):
 
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
     """로그아웃"""
     # The original logout function had a bug where it tried to delete a session
     # without checking if session_id existed, and then deleted the cookie.
