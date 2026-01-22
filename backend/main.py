@@ -83,6 +83,28 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+class PathRewriteMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            # API prefix가 누락된 경로에 대해 자동으로 prefix 추가
+            # /auth, /daily, /sql, /problems, /stats, /admin, /practice
+            prefixes = ["/auth", "/daily", "/sql", "/problems", "/stats", "/admin", "/practice"]
+            for prefix in prefixes:
+                if path.startswith(prefix):
+                    scope["path"] = "/api" + path
+                    break
+        await self.app(scope, receive, send)
+
+# PathRewriteMiddleware 추가 (CORS 처리 전에 경로가 수정되도록 함)
+# add_middleware는 스택에 추가되므로, 나중에 추가된 미들웨어가 먼저 실행됨
+# CORS 미들웨어가 가장 먼저 실행되어야 하므로(Outermost), PathRewriteMiddleware는 그보다 먼저 추가해야 함(Inner)
+# 순서: Request -> CORS (나중에 추가됨) -> PathRewrite (먼저 추가됨) -> App
+app.add_middleware(PathRewriteMiddleware)
+
 # CORS 설정 - 환경별 분리
 # Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
 cloud_origins = [
