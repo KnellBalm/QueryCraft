@@ -22,6 +22,12 @@
 ### 4. 연속 일수(Streak) 로직 개선
 - **계산 방식**: `stats_service.py`에서 오늘 아직 제출이 없더라도 어제의 제출 기록이 있으면 스트릭을 유지하도록 수정.
 
+### 5. CORS 및 404 에러 해결 (PathRewriteMiddleware)
+- **증상**: 프론트엔드에서 `/auth/me` 등 `/api` 접두사가 누락된 요청을 보낼 때 404가 발생하고, 이로 인해 CORS 오류로 오인됨.
+- **해결**: `backend/common/middleware.py`에 `PathRewriteMiddleware` 구현.
+- **적용**: `main.py`에 미들웨어 등록 (CORS 이전에 실행되도록 배치하여 경로 수정 후 CORS 헤더 적용).
+- **테스트**: `tests/test_middleware.py` 추가하여 경로 재작성 로직 검증 완료.
+
 ## 검증 계획
 - [x] 백엔드 유닛 테스트: `pytest` (환경 구축 필요 시 스킵 가능)
 - [x] 프론트엔드 빌드 체크: `npm run build`
