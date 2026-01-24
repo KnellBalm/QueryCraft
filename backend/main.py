@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.common.middleware import PathRewriteMiddleware
 from backend.api.problems import router as problems_router
 from backend.api.sql import router as sql_router
 from backend.api.stats import router as stats_router
@@ -82,6 +83,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# PathRewriteMiddleware 등록 (CORS보다 먼저 등록하여 안쪽에 위치하게 함 -> CORS가 바깥쪽에서 먼저 실행됨)
+# 순서: Request -> CORS -> PathRewrite -> Router
+app.add_middleware(PathRewriteMiddleware)
 
 # CORS 설정 - 환경별 분리
 # Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
