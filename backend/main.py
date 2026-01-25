@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.common.middleware import PathRewriteMiddleware
 from backend.api.problems import router as problems_router
@@ -88,6 +89,39 @@ app = FastAPI(
 # 순서: Request -> CORS -> PathRewrite -> Router
 app.add_middleware(PathRewriteMiddleware)
 
+# 404 및 기타 에러 로깅 미들웨어 (Moved up)
+# 이 미들웨어를 CORS 등록 전에 정의하여, 실행 순서상 CORS보다 안쪽(Inner)에 위치하게 함.
+# 하지만 @app.middleware는 add_middleware보다 나중에 실행되는 효과가 있을 수 있으므로 주의 필요.
+# Wait, @app.middleware registers immediately.
+# app.add_middleware wraps the CURRENT app.
+# So:
+# 1. app created.
+# 2. PathRewrite added. App = PathRewrite(App)
+# 3. LogErrors added. App = LogErrors(PathRewrite(App))
+# 4. CORS added. App = CORS(LogErrors(PathRewrite(App)))
+# This is the desired order: CORS (Outer) -> LogErrors (Middle) -> PathRewrite (Inner) -> App.
+
+@app.middleware("http")
+async def log_errors_middleware(request, call_next):
+    from fastapi import Request
+
+    try:
+        response = await call_next(request)
+
+        if response.status_code == 404:
+            from backend.common.logging import get_logger
+            logger = get_logger("backend.main.404")
+            full_url = str(request.url)
+            logger.warning(f"404 Not Found: {request.method} {full_url} (Referer: {request.headers.get('referer', 'N/A')})")
+
+        return response
+    except Exception as e:
+        from backend.common.logging import get_logger
+        logger = get_logger("backend.main.error")
+        logger.error(f"Unhandled exception in middleware: {str(e)}", exc_info=True)
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
+
 # CORS 설정 - 환경별 분리
 # Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
 cloud_origins = [
@@ -124,22 +158,6 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
-# 404 및 기타 에러 로깅 미들웨어
-@app.middleware("http")
-async def log_errors_middleware(request, call_next):
-    from fastapi import Request
-    from starlette.responses import Response
-    
-    response = await call_next(request)
-    
-    if response.status_code == 404:
-        from backend.common.logging import get_logger
-        logger = get_logger("backend.main.404")
-        full_url = str(request.url)
-        logger.warning(f"404 Not Found: {request.method} {full_url} (Referer: {request.headers.get('referer', 'N/A')})")
-        
-    return response
 
 # 라우터 등록 (순서 중요: /problems/recommend 보다 먼저 등록)
 app.include_router(health_router)
