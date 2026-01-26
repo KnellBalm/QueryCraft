@@ -97,7 +97,7 @@ cloud_origins = [
     "https://querycraft.run.app",  # 커스텀 도메인 예비
 ]
 # 좀 더 유연한 regex: query-craft-frontend로 시작하는 모든 .run.app 도메인 허용
-cloud_origin_regex = r"https://query-craft-frontend-.*\.run\.app"
+cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
 
 if os.getenv("ENV") == "production":
     # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
