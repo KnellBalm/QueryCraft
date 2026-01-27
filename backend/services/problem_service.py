@@ -116,7 +116,7 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
     
     problems_data = []
     
-    # 1. DB에서 조회 시도
+    # 1. DB (problems 테이블) 조회 시도
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df("""
@@ -149,7 +149,22 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                         else:
                             problems_data.append(desc)
     except Exception as e:
-        logger.error(f"Failed to fetch problems from DB: {e}")
+        logger.debug(f"Failed to fetch problems from problems table: {e}")
+
+    # 1.5. daily_challenges 테이블에서 조회 시도 (신규 통합 포맷)
+    if not problems_data:
+        try:
+            from backend.generator.daily_challenge_writer import load_daily_challenge
+            challenge = load_daily_challenge(target_date.isoformat())
+            if challenge and "problems" in challenge:
+                all_problems = challenge["problems"]
+                # 세트 인덱스로 필터링
+                problems_data = [p for p in all_problems if p.get("set_index") == set_index and p.get("problem_type") == data_type]
+                # 만약 해당 세트가 없으면 타입만 맞는 것 중 일부라도 반환
+                if not problems_data:
+                    problems_data = [p for p in all_problems if p.get("problem_type") == data_type][:6]
+        except Exception as e:
+            logger.error(f"Failed to fetch from daily_challenges: {e}")
 
     # 2. DB에 없으면 파일에서 조회 (폴백)
     if not problems_data:
@@ -187,9 +202,16 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
             try:
                 with open(path, encoding="utf-8") as f:
                     all_data = json.load(f)
-                    problems_data = [p for p in all_data if p.get("set_index", 0) == set_index]
+                    
+                    # v2.0 통합 포맷인 경우 (dict {problems: [...]})
+                    if isinstance(all_data, dict) and "problems" in all_data:
+                        all_problems = all_data["problems"]
+                    else:
+                        all_problems = all_data
+                    
+                    problems_data = [p for p in all_problems if p.get("set_index", 0) == set_index and p.get("problem_type", "pa") == data_type]
                     if not problems_data:
-                        problems_data = all_data
+                        problems_data = [p for p in all_problems if p.get("problem_type", "pa") == data_type][:6]
             except:
                 pass
     
@@ -224,8 +246,8 @@ def get_problem_by_id(
     """문제 상세 조회 (DB 우선)"""
     # 1. DB에서 직접 id로 조회 시도
     try:
-        if target_date is None:
-            target_date = get_today_kst()
+        from backend.common.date_utils import get_today_kst
+        check_date = target_date or get_today_kst()
 
         with postgres_connection() as pg:
             df = pg.fetch_df("""
@@ -240,7 +262,7 @@ def get_problem_by_id(
                 problem = Problem(**p_data)
                 
                 # 완료 상태 추가
-                completed_map = get_submission_status(target_date, user_id)
+                completed_map = get_submission_status(check_date, user_id)
                 if problem.problem_id in completed_map:
                     problem.is_completed = True
                     problem.is_correct = completed_map[problem.problem_id]
@@ -248,7 +270,37 @@ def get_problem_by_id(
                     problem.is_completed = False
                 return problem
     except Exception as e:
-        logger.error(f"Failed to fetch problem by id from DB: {e}")
+        logger.debug(f"Failed to fetch problem by id from problems table: {e}")
+
+    # 1.5. daily_challenges 테이블에서 조회 시도 (신규 통합 포맷)
+    try:
+        from backend.generator.daily_challenge_writer import load_daily_challenge
+        # target_date가 없으면 ID에서 추출 시도 (YYYY-MM-DD-...)
+        extracted_date = target_date
+        if extracted_date is None and "-" in problem_id:
+            try:
+                parts = problem_id.split("-")
+                date_str = "-".join(parts[:3])
+                extracted_date = date.fromisoformat(date_str)
+            except:
+                pass
+        
+        if extracted_date:
+            challenge = load_daily_challenge(extracted_date.isoformat())
+            if challenge and "problems" in challenge:
+                for p in challenge["problems"]:
+                    if p.get("problem_id") == problem_id:
+                        problem = Problem(**p)
+                        # 완료 상태 추가
+                        completed_map = get_submission_status(extracted_date, user_id)
+                        if problem.problem_id in completed_map:
+                            problem.is_completed = True
+                            problem.is_correct = completed_map[problem.problem_id]
+                        else:
+                            problem.is_completed = False
+                        return problem
+    except Exception as e:
+        logger.error(f"Failed to fetch problem by id from daily_challenges: {e}")
 
     # 2. 없으면 전체 리스트에서 검색 (폴백)
     problems = get_problems(target_date, data_type, user_id)

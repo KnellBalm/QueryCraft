@@ -119,7 +119,37 @@ def save_daily_challenge(
                 json.dumps(daily_challenge["problems"], ensure_ascii=False), 
                 json.dumps(daily_challenge["metadata"], ensure_ascii=False)
             ))
-            print(f"✅ Daily Challenge saved to DB: {target_date}")
+            
+            # 하위 호환성을 위해 개별 문제 저장 (public.problems 테이블)
+            problems = daily_challenge.get("problems", [])
+            for p in problems:
+                p_type = p.get("problem_type", "pa")
+                pg.execute("""
+                    INSERT INTO public.problems (
+                        problem_date, data_type, set_index, difficulty, title, 
+                        description, answer_sql, expected_columns, hints
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (problem_date, data_type, set_index, title) 
+                    DO UPDATE SET 
+                        difficulty = EXCLUDED.difficulty,
+                        description = EXCLUDED.description,
+                        answer_sql = EXCLUDED.answer_sql,
+                        expected_columns = EXCLUDED.expected_columns,
+                        hints = EXCLUDED.hints,
+                        updated_at = NOW()
+                """, [
+                    target_date, 
+                    p_type, 
+                    p.get("set_index", 0), 
+                    p.get("difficulty"), 
+                    p.get("problem_id"), 
+                    json.dumps(p, ensure_ascii=False),
+                    p.get("answer_sql"),
+                    json.dumps(p.get("expected_columns", []), ensure_ascii=False),
+                    json.dumps({"hint": p.get("hint"), "expected_result": p.get("expected_result")}, ensure_ascii=False)
+                ])
+            
+            print(f"✅ Daily Challenge and {len(problems)} problems saved to DB: {target_date}")
     except Exception as e:
         print(f"⚠️ Failed to save to DB: {e}")
 
