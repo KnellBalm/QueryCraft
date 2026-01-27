@@ -37,7 +37,7 @@ def filter_problems_by_set(problems_raw: List[Any], user_id: Optional[str], targ
     # 2. 문제 데이터에 set_index가 있는지 확인 (v2.0+)
     has_set_index = any('set_index' in p for p in problems)
     
-    # 3. 사용자 세트 인덱스 조회 (PA 타입 기준으로 대표 할당)
+    # 3. 사용자 세트 인덱스 조회
     set_index = get_user_set_index(user_id, target_date, "pa")
     
     if not has_set_index:
@@ -255,25 +255,38 @@ def get_problem_by_id(
     for p in problems:
         if p.problem_id == problem_id:
             return p
+            
+    # 3. 여전히 없으면 날짜 상관없이 모든 문제 검색 (404 방지)
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("""
+                SELECT description FROM public.problems 
+                WHERE (description::jsonb)->>'problem_id' = %s
+                LIMIT 1
+            """, [problem_id])
+            
+            if len(df) > 0:
+                desc = df.iloc[0]["description"]
+                p_data = json.loads(desc) if isinstance(desc, str) else desc
+                return Problem(**p_data)
+    except Exception as e:
+        logger.error(f"Fallback fetch by id failed: {e}")
+
     return None
 
 
 def get_submission_status(target_date: date, user_id: Optional[str] = None) -> Dict[str, bool]:
     """제출 상태 조회"""
     try:
-        with postgres_connection() as pg:
             if user_id:
                 df = pg.fetch_df("""
                     SELECT problem_id, is_correct FROM public.submissions 
                     WHERE session_date = %s AND user_id = %s
                 """, [target_date.isoformat(), user_id])
+                return {row["problem_id"]: row["is_correct"] for _, row in df.iterrows()}
             else:
-                df = pg.fetch_df("""
-                    SELECT problem_id, is_correct FROM public.submissions 
-                    WHERE session_date = %s AND user_id IS NULL
-                """, [target_date.isoformat()])
-            
-            return {row["problem_id"]: row["is_correct"] for _, row in df.iterrows()}
+                # 게스트 사용자는 상태를 공유하지 않음
+                return {}
     except Exception:
         return {}
 

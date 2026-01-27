@@ -119,31 +119,32 @@ async def health_check_with_auto_recovery(request: Request):
             
             start_time = time.time()
             
-            # 1. 데이터 생성
+            # 1. 데이터 생성 (PA 모드: PostgreSQL 적재)
             try:
                 from backend.generator.data_generator_advanced import generate_data
+                # PA 데이터가 필수이므로 먼저 생성
                 generate_data(modes=("pa",))
                 result["details"]["data_generated"] = True
             except Exception as e:
                 logger.error(f"[HEALTH] Data generation failed: {e}")
                 result["details"]["data_error"] = str(e)
             
-            # 2. PA 문제 생성
+            # 2. 통합 문제 생성 (PA, Stream, RCA 포함)
             try:
-                from problems.generator import generate as gen_pa
-                gen_pa(today, pg)
+                from backend.generator.daily_challenge_writer import generate_and_save_daily_challenge
+                filepath = generate_and_save_daily_challenge(str(today))
                 
-                # 생성된 문제 수 확인
-                new_df = pg.fetch_df("""
-                    SELECT COUNT(*) as cnt FROM public.problems 
-                    WHERE problem_date = %s AND data_type = 'pa'
-                """, [today])
-                new_count = int(new_df.iloc[0]["cnt"]) if len(new_df) > 0 else 0
-                result["details"]["pa_generated"] = new_count
+                # 생성 결과 확인
+                import json
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                    new_count = len(data.get("problems", []))
+                    
+                result["details"]["problems_generated"] = new_count
                 result["auto_generated"] = new_count > 0
             except Exception as e:
-                logger.error(f"[HEALTH] PA generation failed: {e}")
-                result["details"]["pa_error"] = str(e)
+                logger.error(f"[HEALTH] Unified generation failed: {e}")
+                result["details"]["gen_error"] = str(e)
             
             duration = time.time() - start_time
             result["details"]["duration_sec"] = round(duration, 2)
@@ -1164,7 +1165,7 @@ async def run_scheduled_generation(request: Request):
 
 
 async def _run_generation_inline(today, start_time):
-    """폴백: 인라인 생성 (Worker Job 없을 때)"""
+    """폴백: 인라인 생성 (Worker Job 없을 때) - 통합 생성기 사용"""
     import time
     from backend.common.logging import get_logger
     logger = get_logger(__name__)
@@ -1173,7 +1174,7 @@ async def _run_generation_inline(today, start_time):
     problems_generated = 0
     details = {"date": str(today), "fallback": True}
     
-    # 1. 데이터 생성 (PA만)
+    # 1. 데이터 생성 (PA 전용)
     try:
         from backend.generator.data_generator_advanced import generate_data
         generate_data(modes=("pa",))
@@ -1183,24 +1184,21 @@ async def _run_generation_inline(today, start_time):
         logger.error(f"[SCHEDULE/RUN] Fallback: Data generation failed: {e}")
         details["data_error"] = str(e)
 
-    # 2. PA 문제 생성
+    # 2. 통합 문제 생성
     try:
-        from problems.generator import generate as gen_pa
-        with postgres_connection() as pg:
-            gen_pa(today, pg)
+        from backend.generator.daily_challenge_writer import generate_and_save_daily_challenge
+        filepath = generate_and_save_daily_challenge(str(today))
+        
+        import json
+        with open(filepath, "r") as f:
+            data = json.load(f)
+            problems_generated = len(data.get("problems", []))
             
-            pa_df = pg.fetch_df("""
-                SELECT COUNT(*) as cnt FROM public.problems
-                WHERE problem_date = %s AND data_type = 'pa'
-            """, [today])
-            pa_count = int(pa_df.iloc[0]["cnt"]) if len(pa_df) > 0 else 0
-            details["pa_problems"] = pa_count
-            problems_generated += pa_count
-            
-        logger.info(f"[SCHEDULE/RUN] Fallback: PA problems generated: {pa_count}")
+        details["problems_total"] = problems_generated
+        logger.info(f"[SCHEDULE/RUN] Fallback: Unified problems generated: {problems_generated}")
     except Exception as e:
-        logger.error(f"[SCHEDULE/RUN] Fallback: PA problem generation failed: {e}")
-        details["pa_error"] = str(e)
+        logger.error(f"[SCHEDULE/RUN] Fallback: Unified generation failed: {e}")
+        details["gen_error"] = str(e)
 
     duration = time.time() - start_time
     status = "success" if problems_generated > 0 else "error"

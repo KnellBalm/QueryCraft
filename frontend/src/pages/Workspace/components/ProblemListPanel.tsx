@@ -103,7 +103,7 @@ export const ProblemListPanel = React.memo(function ProblemListPanel({
                             <div className="slack-header">
                                 <span className="slack-avatar">{dataType === 'rca' ? '🌩️' : '👤'}</span>
                                 <span className="slack-sender">{selectedProblem.requester}</span>
-                                <span className="slack-time">오늘 오전 10:30</span>
+                                <span className="slack-time">{new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                 {dataType === 'rca' && <span className="anomaly-badge">ABNORMALITY DETECTED</span>}
                             </div>
                             <div className="slack-content">

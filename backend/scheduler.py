@@ -160,55 +160,26 @@ def run_weekday_generation():
         from backend.generator.data_generator_advanced import generate_data
         generate_data(modes=("pa",), incremental=False)
         
-        from problems.generator import generate as gen_probs
+        from backend.generator.daily_challenge_writer import generate_and_save_daily_challenge
+        filepath = generate_and_save_daily_challenge(str(today))
+        
+        if filepath:
+            import json
+            with open(filepath, "r") as f:
+                data = json.load(f)
+                problem_count = len(data.get("problems", []))
+        
+        # dataset_versions 기록
+        duration_ms = int((time_module.time() - start_time) * 1000)
         with postgres_connection() as pg:
-            # 1. PA 문제 생성
-            if not os.path.exists(f"problems/daily/{today}.json"):
-                path_pa = gen_probs(today, pg, mode="pa")
-                if path_pa:
-                    import json
-                    with open(path_pa, "r") as f:
-                        pa_data = json.load(f)
-                        pa_count = len(pa_data.get("problems", [])) if isinstance(pa_data, dict) else len(pa_data)
-                else:
-                    pa_count = 0
-            else:
-                import json
-                with open(f"problems/daily/{today}.json", "r") as f:
-                    pa_count = len(json.load(f))
-            
-            # 2. RCA 문제 생성
-            if not os.path.exists(f"problems/daily/rca_{today}.json"):
-                path_rca = gen_probs(today, pg, mode="rca")
-                if path_rca:
-                    import json
-                    with open(path_rca, "r") as f:
-                        rca_data = json.load(f)
-                        rca_count = len(rca_data.get("problems", [])) if isinstance(rca_data, dict) else len(rca_data)
-                else:
-                    rca_count = 0
-            else:
-                import json
-                with open(f"problems/daily/rca_{today}.json", "r") as f:
-                    rca_count = len(json.load(f))
-            
-            # dataset_versions 기록
-            duration_ms = int((time_module.time() - start_time) * 1000)
-            # PA 기록
             pg.execute("""
                 INSERT INTO public.dataset_versions 
                 (generation_date, generation_type, data_type, problem_count, status, error_message, duration_ms)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (today, 'scheduled', 'pa', pa_count, status, error_message, duration_ms))
-            # RCA 기록
-            pg.execute("""
-                INSERT INTO public.dataset_versions 
-                (generation_date, generation_type, data_type, problem_count, status, error_message, duration_ms)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (today, 'scheduled', 'rca', rca_count, status, error_message, duration_ms))
+            """, (today, 'scheduled', 'daily_challenge', problem_count, status, error_message, duration_ms))
             
-        update_job_status("weekday_generation", "평일 문제/데이터 생성", "success")
-        logger.info(f"[SCHEDULER] PA/RCA generation completed for {today}")
+        update_job_status("weekday_generation", "일일 통합 문제/데이터 생성", "success")
+        logger.info(f"[SCHEDULER] Unified generation completed for {today} (count={problem_count})")
     except Exception as e:
         logger.error(f"[SCHEDULER] PA generation failed: {e}")
         update_job_status("weekday_generation", "평일 문제/데이터 생성", f"error: {str(e)}")

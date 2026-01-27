@@ -35,13 +35,14 @@ async def get_latest_daily_challenge(request: Request):
     target_date = date.fromisoformat(challenge.get("date", get_today_kst().isoformat()))
     
     # 문제 필터링
-    challenge["problems"] = filter_problems_by_set(
+    filtered_problems = filter_problems_by_set(
         challenge.get("problems", []), 
         user_id, 
         target_date
     )
+    challenge["problems"] = filtered_problems
 
-    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합하고 카운트 갱신
     if "scenario" in challenge and "metadata" in challenge:
         scenario = challenge["scenario"]
         challenge["metadata"].update({
@@ -50,6 +51,10 @@ async def get_latest_daily_challenge(request: Request):
             "product_type": scenario.get("product_type"),
             "north_star": scenario.get("north_star"),
             "key_metrics": scenario.get("key_metrics"),
+            # 필터링된 결과에 맞게 카운트 갱신 (사용자 혼동 방지)
+            "total_problems": len(filtered_problems),
+            "pa_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'pa'),
+            "stream_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'stream'),
         })
     
     return challenge
@@ -81,13 +86,14 @@ async def get_daily_challenge(request: Request, target_date: str):
     user_id = get_user_id_from_request(request)
     
     # 문제 필터링
-    challenge["problems"] = filter_problems_by_set(
+    filtered_problems = filter_problems_by_set(
         challenge.get("problems", []), 
         user_id, 
         dt
     )
+    challenge["problems"] = filtered_problems
 
-    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합하고 카운트 갱신
     if "scenario" in challenge and "metadata" in challenge:
         scenario = challenge["scenario"]
         challenge["metadata"].update({
@@ -96,6 +102,10 @@ async def get_daily_challenge(request: Request, target_date: str):
             "product_type": scenario.get("product_type"),
             "north_star": scenario.get("north_star"),
             "key_metrics": scenario.get("key_metrics"),
+            # 필터링된 결과에 맞게 카운트 갱신
+            "total_problems": len(filtered_problems),
+            "pa_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'pa'),
+            "stream_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'stream'),
         })
     
     return challenge
@@ -124,18 +134,24 @@ async def get_daily_problems_only(request: Request, target_date: str):
     metadata = challenge.get("metadata", {}).copy()
     scenario = challenge.get("scenario", {})
     
-    # UI 호환성을 위해 scenario 정보를 metadata로 병합
+    # 문제 필터링
+    filtered_problems = filter_problems_by_set(challenge.get("problems", []), user_id, dt)
+    
+    # UI 호환성을 위해 scenario 정보를 metadata로 병합하고 카운트 갱신
     metadata.update({
         "company_name": scenario.get("company_name"),
         "company_description": scenario.get("company_description"),
         "product_type": scenario.get("product_type"),
         "north_star": scenario.get("north_star"),
         "key_metrics": scenario.get("key_metrics"),
+        "total_problems": len(filtered_problems),
+        "pa_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'pa'),
+        "stream_count": sum(1 for p in filtered_problems if p.get('problem_type') == 'stream'),
     })
 
     return {
         "date": target_date,
-        "problems": filter_problems_by_set(challenge.get("problems", []), user_id, dt),
+        "problems": filtered_problems,
         "metadata": metadata
     }
 
