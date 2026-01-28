@@ -66,6 +66,11 @@ async def lifespan(app: FastAPI):
             scheduler_started = True
         except Exception as e:
             print(f"[WARNING] Scheduler module import failed: {e}")
+
+    # Log CORS Configuration
+    print(f"[INFO] CORS Config - ENV: {os.getenv('ENV', 'development')}")
+    print(f"[INFO] CORS Config - Allowed Origins: {cloud_origins}")
+    print(f"[INFO] CORS Config - Origin Regex: {cloud_origin_regex}")
     
     yield
     
