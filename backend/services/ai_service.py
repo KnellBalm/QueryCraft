@@ -35,8 +35,8 @@ def get_ai_insight(problem_id: str, sql: str, results: list[dict], data_type: st
         }
 
     # 문제 컨텍스트 추가
-    problem_title = problem.get('title', '제목 없음') if problem else '문제 정보 없음'
-    problem_question = problem.get('question', '') if problem else ''
+    problem_title = problem.problem_id if problem else '문제 정보 없음'
+    problem_question = problem.question if problem else ''
 
     prompt = f"""
 당신은 데이터 분석 결과를 비즈니스 인사이트로 변환하는 전문가입니다.
@@ -278,7 +278,7 @@ def get_ai_help(
 직접적인 정답을 알려주지 말고, **접근 방향**을 힌트로 제공하세요.
 
 **문제**:
-{problem.get('question', '')}
+{problem.question}
 
 **테이블 스키마**:
 {schema}
@@ -302,14 +302,14 @@ def get_ai_help(
 당신은 SQL 전문가입니다. 학생이 문제를 푸는데 어려움을 겪고 있어 정답을 요청했습니다.
 
 **문제**:
-{problem.get('question', '')}
+{problem.question}
 
 **테이블 스키마**:
 {schema}
 
 **정답 SQL** (참고용):
 ```sql
-{problem.get('expected_query', '')}
+{problem.answer_sql or ''}
 ```
 
 **요구사항**:

@@ -4,7 +4,6 @@
 import time
 import json
 from datetime import date, datetime
-from pathlib import Path
 from typing import Optional
 import pandas as pd
 
@@ -29,31 +28,16 @@ def get_difficulty_xp(difficulty: str) -> int:
 
 
 def load_problem(problem_id: str, data_type: str) -> Optional[dict]:
-    """문제 로드 - 모든 파일 검색 (오늘 날짜뿐만 아니라 과거 문제도)"""
-    problems_dir = Path("problems/daily")
-    
-    # 모든 파일에서 검색
-    if data_type == "stream":
-        # 모든 stream 파일 검색 (최신 순)
-        paths = sorted(problems_dir.glob("stream_*.json"), reverse=True)
-    elif data_type == "rca":
-        # 모든 RCA 파일 검색 (최신 순)
-        paths = sorted(problems_dir.glob("rca_*.json"), reverse=True)
-    else:
-        # 모든 PA 파일 검색 (최신 순)
-        all_files = sorted(problems_dir.glob("20??-??-??*.json"), reverse=True)
-        paths = [f for f in all_files if not f.name.startswith("stream_")]
-    
-    for path in paths:
-        try:
-            problems = json.loads(path.read_text(encoding="utf-8"))
-            for p in problems:
-                if p.get("problem_id") == problem_id:
-                    return p
-        except Exception:
-            continue
-    
-    return None
+    """Load problem from database instead of files (Cloud Run compatible)."""
+    try:
+        problem = get_problem_by_id(problem_id, data_type)
+        if problem:
+            # Convert Pydantic model to dict
+            return problem.model_dump()
+        return None
+    except Exception as e:
+        logger.error(f"Failed to load problem {problem_id}: {e}")
+        return None
 
 
 def compare_results(user_df: pd.DataFrame, expected_df: pd.DataFrame, sort_keys: list = None) -> tuple[bool, str]:

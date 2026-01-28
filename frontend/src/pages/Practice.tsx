@@ -55,6 +55,11 @@ export default function Practice() {
     const rightPanelRef = useRef<HTMLDivElement>(null);
     const lastAttemptedRef = useRef<string | null>(null);
 
+    // 준비중 알림
+    useEffect(() => {
+        alert('준비중입니다');
+    }, []);
+
     // 스키마 로드
     useEffect(() => {
         analytics.pageView('/practice', { data_type: 'practice' });

@@ -18,6 +18,11 @@ export default function AdaptiveTutorPage() {
     const [skills, setSkills] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // 준비중 알림
+    useEffect(() => {
+        alert('준비중입니다');
+    }, []);
+
     useEffect(() => {
         const loadTutorData = async () => {
             setLoading(true);
@@ -26,10 +31,10 @@ export default function AdaptiveTutorPage() {
                     problemsApi.recommend(5),
                     statsApi.skills()
                 ]);
-                
+
                 setRecommendations(recommendRes.data.problems || []);
                 setSkills(skillsRes.data.skills || []);
-                
+
                 analytics.pageView('/adaptive-tutor', { data_type: 'adaptive' });
             } catch (error) {
                 console.error('Failed to load tutor data:', error);

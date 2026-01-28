@@ -1,7 +1,13 @@
 // frontend/src/components/PlaceholderPages.tsx
+import { useEffect } from 'react';
 import './PlaceholderPages.css';
 
 export function DataCenterPage() {
+  // 준비중 알림
+  useEffect(() => {
+    alert('준비중입니다');
+  }, []);
+
   return (
     <div className="placeholder-page">
       <h1>📊 Data Center</h1>
@@ -12,6 +18,11 @@ export function DataCenterPage() {
 }
 
 export function MCPSandboxPage() {
+  // 준비중 알림
+  useEffect(() => {
+    alert('준비중입니다');
+  }, []);
+
   return (
     <div className="placeholder-page">
       <h1>🧪 MCP Sandbox</h1>

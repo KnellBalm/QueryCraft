@@ -965,8 +965,8 @@ async def trigger_daily_generation(request: Request):
         
         # 5. Daily Challenge 테이블 업데이트 (백엔드 로드용)
         try:
-            from backend.generator.daily_challenge_writer import save_daily_challenge
-            save_daily_challenge(today)
+            from backend.generator.daily_challenge_writer import generate_and_save_daily_challenge
+            generate_and_save_daily_challenge(str(today))
             results["daily_challenge_saved"] = True
             logger.info("[TRIGGER] Daily challenge table updated")
         except Exception as e:

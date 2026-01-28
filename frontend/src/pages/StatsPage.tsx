@@ -14,6 +14,10 @@ export function StatsPage() {
   const [skills, setSkills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 준비중 알림
+  useEffect(() => {
+    alert('준비중입니다');
+  }, []);
 
   useEffect(() => {
     async function loadStats() {
@@ -25,7 +29,7 @@ export function StatsPage() {
         ]);
         setStats(statsRes.data);
         setHistory(historyRes.data);
-        
+
         // 레이더 차트용 데이터 포맷팅
         const formattedSkills = (skillsRes.data.skills || []).map((s: any) => ({
           subject: s.category,

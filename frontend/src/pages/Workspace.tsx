@@ -117,6 +117,13 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
         loadData();
     }, [loadData]);
 
+    // 준비중 알림 (stream, rca)
+    useEffect(() => {
+        if (dataType === 'stream' || dataType === 'rca') {
+            alert('준비중입니다');
+        }
+    }, [dataType]);
+
     // Analytics: 페이지 로드 및 문제 선택 추적
     useEffect(() => {
         const pagePath = dataType === 'pa' ? '/pa-practice' :
