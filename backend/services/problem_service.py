@@ -66,14 +66,8 @@ def filter_problems_by_set(problems_raw: List[Any], user_id: Optional[str], targ
             p_copy['table_names'] = p_copy.get('table_names', [])
             
         final_problems.append(p_copy)
-        
+
     return final_problems[:6]
-from backend.common.logging import get_logger
-
-logger = get_logger(__name__)
-
-PROBLEM_DIR = Path("problems/daily")
-NUM_PROBLEM_SETS = 2
 
 
 def get_user_set_index(user_id: Optional[str], target_date: date, data_type: str) -> int:
@@ -290,6 +284,15 @@ def get_problem_by_id(
             if challenge and "problems" in challenge:
                 for p in challenge["problems"]:
                     if p.get("problem_id") == problem_id:
+                        # Validate problem_type matches data_type
+                        problem_type = p.get("problem_type")
+                        if problem_type != data_type:
+                            logger.warning(
+                                f"Problem {problem_id} found but type mismatch: "
+                                f"expected {data_type}, got {problem_type}"
+                            )
+                            continue
+
                         problem = Problem(**p)
                         # 완료 상태 추가
                         completed_map = get_submission_status(extracted_date, user_id)
@@ -312,11 +315,12 @@ def get_problem_by_id(
     try:
         with postgres_connection() as pg:
             df = pg.fetch_df("""
-                SELECT description FROM public.problems 
+                SELECT description FROM public.problems
                 WHERE (description::jsonb)->>'problem_id' = %s
+                AND data_type = %s
                 LIMIT 1
-            """, [problem_id])
-            
+            """, [problem_id, data_type])
+
             if len(df) > 0:
                 desc = df.iloc[0]["description"]
                 p_data = json.loads(desc) if isinstance(desc, str) else desc
@@ -330,9 +334,10 @@ def get_problem_by_id(
 def get_submission_status(target_date: date, user_id: Optional[str] = None) -> Dict[str, bool]:
     """제출 상태 조회"""
     try:
+        with postgres_connection() as pg:
             if user_id:
                 df = pg.fetch_df("""
-                    SELECT problem_id, is_correct FROM public.submissions 
+                    SELECT problem_id, is_correct FROM public.submissions
                     WHERE session_date = %s AND user_id = %s
                 """, [target_date.isoformat(), user_id])
                 return {row["problem_id"]: row["is_correct"] for _, row in df.iterrows()}

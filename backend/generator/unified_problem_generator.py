@@ -5,12 +5,16 @@
 """
 import sys
 import os
-from typing import List, Tuple
+from typing import List, Optional
 import random
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from generator.scenario_generator import BusinessScenario
+from backend.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 # 문제 유형과 난이도 정의
@@ -23,17 +27,19 @@ def generate_daily_problems(scenario: BusinessScenario) -> List[dict]:
     하나의 시나리오에서 12문제 생성 (2개 세트 x 6문제)
     - Set 0: 6문제 (PA 3, Stream 3 / Easy 2, Medium 2, Hard 2)
     - Set 1: 6문제 (PA 3, Stream 3 / Easy 2, Medium 2, Hard 2)
-    
+
     Args:
         scenario: BusinessScenario 객체
-    
+
     Returns:
         12개의 문제 딕셔너리 리스트
     """
     all_problems = []
-    
+
     for set_idx in range(2):
         set_problems = []
+        failed_enrichments = 0
+
         # 난이도와 유형 조합 생성
         combinations = [
             ('easy', 'pa'),
@@ -43,14 +49,14 @@ def generate_daily_problems(scenario: BusinessScenario) -> List[dict]:
             ('hard', 'pa'),
             ('hard', 'stream'),
         ]
-        
+
         # 순서 섞기
         random.shuffle(combinations)
-        
+
         for idx_in_set, (difficulty, problem_type) in enumerate(combinations, 1):
             # 전역 고유 ID: {date}-{set}-{idx}
             problem_id = f"{scenario.date}-{set_idx}-{idx_in_set}"
-            
+
             if problem_type == 'pa':
                 problem = generate_pa_problem(
                     scenario=scenario,
@@ -65,21 +71,237 @@ def generate_daily_problems(scenario: BusinessScenario) -> List[dict]:
                     problem_id=problem_id,
                     problem_number=idx_in_set
                 )
-            
+
+            # AI를 사용해 answer_sql과 expected_result 추가
+            problem = enrich_problem_with_ai_solution(problem, scenario)
+
+            # Validation gate: answer_sql이 없으면 문제 스킵
+            if not problem.get('answer_sql'):
+                logger.error(f"Skipping problem {problem['problem_id']} - AI enrichment failed (no answer_sql)")
+                failed_enrichments += 1
+                continue
+
             # 세트 정보 주입
             problem['set_index'] = set_idx
             set_problems.append(problem)
-            
+
+        # 실패한 enrichment 요약 로그
+        if failed_enrichments > 0:
+            logger.warning(f"Set {set_idx}: {failed_enrichments} problems skipped due to AI enrichment failures")
+
         all_problems.extend(set_problems)
-    
+
     return all_problems
+
+
+def enrich_problem_with_ai_solution(problem: dict, scenario: BusinessScenario) -> dict:
+    """
+    AI를 사용해 문제에 answer_sql과 expected_result를 추가
+
+    Args:
+        problem: 기본 문제 딕셔너리
+        scenario: 비즈니스 시나리오 정보
+
+    Returns:
+        answer_sql과 expected_result가 추가된 문제 딕셔너리
+    """
+    try:
+        # Gemini 클라이언트 가져오기
+        from problems.gemini import _call_gemini_with_retry, GeminiModels
+
+        # 테이블 스키마 정보 생성
+        table_schema_info = _build_table_schema_text(scenario)
+
+        # AI 프롬프트 생성
+        prompt = _build_sql_generation_prompt(problem, scenario, table_schema_info)
+
+        logger.info(f"Generating answer_sql for problem {problem['problem_id']} using Gemini")
+
+        # Gemini 호출
+        response = _call_gemini_with_retry(
+            model=GeminiModels.PROBLEM,
+            contents=prompt,
+            purpose="sql_generation"
+        )
+
+        # SQL 추출
+        answer_sql = _extract_sql_from_response(response.text)
+
+        if not answer_sql:
+            logger.warning(f"Failed to extract SQL for {problem['problem_id']}")
+            return problem
+
+        problem['answer_sql'] = answer_sql
+        logger.info(f"Successfully generated answer_sql for {problem['problem_id']}")
+
+        # SQL 실행하여 expected_result 생성
+        expected_result = _execute_and_get_result(answer_sql, problem['problem_id'])
+
+        if expected_result is not None:
+            problem['expected_result'] = expected_result
+            problem['expected_row_count'] = len(expected_result)
+            logger.info(f"Generated expected_result with {len(expected_result)} rows for {problem['problem_id']}")
+        else:
+            problem['expected_result'] = []
+            problem['expected_row_count'] = 0
+            logger.warning(f"Failed to execute answer_sql for {problem['problem_id']}")
+
+        return problem
+
+    except Exception as e:
+        logger.warning(f"Failed to enrich problem {problem['problem_id']} with AI solution: {e}")
+        # 실패해도 원본 문제 반환 (fallback 채점 방식 사용)
+        return problem
+
+
+def _build_table_schema_text(scenario: BusinessScenario) -> str:
+    """시나리오의 테이블 스키마 정보를 텍스트로 변환"""
+    schema_lines = ["## 사용 가능한 테이블"]
+
+    for table in scenario.table_configs:
+        schema_lines.append(f"\n### {table.full_name}")
+        schema_lines.append(f"목적: {table.purpose}")
+        schema_lines.append(f"행 수: {table.row_count:,}개")
+        schema_lines.append("컬럼:")
+
+        for col in table.columns:
+            nullable = "NULL 가능" if col.nullable else "NOT NULL"
+            desc = f" - {col.description}" if col.description else ""
+            schema_lines.append(f"  - {col.name} ({col.data_type}, {nullable}){desc}")
+
+    return "\n".join(schema_lines)
+
+
+def _build_sql_generation_prompt(problem: dict, scenario: BusinessScenario, table_schema: str) -> str:
+    """SQL 생성을 위한 Gemini 프롬프트 작성"""
+    return f"""당신은 PostgreSQL 전문 데이터 분석가입니다.
+아래 비즈니스 문제에 대한 SQL 쿼리를 작성해주세요.
+
+## 비즈니스 배경
+- 회사: {scenario.company_name}
+- 상황: {scenario.situation}
+- 분석 기간: {scenario.data_period[0]} ~ {scenario.data_period[1]}
+- 산업: {scenario.product_type}
+
+## 문제
+**제목**: {problem.get('question', 'N/A')}
+**난이도**: {problem.get('difficulty', 'medium')}
+**주제**: {problem.get('topic', 'aggregation')}
+**요청자**: {problem.get('requester', '데이터팀')}
+
+{problem.get('context', '')}
+
+## 기대하는 결과 컬럼
+{', '.join(problem.get('expected_columns', []))}
+
+{table_schema}
+
+## 중요 제약사항
+1. PostgreSQL 문법만 사용하세요
+2. 위에 명시된 테이블과 컬럼만 사용하세요
+3. division by zero 방지: NULLIF 또는 CASE 사용
+4. 날짜 조건은 반드시 {scenario.data_period[0]} ~ {scenario.data_period[1]} 범위 내에서 사용
+5. 기대하는 결과 컬럼명과 정확히 일치하도록 작성
+6. 세미콜론(;)을 끝에 추가하지 마세요
+7. 주석(--) 사용 금지
+
+## 출력 형식
+SQL 쿼리만 출력하세요. 설명이나 마크다운 코드블록 없이 순수 SQL만 작성하세요.
+
+예시:
+SELECT
+    column1,
+    COUNT(*) as count
+FROM table_name
+WHERE condition
+GROUP BY column1
+ORDER BY count DESC"""
+
+
+def _extract_sql_from_response(response_text: str) -> Optional[str]:
+    """Gemini 응답에서 SQL 쿼리 추출"""
+    # 1. 코드블록 안의 SQL 추출 시도
+    code_block_match = re.search(
+        r'```(?:sql)?\s*(.*?)\s*```',
+        response_text,
+        re.DOTALL | re.IGNORECASE
+    )
+
+    if code_block_match:
+        sql = code_block_match.group(1).strip()
+    else:
+        # 2. 코드블록이 없으면 전체 텍스트를 SQL로 간주
+        sql = response_text.strip()
+
+    # 3. SQL 정리
+    # 주석 제거
+    sql = re.sub(r'--[^\n]*', '', sql)  # 단일 라인 주석
+    sql = re.sub(r'/\*.*?\*/', '', sql, flags=re.DOTALL)  # 멀티 라인 주석
+
+    # 세미콜론 제거
+    sql = sql.rstrip(';').strip()
+
+    # 빈 SQL 체크
+    if not sql or len(sql) < 10:
+        return None
+
+    return sql
+
+
+def _execute_and_get_result(answer_sql: str, problem_id: str, limit: int = 1000) -> Optional[List[dict]]:
+    """
+    정답 SQL을 실행하여 expected_result 생성
+
+    Args:
+        answer_sql: 실행할 SQL
+        problem_id: 문제 ID (로깅용)
+        limit: 최대 행 수
+
+    Returns:
+        결과 리스트 (실패 시 None)
+    """
+    try:
+        from backend.engine.postgres_engine import PostgresEngine
+        from backend.config.db import PostgresEnv
+
+        pg = PostgresEngine(PostgresEnv().dsn())
+
+        try:
+            # LIMIT 추가하여 너무 큰 결과 방지
+            limited_sql = f"SELECT * FROM ({answer_sql}) AS _result LIMIT {limit}"
+            df = pg.fetch_df(limited_sql)
+
+            # DataFrame을 리스트로 변환
+            result = []
+            for _, row in df.iterrows():
+                record = {}
+                for col in df.columns:
+                    val = row[col]
+                    # JSON 직렬화 가능하도록 변환
+                    if hasattr(val, 'isoformat'):  # datetime, date
+                        record[col] = val.isoformat()
+                    elif hasattr(val, 'item'):  # numpy types
+                        record[col] = val.item()
+                    else:
+                        record[col] = val
+                result.append(record)
+
+            return result
+
+        finally:
+            pg.close()
+
+    except Exception as e:
+        logger.error(f"Failed to execute answer_sql for {problem_id}: {e}")
+        logger.error(f"SQL was: {answer_sql[:200]}...")
+        return None
 
 
 def generate_pa_problem(
     scenario: BusinessScenario,
     difficulty: str,
     problem_id: str,
-    problem_number: int
+    _problem_number: int
 ) -> dict:
     """
     PA 문제 생성 (집계 분석)
@@ -132,7 +354,7 @@ def generate_stream_problem(
     scenario: BusinessScenario,
     difficulty: str,
     problem_id: str,
-    problem_number: int
+    _problem_number: int
 ) -> dict:
     """
     Stream 문제 생성 (시계열 분석)
