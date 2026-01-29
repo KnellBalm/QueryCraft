@@ -277,7 +277,7 @@ def init_database():
             pg.execute("""
                 CREATE TABLE IF NOT EXISTS public.pa_users (
                     user_id TEXT PRIMARY KEY,
-                    signup_at TIMESTAMP NOT NULL,
+                    signup_at DATE NOT NULL,
                     country TEXT NOT NULL,
                     channel TEXT NOT NULL
                 );

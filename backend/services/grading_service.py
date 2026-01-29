@@ -12,6 +12,9 @@ from backend.schemas.submission import SubmitResponse
 from backend.services.db_logger import db_log, LogCategory, LogLevel
 from backend.common.date_utils import get_today_kst
 from backend.services.problem_service import get_problem_by_id
+from backend.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 GRADING_SCHEMA = "grading"
 
@@ -327,19 +330,26 @@ def get_hint(problem_id: str, sql: str, data_type: str = "pa") -> str:
     """AI 힌트 요청 - 문제 전체 컨텍스트 전달"""
     try:
         from problems.gemini import grade_pa_submission
-        
+        from backend.services.problem_service import get_table_schema
+
         # 문제 정보 로드하여 컨텍스트 강화
         problem = get_problem_by_id(problem_id, data_type)
-        
-        # 스키마 정보 문자열화
+
+        # 스키마 정보 조회 및 문자열화
         schema_info = None
-        if problem and problem.schema:
-            schema_lines = []
-            for table in problem.schema:
-                cols = ", ".join([f"{c.name} ({c.type})" for c in table.columns])
-                schema_lines.append(f"{table.name}: {cols}")
-            schema_info = "\n".join(schema_lines)
-        
+        try:
+            # data_type에 따라 적절한 prefix 설정
+            prefix = "pa_" if data_type == "pa" else "stream_" if data_type == "stream" else "rca_"
+            table_schemas = get_table_schema(prefix=prefix)
+            if table_schemas:
+                schema_lines = []
+                for table in table_schemas:
+                    cols = ", ".join([f"{c.column_name} ({c.data_type})" for c in table.columns])
+                    schema_lines.append(f"{table.table_name}: {cols}")
+                schema_info = "\n".join(schema_lines)
+        except Exception as schema_err:
+            logger.warning(f"Failed to fetch schema for hint: {schema_err}")
+
         return grade_pa_submission(
             problem_id=problem_id,
             sql_text=sql,

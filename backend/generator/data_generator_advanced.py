@@ -156,7 +156,7 @@ def init_duckdb_schema(con: duckdb.DuckDBPyConnection) -> None:
     con.execute("""
     CREATE TABLE IF NOT EXISTS pa_users (
       user_id VARCHAR,
-      signup_at TIMESTAMP,
+      signup_at DATE,
       country VARCHAR,
       channel VARCHAR
     );
