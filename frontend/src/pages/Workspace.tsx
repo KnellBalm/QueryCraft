@@ -79,9 +79,21 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
 
             let newProblems: Problem[] = Array.isArray(problemsRes.data.problems) ? problemsRes.data.problems : [];
 
-            // 데일리 챌린지인 경우, 현재 dataType (pa/stream)에 맞는 문제만 추출
-            if (isDaily) {
+            // Daily Challenge shows ALL problems (PA + Stream mixed) regardless of route
+            // Do NOT filter by dataType for daily challenges
+            if (!isDaily) {
+                // Only filter by dataType for non-daily practice mode
                 newProblems = newProblems.filter(p => (p.problem_type || (p as any).data_type) === dataType);
+            }
+
+            // Sort problems by difficulty for display (easy → medium → hard)
+            if (isDaily && newProblems.length > 0) {
+                newProblems = [...newProblems].sort((a, b) => {
+                    const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
+                    const orderA = difficultyOrder[a.difficulty || 'medium'];
+                    const orderB = difficultyOrder[b.difficulty || 'medium'];
+                    return orderA - orderB;
+                });
             }
 
             setProblems(newProblems);
@@ -118,8 +130,13 @@ export function Workspace({ dataType: propDataType }: WorkspaceProps) {
     }, [loadData]);
 
     // 준비중 알림 (stream, rca)
+    // Only show alert for stream/rca in non-daily practice mode
+    // Daily challenges include working stream problems
     useEffect(() => {
-        if (dataType === 'stream' || dataType === 'rca') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const targetDate = searchParams.get('date') || undefined;
+        const isDaily = !!targetDate; // Daily challenge has date in URL query params
+        if (!isDaily && (dataType === 'stream' || dataType === 'rca')) {
             alert('준비중입니다');
         }
     }, [dataType]);
