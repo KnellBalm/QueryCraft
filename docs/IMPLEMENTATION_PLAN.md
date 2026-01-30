@@ -1,28 +1,21 @@
-# 버그 수정 및 안정성 강화 (2026-01-20)
+# AI API 키 동기화 및 서비스 복구 계획
 
-## 배경 및 목표
-상용 서버 배포 후 보고된 404 에러, 에디터 스타일 충돌, 문제 세트 필터링 오류, 스트릭 계산 버그를 해결하여 시스템을 안정화함.
+새로 발급받은 유효한 Gemini API 키를 시스템 전체(로컬 및 클라우드)에 동기화하여 AI 도움, 문제 생성, 오늘의 팁 등 모든 AI 기능을 복구했습니다. 또한 로그에서 발견된 인자 오류를 함께 수정했습니다.
 
-## 해결된 이슈 및 변경 사항
+## 변경 사항
 
-### 1. 404 Not Found 에러 및 로깅 강화
-- **OAuth 콜백**: `auth.py`에서 누락된 `/api` prefix 추가.
-- **로깅**: `main.py`에 404 URL 상세 로깅 미들웨어 추가.
-- **프론트엔드**: `Workspace.tsx`에서 잘못된 `dataType` 요청 차단.
+### 로컬 환경 설정
+- **[.env](file:///Users/zokr/python_workspace/QueryCraft/.env)**: `GEMINI_API_KEY` 업데이트 완료.
+- **[.env.dev](file:///Users/zokr/python_workspace/QueryCraft/.env.dev)**: `GEMINI_API_KEY` 업데이트 완료.
 
-### 2. 에디터 자동 완성 가시성 및 스타일 충돌 해결
-- **전역 스타일 분리**: `App.css`의 `.main` 클래스를 `.app-main`으로 변경하여 Monaco 에디터 내부 클래스와의 충돌(height: 0px) 해결.
-- **에디터 색상**: `Workspace.css`에서 자동 완성 위젯의 텍스트 색상 및 하이라이트 강제 지정.
+### Cloud Run 서비스 업데이트
+- **`query-craft-backend`**: `GEMINI_API_KEY` 업데이트 완료 (사용자 실행).
+- **`tip-worker`**: `GEMINI_API_KEY` 업데이트 완료.
+- **`problem-worker`**: `GEMINI_API_KEY` 업데이트 완료.
 
-### 3. 문제 세트 필터링 (12개 -> 사용자별 6개)
-- **생성기**: `unified_problem_generator.py`가 하루 2세트(12문제)를 생성하도록 확장.
-- **API**: `daily.py`에서 `user_id` 기반 `set_index` 필터링 로직 구현.
-- **데이터**: 2026-01-20일자 데이터를 12문제 버전으로 재생성.
+### 코드 수정
+- **[unified_problem_generator.py](file:///Users/zokr/python_workspace/QueryCraft/backend/generator/unified_problem_generator.py)**: `generate_pa_problem` 및 `generate_stream_problem`의 `_problem_number` 인자명을 `problem_number`로 수정하여 `unexpected keyword argument` 에러 해결.
 
-### 4. 연속 일수(Streak) 로직 개선
-- **계산 방식**: `stats_service.py`에서 오늘 아직 제출이 없더라도 어제의 제출 기록이 있으면 스트릭을 유지하도록 수정.
-
-## 검증 계획
-- [x] 백엔드 유닛 테스트: `pytest` (환경 구축 필요 시 스킵 가능)
-- [x] 프론트엔드 빌드 체크: `npm run build`
-- [x] 로컬 통합 테스트: `daily_challenge_writer.py`를 통한 데이터 로드 확인
+## 검증 결과
+- `test_gemini.py`를 통한 API 호출 성공 확인.
+- Cloud Run 서비스 배포 성공 확인.

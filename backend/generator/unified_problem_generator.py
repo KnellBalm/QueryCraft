@@ -301,7 +301,7 @@ def generate_pa_problem(
     scenario: BusinessScenario,
     difficulty: str,
     problem_id: str,
-    _problem_number: int
+    problem_number: int
 ) -> dict:
     """
     PA 문제 생성 (집계 분석)
@@ -354,7 +354,7 @@ def generate_stream_problem(
     scenario: BusinessScenario,
     difficulty: str,
     problem_id: str,
-    _problem_number: int
+    problem_number: int
 ) -> dict:
     """
     Stream 문제 생성 (시계열 분석)
