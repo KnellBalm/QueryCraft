@@ -1,21 +1,27 @@
-# AI API 키 동기화 및 서비스 복구 계획
+# 상용 서비스 404 에러 및 생성 장애 복구 계획 (완료)
 
-새로 발급받은 유효한 Gemini API 키를 시스템 전체(로컬 및 클라우드)에 동기화하여 AI 도움, 문제 생성, 오늘의 팁 등 모든 AI 기능을 복구했습니다. 또한 로그에서 발견된 인자 오류를 함께 수정했습니다.
+1월 30일 발생한 상용 서비스 404 에러를 해결하고 시스템을 정상화했습니다.
 
-## 변경 사항
+## ✅ 조치 완료 사항
 
-### 로컬 환경 설정
-- **[.env](file:///Users/zokr/python_workspace/QueryCraft/.env)**: `GEMINI_API_KEY` 업데이트 완료.
-- **[.env.dev](file:///Users/zokr/python_workspace/QueryCraft/.env.dev)**: `GEMINI_API_KEY` 업데이트 완료.
+### 1. Gemini API 키 교체
+- **내용**: 만료된 AI API 키를 새 키로 교체.
+- **범위**: 로컬 `.env`, Cloud Run 3종 서비스(`backend`, `problem-worker`, `tip-worker`).
+- **상태**: 완료.
 
-### Cloud Run 서비스 업데이트
-- **`query-craft-backend`**: `GEMINI_API_KEY` 업데이트 완료 (사용자 실행).
-- **`tip-worker`**: `GEMINI_API_KEY` 업데이트 완료.
-- **`problem-worker`**: `GEMINI_API_KEY` 업데이트 완료.
+### 2. DB 연결 설정 최적화
+- **내용**: `POSTGRES_DSN` 형식을 공백 구분자 문자열에서 **URI 형식**으로 변경.
+- **이유**: 상용 환경에서 포트 번호(5432)를 호스트네임의 일부로 오인하는 파싱 오류 해결.
+- **상태**: 완료.
 
-### 코드 수정
-- **[unified_problem_generator.py](file:///Users/zokr/python_workspace/QueryCraft/backend/generator/unified_problem_generator.py)**: `generate_pa_problem` 및 `generate_stream_problem`의 `_problem_number` 인자명을 `problem_number`로 수정하여 `unexpected keyword argument` 에러 해결.
+### 3. 문제 생성 코드 패치
+- **내용**: `unified_problem_generator.py` 내의 인자 매칭 오류 및 `NaN` 값 직렬화 오류 수정.
+- **상태**: 완료 (main 브랜치 push).
 
-## 검증 결과
-- `test_gemini.py`를 통한 API 호출 성공 확인.
-- Cloud Run 서비스 배포 성공 확인.
+### 4. 수동 데이터 복구 (Backfill)
+- **내용**: `health-check` 엔드포인트를 호출하여 1월 30일자 유저 데이터 및 문제 세트 강제 생성.
+- **결과**: `problems` 12개, `daily_challenges` 1개, `pa_users` 500개 적재 확인.
+
+## 🏁 최종 상태
+- **서비스 URL**: [https://query-craft.run.app](https://query-craft.run.app) (정상 작동)
+- **API 응답**: 오늘의 문제 데이터 정상 반환 확인.

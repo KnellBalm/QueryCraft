@@ -203,8 +203,8 @@ def grade_submission(
     session_date = today_kst.isoformat()
     
     try:
-        # 1. 문제 로드 (DB 우선, 파일 폴백 - problem_service 활용)
-        problem = get_problem_by_id(problem_id, data_type, target_date=today_kst, user_id=user_id)
+        # 1. 문제 로드 (ID 우선 검색으로 변경하여 날짜 불일치로 인한 404 방지)
+        problem = get_problem_by_id(problem_id, data_type, user_id=user_id)
         if not problem:
             return SubmitResponse(
                 is_correct=False,

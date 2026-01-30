@@ -238,25 +238,33 @@ def get_problem_by_id(
     user_id: Optional[str] = None
 ) -> Optional[Problem]:
     """문제 상세 조회 (DB 우선)"""
-    # 1. DB에서 직접 id로 조회 시도
+    # 1. DB에서 직접 id로 조회 시도 (가장 정확하고 빠름)
     try:
-        from backend.common.date_utils import get_today_kst
-        check_date = target_date or get_today_kst()
-
         with postgres_connection() as pg:
+            # ID는 그 자체로 유니크하도록 설계되어 있으므로(YYYY-MM-DD-SET-NUM), 
+            # 날짜나 data_type 필터 없이 ID로만 먼저 찾습니다.
             df = pg.fetch_df("""
-                SELECT description FROM public.problems 
-                WHERE title = %s OR (description::jsonb)->>'problem_id' = %s
+                SELECT description, data_type, problem_date 
+                FROM public.problems 
+                WHERE (description::jsonb)->>'problem_id' = %s
                 LIMIT 1
-            """, [problem_id, problem_id])
+            """, [problem_id])
             
             if len(df) > 0:
                 desc = df.iloc[0]["description"]
+                db_data_type = df.iloc[0]["data_type"]
+                db_date_str = df.iloc[0]["problem_date"]
+                
                 p_data = json.loads(desc) if isinstance(desc, str) else desc
                 problem = Problem(**p_data)
                 
-                # 완료 상태 추가
-                completed_map = get_submission_status(check_date, user_id)
+                # 완료 상태 추가 (DB에 저장된 실제 날짜 사용)
+                try:
+                    status_date = date.fromisoformat(db_date_str) if isinstance(db_date_str, str) else db_date_str
+                except:
+                    status_date = target_date or get_today_kst()
+                    
+                completed_map = get_submission_status(status_date, user_id)
                 if problem.problem_id in completed_map:
                     problem.is_completed = True
                     problem.is_correct = completed_map[problem.problem_id]

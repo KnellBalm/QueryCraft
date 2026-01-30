@@ -1,4 +1,7 @@
 /* frontend/src/index.css - 전체 리셋 및 기본 스타일 */
+/* Noto Sans KR - Google Fonts (무료, 안정적) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -16,9 +19,6 @@ body,
   overflow: hidden !important;
   /* 2단 스크롤 원천 봉쇄 */
 }
-
-/* Noto Sans KR - Google Fonts (무료, 안정적) */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
 
 body {
   font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;

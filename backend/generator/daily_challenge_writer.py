@@ -305,6 +305,50 @@ def archive_old_format_files():
         print(f"✅ Archived {archived_count} old format files to problems/archive/")
 
 
+def fallback_to_last_successful_challenge(target_date: str) -> Optional[str]:
+    """
+    문제 생성 실패 시 비상 조치: 가장 최근 성공한 챌린지를 오늘 날짜로 복제
+    """
+    print(f"⚠️ Problem generation failed. Attempting emergency fallback for {target_date}...")
+    latest = get_latest_challenge()
+    if not latest or not latest.get("problems"):
+        print("❌ No successful challenge found to fallback.")
+        return None
+    
+    # 최근 챌린지 데이터를 오늘 날짜 세트로 변환
+    problems = latest["problems"]
+    # problem_id를 오늘 날짜 형식으로 업데이트 (채점 및 조회를 위해)
+    for p in problems:
+        if 'problem_id' in p:
+            old_id = p['problem_id']
+            # YYYY-MM-DD-SET-NUM 형식 가정
+            parts = old_id.split('-')
+            if len(parts) >= 4:
+                p['problem_id'] = f"{target_date}-{'-'.join(parts[3:])}"
+    
+    # 가짜 시나리오 객체 생성하여 저장
+    from generator.scenario_generator import BusinessScenario
+    s_data = latest["scenario"]
+    scenario = BusinessScenario(
+        date=target_date,
+        company_name=s_data.get("company_name", "Emergency Backup"),
+        company_description=s_data.get("company_description", ""),
+        product_type=s_data.get("product_type", "unknown"),
+        situation=s_data.get("situation", "시스템 오류로 인한 비상 복구 모드입니다."),
+        stake=s_data.get("stake", ""),
+        data_selection=[], # Not needed for fallback
+        data_period=(s_data.get("data_period", {}).get("start"), s_data.get("data_period", {}).get("end")),
+        table_configs=[], # Will be filled from s_data if needed
+        data_story=s_data.get("data_story", ""),
+        north_star=s_data.get("north_star", ""),
+        key_metrics=s_data.get("key_metrics", [])
+    )
+    
+    filepath = save_daily_challenge(scenario, problems, target_date)
+    print(f"✅ Emergency fallback successful: {target_date} problems restored from previous data.")
+    return filepath
+
+
 # 전체 파이프라인
 def generate_and_save_daily_challenge(target_date: Optional[str] = None) -> str:
     """
@@ -317,16 +361,23 @@ def generate_and_save_daily_challenge(target_date: Optional[str] = None) -> str:
     
     print(f"\n🎯 Generating Daily Challenge for {target_date}...")
     
-    # 1. Scenario 생성
-    scenario = generate_scenario(target_date)
-    
-    # 2. 문제 생성
-    problems = generate_daily_problems(scenario)
-    
-    # 3. 파일 저장
-    filepath = save_daily_challenge(scenario, problems, target_date)
-    
-    return filepath
+    try:
+        # 1. Scenario 생성
+        scenario = generate_scenario(target_date)
+        
+        # 2. 문제 생성
+        problems = generate_daily_problems(scenario)
+        
+        # 3. 파일 저장
+        filepath = save_daily_challenge(scenario, problems, target_date)
+        return filepath
+    except Exception as e:
+        print(f"❌ Error during generation for {target_date}: {e}")
+        # 비상 복구 시도
+        fallback_path = fallback_to_last_successful_challenge(target_date)
+        if fallback_path:
+            return fallback_path
+        raise e
 
 
 if __name__ == "__main__":

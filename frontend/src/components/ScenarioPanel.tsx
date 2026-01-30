@@ -25,7 +25,7 @@ interface Scenario {
     end: string;
   };
   table_configs: TableConfig[];
-  data_story?: string;
+  data_story?: string | null;
   north_star: string;
   key_metrics: string[];
 }

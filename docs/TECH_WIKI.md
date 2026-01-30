@@ -117,7 +117,7 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 
 ### 4.2 필수 환경 변수
 
-- **POSTGRES_DSN**: Supabase 연결 URI (Connection Pooler 사용 필수).
+- **POSTGRES_DSN**: Supabase 연결 URI. `postgresql://user:pass@host:port/dbname?sslmode=require` 형식을 권장합니다. (공백 구분자 형식은 일부 모듈에서 파싱 오류를 발생시킬 수 있음)
 - **GEMINI_API_KEY**: Google Gemini Pro API Key.
 - **ENV**: `production` 또는 `development`.
 
@@ -154,7 +154,28 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 
 ---
 
-## 🛡️ 7. Core Stability Guardrails (핵심 기능 고정)
+---
+
+## 🛡️ 7. Operational Stability & Recovery (운영 안정성)
+
+서비스의 지속 가능성을 위해 문제 생성 및 채점 파이프라인에는 다중 방어 기제가 적용되어 있습니다.
+
+### 7.1 404 에러 방어 (Defense-in-Depth)
+- **ID 기반 검색**: 채점 시 `target_date`에 종속되지 않고 `problem_id`로만 직접 검색하도록 개선하여, 서버간 시간차나 세션 만료로 인한 404를 방지합니다.
+- **Lazy Schema Discovery**: 테이블 스키마 조회 시 캐싱 대신 실시간 메타데이터를 참조하여 데이터 생성 직후 즉시 채점이 가능하도록 합니다.
+
+### 7.2 자가 복구 메커니즘 (Self-Healing)
+- **Emergency Fallback**: AI(Gemini) 오류로 당일 문제 생성에 실패할 경우, 시스템은 자동으로 **가장 최근 성공한 챌린지를 오늘 날짜로 복제**하여 서비스 중단을 막습니다.
+- **Health-check Trigger**: `/health/daily-problems` 호출 시 데이터 부재를 감지하면 즉시 백그라운드 생성을 시도합니다.
+
+### 7.3 운영진을 위한 골든 룰
+1. **모니터링**: 아침 9시 이후 서비스 접속 시 문제가 없다면 성공입니다.
+2. **수동 복구**: 404 발생 시 관리자 페이지의 **[통합 생성]** 버튼을 누르거나 `health-check` 엔드포인트를 호출하세요.
+3. **환경 변수**: `POSTGRES_DSN`은 반드시 **URI 형식**을 유지해야 합니다.
+
+---
+
+## 8. Core Stability Guardrails (핵심 기능 고정)
 
 사용자 경험의 핵심인 에디터, 문제 로드, 채점 프로세스는 현재 "Golden State"로 간주되어 고정(Freeze)되었습니다.
 
@@ -164,4 +185,4 @@ QueryCraft의 프론트엔드는 디자인 일관성과 유지보수를 위해 *
 
 ---
 
-**마지막 업데이트: 2026-01-21**
+**마지막 업데이트: 2026-01-30 (운영 안정성 패치 적용)**
