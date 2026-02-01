@@ -38,7 +38,6 @@ class TestCORSConfig:
         assert response.headers.get("access-control-allow-credentials") == "true"
 
         # 2. Test GET request
-        # /auth/me might return 200 (logged_in=False) or 401 depending on logic, but headers must be present
         response = client.get(
             "/auth/me",
             headers={"Origin": origin}
@@ -49,6 +48,21 @@ class TestCORSConfig:
     def test_cors_cloud_run_domain_regex(self):
         """Verify that other Cloud Run domains matching the regex are also allowed."""
         origin = "https://query-craft-frontend-random-hash.a.run.app"
+        client = TestClient(app)
+
+        response = client.options(
+            "/auth/me",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+            }
+        )
+        assert response.status_code == 200
+        assert response.headers.get("access-control-allow-origin") == origin
+
+    def test_cors_origin_with_trailing_slash(self):
+        """Verify that an origin with a trailing slash is allowed (via regex)."""
+        origin = "https://query-craft-frontend-758178119666.us-central1.run.app/"
         client = TestClient(app)
 
         response = client.options(
@@ -73,12 +87,6 @@ class TestCORSConfig:
                 "Access-Control-Request-Method": "GET",
             }
         )
-        # Standard behavior for disallowed origin in FastAPI CORSMiddleware is
-        # usually 200 OK but WITHOUT Access-Control-Allow-Origin header,
-        # or sometimes 400.
-        # Starlette CORSMiddleware just ignores it and processes request as normal non-CORS,
-        # or returns response without CORS headers.
-
         assert "access-control-allow-origin" not in response.headers
 
     def test_path_rewrite_does_not_break_cors(self):

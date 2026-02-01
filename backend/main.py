@@ -106,7 +106,8 @@ cloud_origins = [
     "https://querycraft.run.app",  # 커스텀 도메인 예비
 ]
 # 좀 더 유연한 regex: query-craft-frontend로 시작하는 모든 .run.app 도메인 허용
-cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
+# optional trailing slash allowed
+cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app/?"
 
 if os.getenv("ENV") == "production":
     # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
@@ -140,6 +141,15 @@ async def log_errors_middleware(request, call_next):
     from fastapi import Request
     from starlette.responses import Response
     
+    # Log Origin for debugging CORS issues
+    origin = request.headers.get("origin")
+    if origin:
+        from backend.common.logging import get_logger
+        logger = get_logger("backend.middleware.cors_debug")
+        # Only log if it looks like a production request to avoid spam in dev
+        if "run.app" in origin:
+            logger.info(f"Incoming Request Origin: {origin}")
+
     response = await call_next(request)
     
     if response.status_code == 404:
