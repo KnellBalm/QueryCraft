@@ -2,19 +2,31 @@
 import os
 import sys
 import pytest
+from unittest import mock
 from fastapi.testclient import TestClient
-
-# Set ENV to production before importing backend.main to ensure production CORS settings are used
-os.environ["ENV"] = "production"
-
-try:
-    from backend.main import app
-except ImportError:
-    sys.path.append(os.getcwd())
-    from backend.main import app
 
 class TestCORSConfig:
     """Test CORS configuration for the backend."""
+
+    @pytest.fixture(autouse=True)
+    def setup_cors_env(self):
+        """
+        Setup environment variables for CORS testing and reload the app.
+        We need to ensure ENV is production to test the production CORS logic.
+        Using mock.patch.dict ensures this is isolated to this test class.
+        """
+        with mock.patch.dict(os.environ, {"ENV": "production"}):
+            # We need to reload the app or at least ensuring the logic reads the new env
+            # consistently. Since backend.main executes at import time, we might need
+            # to reload it or structure the test to import inside the mock context.
+
+            # Unload backend.main if it's already imported to force re-execution of lifespan/middleware logic
+            if "backend.main" in sys.modules:
+                del sys.modules["backend.main"]
+
+            from backend.main import app
+            self.app = app
+            yield
 
     def test_cors_specific_origin_allowed(self):
         """
@@ -22,7 +34,7 @@ class TestCORSConfig:
         Origin: https://query-craft-frontend-758178119666.us-central1.run.app
         """
         origin = "https://query-craft-frontend-758178119666.us-central1.run.app"
-        client = TestClient(app)
+        client = TestClient(self.app)
 
         # 1. Test Preflight (OPTIONS)
         response = client.options(
@@ -48,7 +60,7 @@ class TestCORSConfig:
     def test_cors_cloud_run_domain_regex(self):
         """Verify that other Cloud Run domains matching the regex are also allowed."""
         origin = "https://query-craft-frontend-random-hash.a.run.app"
-        client = TestClient(app)
+        client = TestClient(self.app)
 
         response = client.options(
             "/auth/me",
@@ -63,7 +75,7 @@ class TestCORSConfig:
     def test_cors_origin_with_trailing_slash(self):
         """Verify that an origin with a trailing slash is allowed (via regex)."""
         origin = "https://query-craft-frontend-758178119666.us-central1.run.app/"
-        client = TestClient(app)
+        client = TestClient(self.app)
 
         response = client.options(
             "/auth/me",
@@ -78,7 +90,7 @@ class TestCORSConfig:
     def test_cors_disallowed_origin(self):
         """Verify that a random origin is NOT allowed."""
         origin = "https://evil-site.com"
-        client = TestClient(app)
+        client = TestClient(self.app)
 
         response = client.options(
             "/auth/me",
@@ -95,7 +107,7 @@ class TestCORSConfig:
         does not interfere with CORS headers.
         """
         origin = "https://query-craft-frontend-758178119666.us-central1.run.app"
-        client = TestClient(app)
+        client = TestClient(self.app)
 
         # Send request to /auth/me (rewritten to /api/auth/me)
         response = client.get(
