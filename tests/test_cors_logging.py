@@ -7,18 +7,33 @@ import sys
 # Ensure backend can be imported
 sys.path.append(os.getcwd())
 
+# Save original ENV
+original_env = os.environ.get("ENV")
+
 # Mock environment to avoid DB connection issues during import if not already imported
 if "backend.main" not in sys.modules:
-    # Use mock.patch.dict to set environment variables safely?
-    # But imports happen at module level.
-    # We rely on previous steps or set it here.
+    # Set ENV to production to ensure CORS middleware is added
     os.environ["ENV"] = "production"
     os.environ["POSTGRES_DSN"] = "postgresql://dummy:dummy@localhost:5432/dummy"
     # Also mock db_init to prevent thread creation
     sys.modules["backend.services.db_init"] = MagicMock()
     sys.modules["backend.scheduler"] = MagicMock()
 
-from backend.main import app
+try:
+    from backend.main import app
+except ImportError:
+    # Retry import if it failed? Or just let it fail
+    from backend.main import app
+finally:
+    # Restore original ENV immediately after import
+    # The app object is already created with production settings (if we just imported it)
+    # If it was already imported, changing ENV here doesn't affect the app instance,
+    # but protects other tests.
+    if original_env is None:
+        if "ENV" in os.environ:
+            del os.environ["ENV"]
+    else:
+        os.environ["ENV"] = original_env
 
 def test_cors_logging_middleware():
     """Test that CORSLoggingMiddleware logs origin and response headers."""
