@@ -199,8 +199,9 @@ def grade_submission(
 ) -> SubmitResponse:
     """문제 제출 채점 - grading 스키마 테이블 비교 방식"""
     start = time.time()
-    today_kst = get_today_kst()
-    session_date = today_kst.isoformat()
+    # [PORTFOLIO-MODE] 기본값은 오늘이지만, 문제 로드 후 해당 문제의 실제 날짜로 업데이트합니다.
+    target_date_obj = get_today_kst()
+    session_date = target_date_obj.isoformat()
     
     try:
         # 1. 문제 로드 (ID 우선 검색으로 변경하여 날짜 불일치로 인한 404 방지)
@@ -212,6 +213,14 @@ def grade_submission(
                 execution_time_ms=0,
                 diff=None
             )
+        
+        # [PORTFOLIO-MODE] 문제의 실제 날짜를 세션 날짜로 사용 (제출 기록 정합성 유지)
+        if hasattr(problem, 'problem_date') and problem.problem_date:
+            session_date = problem.problem_date
+            if isinstance(session_date, date):
+                session_date = session_date.isoformat()
+        elif isinstance(problem, dict) and problem.get('problem_date'):
+            session_date = problem.get('problem_date')
         
         sort_keys = problem.sort_keys or []
         expected_result = problem.expected_result
@@ -239,9 +248,13 @@ def grade_submission(
                         )
                 else:
                     # 기존 방식: grading 테이블에서 정답 로드
-                    grading_table = f"{GRADING_SCHEMA}.expected_{problem_id}"
+                    grading_table = f"expected_{problem_id}" # 스키마 분리
                     try:
-                        expected_df = pg.fetch_df(f"SELECT * FROM {grading_table}")
+                        # 테이블명은 식별자이므로 매개변수로 넘길 수 없으나, ID 형식을 검증하거나 스키마를 지정함
+                        if not problem_id.isalnum() and '_' not in problem_id:
+                            raise ValueError("Invalid problem_id format")
+                        
+                        expected_df = pg.fetch_df(f"SELECT * FROM {GRADING_SCHEMA}.{grading_table}")
                     except Exception as e:
                         return SubmitResponse(
                             is_correct=False,

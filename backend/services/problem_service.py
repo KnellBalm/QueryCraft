@@ -18,6 +18,32 @@ logger = get_logger(__name__)
 PROBLEM_DIR = Path("problems/daily")
 NUM_PROBLEM_SETS = 2
 
+def get_latest_problem_date(data_type: str = "pa") -> date:
+    """DB 또는 파일에서 가장 최신의 문제 날짜를 탐색"""
+    try:
+        with postgres_connection() as pg:
+            df = pg.fetch_df("SELECT MAX(problem_date) as max_date FROM public.problems WHERE data_type = %s", [data_type])
+            if not df.empty and df.iloc[0]["max_date"]:
+                max_date = df.iloc[0]["max_date"]
+                return date.fromisoformat(max_date) if isinstance(max_date, str) else max_date
+    except Exception as e:
+        logger.warning(f"Failed to get latest date from DB: {e}")
+
+    # Fallback: 파일 시스템
+    try:
+        files = sorted(PROBLEM_DIR.glob(f"{data_type}_*.json" if data_type != "pa" else "*.json"), reverse=True)
+        if files:
+            # 파일명에서 날짜 추출 (예: 2024-01-30.json 또는 stream_2024-01-30.json)
+            name = files[0].stem
+            date_str = name.replace(f"{data_type}_", "") if data_type != "pa" else name
+            if "_set" in date_str:
+                date_str = date_str.split("_set")[0]
+            return date.fromisoformat(date_str)
+    except Exception:
+        pass
+        
+    return get_today_kst()
+
 
 def filter_problems_by_set(problems_raw: List[Any], user_id: Optional[str], target_date: date) -> List[Dict[str, Any]]:
     """사용자 세트에 맞는 문제만 필터링 및 프론트엔드용 필드 정규화"""
@@ -142,6 +168,23 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                             problems_data.append(json.loads(desc))
                         else:
                             problems_data.append(desc)
+                else:
+                    # [PORTFOLIO-MODE] 오늘 날짜 데이터가 아예 없으면 가장 최근 날짜의 문제를 조회
+                    logger.info(f"No problems found for {target_date}, searching for latest available problems")
+                    df_latest = pg.fetch_df("""
+                        SELECT description FROM public.problems 
+                        WHERE data_type = %s
+                        ORDER BY problem_date DESC, id ASC
+                        LIMIT 6
+                    """, [data_type])
+                    
+                    if len(df_latest) > 0:
+                        for _, row in df_latest.iterrows():
+                            desc = row["description"]
+                            if isinstance(desc, str):
+                                problems_data.append(json.loads(desc))
+                            else:
+                                problems_data.append(desc)
     except Exception as e:
         logger.debug(f"Failed to fetch problems from problems table: {e}")
 
@@ -210,9 +253,14 @@ def get_problems(target_date: Optional[date] = None, data_type: str = "pa", user
                 pass
     
     if not problems_data:
+        # [PORTFOLIO-MODE] 요청한 날짜에 데이터가 없으면 '최신 가용 날짜'로 다시 조회
+        latest_date = get_latest_problem_date(data_type)
+        if latest_date != target_date:
+            logger.info(f"Retrying get_problems for {data_type} with latest date: {latest_date}")
+            return get_problems(target_date=latest_date, data_type=data_type, user_id=user_id)
         return []
     
-    # 완료 상태 조회
+    # 완료 상태 조회 (실제 데이터가 있는 날짜 기준)
     completed_map = get_submission_status(target_date, user_id)
     
     problems = []
@@ -364,24 +412,28 @@ def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
         with postgres_connection() as pg:
             # 테이블 목록 (prefix에 상관없이 pa_와 stream_ 모두 조회가 필요할 수도 있지만, 현재는 prefix 필터 유지)
             # 사용자가 특정 모드(PA/Stream)로 진입했을 때 해당 테이블들만 보여주기 위함
-            table_df = pg.fetch_df(f"""
+            # prefix는 "pa_", "stream_", "rca_" 등 사전에 정의된 값만 허용 (보안)
+            if prefix not in ("pa_", "stream_", "rca_"):
+                prefix = "pa_"
+                
+            table_df = pg.fetch_df("""
                 SELECT table_name 
                 FROM information_schema.tables 
                 WHERE table_schema = 'public' 
-                AND table_name LIKE '{prefix}%'
+                AND table_name LIKE %s
                 ORDER BY table_name
-            """)
+            """, [f"{prefix}%"])
             
-            for _, row in table_df.iterrows():
-                tbl_name = row["table_name"]
+            for _, t_row in table_df.iterrows():
+                tbl_name = t_row["table_name"]
                 
                 # 컬럼 정보
-                col_df = pg.fetch_df(f"""
+                col_df = pg.fetch_df("""
                     SELECT column_name, data_type
                     FROM information_schema.columns
-                    WHERE table_name = '{tbl_name}' AND table_schema = 'public'
+                    WHERE table_name = %s AND table_schema = 'public'
                     ORDER BY ordinal_position
-                """)
+                """, [tbl_name])
                 
                 columns = [
                     TableColumn(
@@ -393,6 +445,7 @@ def get_table_schema(prefix: str = "pa_") -> List[TableSchema]:
                 
                 # 행 수 (Supabase/PostgreSQL 속도 최적화를 위해 간단한 COUNT 사용)
                 try:
+                    # 테이블명은 매개변수화가 불가능하므로 사전에 조회된 테이블 이름만 사용하도록 보장됨 (t_row["table_name"])
                     count_df = pg.fetch_df(f"SELECT COUNT(*) as cnt FROM public.{tbl_name}")
                     row_count = int(count_df.iloc[0]["cnt"])
                 except:

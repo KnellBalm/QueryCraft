@@ -60,7 +60,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --min-instances 1 \
+            --min-instances 0 \
             --max-instances 2 \
             --memory 512Mi \
             --timeout 300 \
@@ -96,31 +96,6 @@ jobs:
             --max-instances 2 \
             --memory 256Mi
 
-      # 6. Cloud Scheduler 설정 - 백엔드 직접 트리거 (X-Scheduler-Key 사용)
-      - name: Setup Cloud Scheduler
-        run: |
-          # Problem generation - Backend API 직접 호출 (KST 10:00 = UTC 01:00)
-          gcloud scheduler jobs delete problem-generation-daily --location=$REGION --quiet || true
-          gcloud scheduler jobs create http problem-generation-daily \
-            --location=$REGION \
-            --schedule="0 1 * * *" \
-            --uri="${{ steps.get-backend-url.outputs.BACKEND_URL }}/admin/trigger/daily-generation" \
-            --http-method=POST \
-            --time-zone="UTC" \
-            --headers="X-Scheduler-Key=${{ secrets.SCHEDULER_API_KEY }},Content-Type=application/json" \
-            --description="Daily problem generation via backend API trigger (Daily 10:00 KST)"
-
-          # Tip generation - 독립 실행 (KST 00:30 = UTC 15:30)
-          gcloud scheduler jobs delete tip-generation-daily --location=$REGION --quiet || true
-          gcloud scheduler jobs create http tip-generation-daily \
-            --location=$REGION \
-            --schedule="30 15 * * *" \
-            --uri="${{ steps.get-backend-url.outputs.BACKEND_URL }}/admin/trigger/daily-tip" \
-            --http-method=POST \
-            --time-zone="UTC" \
-            --headers="X-Scheduler-Key=${{ secrets.SCHEDULER_API_KEY }},Content-Type=application/json" \
-            --description="Daily tip generation via backend trigger"
-
       # 8. 배포 결과 출력
       - name: Show Deployment URLs
         run: |
@@ -129,5 +104,4 @@ jobs:
           echo "============================================"
           echo "Frontend: $(gcloud run services describe $FRONTEND_SERVICE --region $REGION --format 'value(status.url)')"
           echo "Backend: ${{ steps.get-backend-url.outputs.BACKEND_URL }}"
-          echo "Worker Job: querycraft-worker"
           echo "============================================"

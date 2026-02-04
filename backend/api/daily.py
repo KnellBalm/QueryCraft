@@ -30,15 +30,15 @@ async def get_latest_daily_challenge(
     challenge = get_latest_challenge()
     
     if not challenge:
-        # [AUTO-RECOVERY] 데이터가 전혀 없으면 즉시 백그라운드 생성 트리거
-        logger.warning(f"No Daily Challenge found. Triggering auto-recovery...")
-        today = get_today_kst()
-        background_tasks.add_task(run_full_generation_task, today)
+        # [PORTFOLIO-MODE] 오늘 챌린지 없으면 가장 최신 챌린지 로드
+        logger.info("No Daily Challenge for today. Falling back to latest available challenge.")
+        challenge = get_latest_challenge()
         
-        # 생성 작업이 시작되었음을 알리고 재시도 유도 (혹은 빈 값 대신 에러)
+    if not challenge:
+        # 데이터가 아예 없는 경우에만 에러 (또는 기본값)
         raise HTTPException(
-            status_code=503,
-            detail="데이터를 생성 중입니다. 1~2분 후 다시 시도해주세요."
+            status_code=404,
+            detail="이용 가능한 데일리 챌린지가 없습니다."
         )
     
     user_id = get_user_id_from_request(request)
@@ -92,13 +92,11 @@ async def get_daily_challenge(
     challenge = load_daily_challenge(target_date)
     
     if not challenge:
-        # [AUTO-RECOVERY] 요청한 날짜 데이터가 없으면 백그라운드 생성 시도
-        logger.warning(f"Challenge not found for {target_date}. Triggering recovery...")
-        background_tasks.add_task(run_full_generation_task, dt)
-        
+        # [PORTFOLIO-MODE] 특정 날짜 데이터 없으면 최신 데이터로 리다이렉트 유도하거나 안내
+        logger.warning(f"Challenge not found for {target_date}.")
         raise HTTPException(
-            status_code=503,
-            detail=f"{target_date} 데이터를 복구 중입니다. 잠시 후 다시 시도해주세요."
+            status_code=404,
+            detail=f"{target_date}의 데이터를 찾을 수 없습니다."
         )
     
     user_id = get_user_id_from_request(request)
