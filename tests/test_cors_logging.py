@@ -2,22 +2,29 @@ import logging
 import os
 import sys
 import pytest
+import importlib
+from unittest import mock
 from fastapi.testclient import TestClient
 
-# Set ENV to production
-os.environ["ENV"] = "production"
-
-try:
-    from backend.main import app
-except ImportError:
-    sys.path.append(os.getcwd())
-    from backend.main import app
+def get_app_with_env(env_value):
+    """Reload backend.main with the specified ENV variable."""
+    with mock.patch.dict(os.environ, {"ENV": env_value}):
+        if 'backend.main' in sys.modules:
+            import backend.main
+            importlib.reload(backend.main)
+        else:
+            if os.getcwd() not in sys.path:
+                sys.path.append(os.getcwd())
+            import backend.main
+        return backend.main.app
 
 class TestCORSLogging:
 
     def test_cors_logging_success(self, caplog):
         """Test that CORS requests are logged and valid responses don't trigger warnings."""
         caplog.set_level(logging.INFO)
+        # Load app in production mode to enable strict CORS
+        app = get_app_with_env("production")
         client = TestClient(app)
         origin = "https://query-craft-frontend-758178119666.us-central1.run.app"
 
@@ -46,6 +53,8 @@ class TestCORSLogging:
     def test_cors_logging_missing_header_warning(self, caplog):
         """Test that missing headers trigger a warning log."""
         caplog.set_level(logging.WARNING)
+        # Load app in production mode
+        app = get_app_with_env("production")
         client = TestClient(app)
         origin = "https://evil-site.com"
 
