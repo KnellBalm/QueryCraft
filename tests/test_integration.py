@@ -6,6 +6,7 @@ PostgreSQL 연결이 필요한 테스트는 @pytest.mark.integration 마커 사�
 import pytest
 import os
 from datetime import date
+from unittest import mock
 
 # 통합 테스트 마커
 integration = pytest.mark.skipif(
@@ -25,10 +26,12 @@ class TestConfigSettings:
     
     def test_db_config_loads(self):
         """config.db 모듈이 에러 없이 로드되어야 함"""
-        from backend.config.db import PostgresEnv, get_duckdb_path
-        env = PostgresEnv()
-        assert env.dsn() is not None
-        assert get_duckdb_path() is not None
+        # Ensure ENV is development to avoid production check for POSTGRES_DSN
+        with mock.patch.dict(os.environ, {"ENV": "development"}):
+            from backend.config.db import PostgresEnv, get_duckdb_path
+            env = PostgresEnv()
+            assert env.dsn() is not None
+            assert get_duckdb_path() is not None
 
 
 class TestDailyPipeline:
