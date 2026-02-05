@@ -22,7 +22,12 @@ def get_latest_problem_date(data_type: str = "pa") -> date:
     """DB 또는 파일에서 가장 최신의 문제 날짜를 탐색"""
     try:
         with postgres_connection() as pg:
-            df = pg.fetch_df("SELECT MAX(problem_date) as max_date FROM public.problems WHERE data_type = %s", [data_type])
+            df = pg.fetch_df("""
+                SELECT MAX(problem_date) as max_date 
+                FROM public.problems 
+                WHERE data_type = %s 
+                AND description IS NOT NULL
+            """, [data_type])
             if not df.empty and df.iloc[0]["max_date"]:
                 max_date = df.iloc[0]["max_date"]
                 return date.fromisoformat(max_date) if isinstance(max_date, str) else max_date

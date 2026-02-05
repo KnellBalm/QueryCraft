@@ -113,9 +113,10 @@ async def health_check_with_auto_recovery(request: Request):
                 logger.info(f"[HEALTH] Problems exist for {today}: {result['details']}")
                 return result
             
-            # 문제가 없으면 자동 생성 시도
-            logger.warning(f"[HEALTH] No problems found for {today}, triggering auto-generation")
-            db_log(LogCategory.SCHEDULER, f"Health check 자동 복구: {today} 문제 없음, 생성 시작", LogLevel.WARNING, "health_check")
+            # [PORTFOLIO-MODE] 문제가 없어도 자동으로 생성하지 않음 (정적 상태 유지)
+            logger.info(f"[HEALTH] No problems found for {today}. Portfolio mode is active, skipping auto-generation.")
+            result["status"] = "healthy (static)"
+            return result
             
             start_time = time.time()
             

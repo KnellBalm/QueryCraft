@@ -228,6 +228,7 @@ def get_latest_challenge() -> Optional[dict]:
             res = pg.fetch_one("""
                 SELECT version, scenario_data, problems_data, metadata, challenge_date
                 FROM public.daily_challenges
+                WHERE problems_data IS NOT NULL AND jsonb_array_length(problems_data) > 0
                 ORDER BY challenge_date DESC
                 LIMIT 1
             """)
