@@ -34,3 +34,28 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                 status_code=500,
                 content={"detail": "Internal Server Error"}
             )
+
+class CORSLoggingMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to log CORS related headers to help debugging.
+    Should be placed OUTSIDE CORSMiddleware.
+    """
+    async def dispatch(self, request: Request, call_next):
+        logger = get_logger("backend.middleware.cors")
+        origin = request.headers.get("origin")
+
+        # Log incoming origin
+        if origin:
+            logger.info(f"CORS Request from Origin: {origin} -> {request.method} {request.url.path}")
+
+        response = await call_next(request)
+
+        # Check for CORS headers in response if origin was present
+        if origin:
+            allow_origin = response.headers.get("access-control-allow-origin")
+            if not allow_origin:
+                logger.warning(f"CORS Warning: No Access-Control-Allow-Origin header in response for origin: {origin}. Status: {response.status_code}")
+            else:
+                 logger.debug(f"CORS Success: Access-Control-Allow-Origin: {allow_origin}")
+
+        return response
