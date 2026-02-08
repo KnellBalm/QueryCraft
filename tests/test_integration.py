@@ -5,6 +5,7 @@ PostgreSQL 연결이 필요한 테스트는 @pytest.mark.integration 마커 사�
 """
 import pytest
 import os
+from unittest import mock
 from datetime import date
 
 # 통합 테스트 마커
@@ -25,10 +26,12 @@ class TestConfigSettings:
     
     def test_db_config_loads(self):
         """config.db 모듈이 에러 없이 로드되어야 함"""
-        from backend.config.db import PostgresEnv, get_duckdb_path
-        env = PostgresEnv()
-        assert env.dsn() is not None
-        assert get_duckdb_path() is not None
+        # Ensure ENV is development to avoid POSTGRES_DSN requirement in production check
+        with mock.patch.dict(os.environ, {"ENV": "development"}):
+            from backend.config.db import PostgresEnv, get_duckdb_path
+            env = PostgresEnv()
+            assert env.dsn() is not None
+            assert get_duckdb_path() is not None
 
 
 class TestDailyPipeline:
@@ -50,26 +53,29 @@ class TestPostgresIntegration:
         from backend.engine.postgres_engine import PostgresEngine
         from backend.config.db import PostgresEnv
         
-        pg = PostgresEngine(PostgresEnv().dsn())
-        result = pg.fetch_df("SELECT 1 as test")
-        assert len(result) == 1
-        assert result.iloc[0]["test"] == 1
-        pg.close()
+        # Ensure ENV is development to use local PG config if DSN is missing
+        with mock.patch.dict(os.environ, {"ENV": "development"}):
+            pg = PostgresEngine(PostgresEnv().dsn())
+            result = pg.fetch_df("SELECT 1 as test")
+            assert len(result) == 1
+            assert result.iloc[0]["test"] == 1
+            pg.close()
     
     def test_postgres_schema_exists(self):
         """PostgreSQL 스키마 존재 확인"""
         from backend.engine.postgres_engine import PostgresEngine
         from backend.config.db import PostgresEnv
         
-        pg = PostgresEngine(PostgresEnv().dsn())
-        # 기본 테이블 중 하나라도 있는지 확인
-        tables = pg.fetch_df("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-        """)
-        pg.close()
-        assert len(tables) >= 0  # 스키마가 초기화되지 않았을 수 있음
+        with mock.patch.dict(os.environ, {"ENV": "development"}):
+            pg = PostgresEngine(PostgresEnv().dsn())
+            # 기본 테이블 중 하나라도 있는지 확인
+            tables = pg.fetch_df("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+            """)
+            pg.close()
+            assert len(tables) >= 0  # 스키마가 초기화되지 않았을 수 있음
 
 
 class TestDashboardImports:
