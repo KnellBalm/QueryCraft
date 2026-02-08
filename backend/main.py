@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.common.middleware import PathRewriteMiddleware, ExceptionHandlingMiddleware
+from backend.common.middleware import PathRewriteMiddleware, ExceptionHandlingMiddleware, CORSLoggingMiddleware
 from backend.api.problems import router as problems_router
 from backend.api.sql import router as sql_router
 from backend.api.stats import router as stats_router
@@ -16,6 +16,17 @@ from backend.api.auth import router as auth_router
 from backend.api.practice import router as practice_router
 from backend.api.health import router as health_router
 from backend.api.daily import router as daily_router  # Daily Challenge (NEW)
+
+# CORS 설정 - 환경별 분리
+# Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
+cloud_origins = [
+    "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
+    "https://query-craft-frontend-758178119666.us-central1.run.app",
+    "https://query-craft-frontend-758178119666.a.run.app", # 추가
+    "https://querycraft.run.app",  # 커스텀 도메인 예비
+]
+# 좀 더 유연한 regex: query-craft-frontend로 시작하는 모든 .run.app 도메인 허용
+cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
 
 # 초기화 상태 기록
 init_status = {"initialized": False, "error": None}
@@ -97,17 +108,6 @@ app.add_middleware(PathRewriteMiddleware)
 # ensuring CORS headers are added by the outer CORS middleware.
 app.add_middleware(ExceptionHandlingMiddleware)
 
-# CORS 설정 - 환경별 분리
-# Cloud Run 도메인 및 Regex 정의 (환경 무관하게 참조 가능하도록)
-cloud_origins = [
-    "https://query-craft-frontend-53ngedkhia-uc.a.run.app",
-    "https://query-craft-frontend-758178119666.us-central1.run.app",
-    "https://query-craft-frontend-758178119666.a.run.app", # 추가
-    "https://querycraft.run.app",  # 커스텀 도메인 예비
-]
-# 좀 더 유연한 regex: query-craft-frontend로 시작하는 모든 .run.app 도메인 허용
-cloud_origin_regex = r"https://query-craft-frontend.*\.run\.app"
-
 if os.getenv("ENV") == "production":
     # 프로덕션: Cloud Run 도메인 허용 (여러 형식 지원)
     app.add_middleware(
@@ -133,6 +133,9 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Add logging middleware (outermost - added last)
+app.add_middleware(CORSLoggingMiddleware)
     
 # 404 및 기타 에러 로깅 미들웨어
 @app.middleware("http")
